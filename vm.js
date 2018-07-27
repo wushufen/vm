@@ -1,3 +1,4 @@
+// 封装与标记节点
 var $$ = function(node, cloneUid) {
 	// $$(node) -> new $$(node)
 	if (!(this instanceof $$)) return new $$(node, cloneUid)
@@ -267,6 +268,7 @@ $$.prototype = {
 }
 
 
+// VM 编译，生成dom，更新dom
 var V = function(options) {
 	// V() -> new V()
 	if (!(this instanceof V)) return new V(options)
@@ -437,6 +439,7 @@ V.injectFunction = function(argument) {
 }
 
 
+// 组件 保存生成vm的options, $$().is()->V(options)->$mouted()
 V.componments = {}
 V.componment = function(name, options) {
 	V.componments[name] = options
