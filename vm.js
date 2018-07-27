@@ -139,6 +139,7 @@ $$.prototype = {
 		}
 	},
 	if: function (value, fn) {
+		this.isIf = true
 		if (value) {
 			fn && fn()
 			this.insert()
@@ -177,21 +178,21 @@ $$.prototype = {
 			markNode.parentNode.insertBefore(node, markNode)
 		}
 	},
-	clone: function (index) {
+	clone: function (key) {
 		var $forNode = this
 		var forNode = this.node
 
 		var clones = this.clones = this.clones || {}
-		var $node = clones[index]
+		var $node = clones[key]
 		if (!$node) {
 			var node = forNode.cloneNode(true)
 
 			// 克隆元素标识，使能通过原节点标识找到克隆节点
-			// 原节点id.index
+			// 原节点id.key
 			!function loop(forNode, node){
 				var uid = $$.getUid(forNode)
 				if (uid) {
-					var _$node = $$(node, uid+'.'+index)
+					var _$node = $$(node, uid+'.'+key)
 					if (!$node) { // root
 						$node = _$node
 					}
@@ -207,10 +208,10 @@ $$.prototype = {
 
 
 			node.setAttribute('_for', $forNode.uid) // @dev
-			$node.index = index
+			$node.key = key
 			$node.$forNode = $forNode
 
-			clones[index] = $node
+			clones[key] = $node
 		}
 
 		return $node
@@ -223,11 +224,12 @@ $$.prototype = {
 
 		var forKeyPath = $$.forKeyPath
 		$$.each(list, function (item, key, index) {
-			$$.forKeyPath = forKeyPath + '.' + index
 
 			// clone
-			var $node = $forNode.clone(index)
-			$node.insert() // 当 for, if 同时存在，for insert, if false remove, 会造成dom更新
+			$$.forKeyPath = forKeyPath + '.' + key
+			var $node = $forNode.clone(key)
+			// 当 for, if 同时存在，for insert, if false remove, 会造成dom更新
+			!$node.isIf && $node.insert()
 
 			fn(item, key, index)
 		})
@@ -342,7 +344,7 @@ function compile(node) {
 				break;
 			case 3: // text
 
-				var nodeValue = String(node.nodeValue) // ie null or bool
+				var nodeValue = String(node.nodeValue) // ie: null, boolean
 
 				// {{}}
 				if (nodeValue.match('{{')) {
@@ -357,7 +359,7 @@ function compile(node) {
 
 	}(node)
 
-	var render = Function(code)
+	var render = Function('data', 'with(data){'+code+'}')
 	return render
 }
 
@@ -369,7 +371,9 @@ function V(options) {
 
 	var render = compile(el)
 	render(data)
-	data.render = render
+	data.render = function () {
+		render(data)
+	}
 
 	return data
 }
