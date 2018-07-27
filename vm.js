@@ -1,5 +1,4 @@
-
-var $$ = function(node, cloneUid){
+var $$ = function(node, cloneUid) {
 	// $$(node) -> new $$(node)
 	if (!(this instanceof $$)) return new $$(node, cloneUid)
 
@@ -35,30 +34,30 @@ var $$_ = {
 		return $$.map[uid + $$.forKeyPath]
 	}
 	*/
-	forKeyPath: '',
+	forKeyPath: '', // uid.for1Index.for2Index...
 	map: {},
-	incId: function () {
+	incId: function() {
 		return this._inc = (this._inc || 0) + 1
 	},
-	setUid: function (node, uid) {
-		if (node.nodeType==1) {
+	setUid: function(node, uid) {
+		if (node.nodeType == 1) {
 			node.uid = uid
 			node.setAttribute('uid', uid) // @dev
-		} else if(node.nodeType==3){
+		} else if (node.nodeType == 3) {
 			node.nodeValue = '\r:\b' + uid
 		}
 	},
-	getUid: function (node) {
-		if (node.nodeType==1) {
+	getUid: function(node) {
+		if (node.nodeType == 1) {
 			return node.uid
-		} else if(node.nodeType==3){
+		} else if (node.nodeType == 3) {
 			if (node.nodeValue.match('^\r:\b')) {
 				return node.nodeValue.replace('\r:\b', '')
 			}
 		}
 	},
-	extend: function (obj, _obj) {
-		for(var key in _obj){
+	extend: function(obj, _obj) {
+		for (var key in _obj) {
 			if (!_obj.hasOwnProperty(key)) continue
 			obj[key] = _obj[key]
 		}
@@ -74,13 +73,13 @@ var $$_ = {
 	},
 	each: function(list, fn) {
 		if (list instanceof Array) {
-			for(var i = 0; i<list.length; i++){
+			for (var i = 0; i < list.length; i++) {
 				var item = list[i]
 				fn(item, i, i)
 			}
 		} else {
 			var i = 0
-			for(var key in list){
+			for (var key in list) {
 				if (!list.hasOwnProperty(key)) continue
 				var item = list[key]
 				fn(item, key, i++)
@@ -88,12 +87,12 @@ var $$_ = {
 		}
 	},
 	replaceVars: function(s, vs) {
-		for(var k in vs){
+		for (var k in vs) {
 			s = s.replace(RegExp(k, 'g'), vs[k])
 		}
 		return s + '\n'
 	},
-	parseText: function (text) {
+	parseText: function(text) {
 		return '"' + text
 			// 边界符外的文本 " \ 转义
 			.replace(/(^|}}).*?({{|$)/g, function($) {
@@ -102,9 +101,10 @@ var $$_ = {
 			// 换行符转空格
 			.replace(/\r?\n/g, '\\n')
 			// {{value}} -> "+value+"
-			.replace(/{{(.*?)}}/g, '"+$1+"') 
+			.replace(/{{(.*?)}}/g, '"+$1+"')
 			// 
-			+ '"'
+			+
+			'"'
 	},
 	addEventListener: function(type, fn) {
 		return document.addEventListener ? function(type, fn) {
@@ -116,7 +116,7 @@ var $$_ = {
 			});
 		}
 	}(),
-	getDirs: function (node) {
+	getDirs: function(node) {
 		var attributes = $$.toArray(node.attributes)
 		for (var i = 0; i < attributes.length; i++) {
 			var attribute = attributes[i]
@@ -128,17 +128,17 @@ var $$_ = {
 }
 $$_.extend($$, $$_)
 $$.prototype = {
-	text: function (value) {
+	text: function(value) {
 		if (value === this._text) return
 
 		var node = this.node
 		if (node.nodeType == 3) {
 			this._text = node.nodeValue = value
-		} else if(node.nodeType == 1){
+		} else if (node.nodeType == 1) {
 			this._text = node.innerText = value
 		}
 	},
-	if: function (value, fn) {
+	if: function(value, fn) {
 		this.isIf = true
 		if (value) {
 			fn && fn()
@@ -147,12 +147,10 @@ $$.prototype = {
 			this.remove()
 		}
 	},
-	elseif: function (value, fn) {
-	},
-	else: function () {
-	},
-	mark: function () {
-		var node = this.node	
+	elseif: function(value, fn) {},
+	else: function() {},
+	mark: function() {
+		var node = this.node
 		if (!this.markNode) {
 			// var mark = document.createComment(this.uid)
 			var mark = document.createComment(node.outerHTML) // @dev
@@ -162,7 +160,7 @@ $$.prototype = {
 			node.markNode = mark // @dev
 		}
 	},
-	remove: function () {
+	remove: function() {
 		var node = this.node
 		var parentNode = node.parentNode
 		if (parentNode && parentNode.nodeType == 1) {
@@ -170,7 +168,7 @@ $$.prototype = {
 			node.parentNode.removeChild(node)
 		}
 	},
-	insert: function () {
+	insert: function() {
 		var node = this.node
 		var parentNode = node.parentNode
 		if (!parentNode || parentNode.nodeType != 1) {
@@ -178,7 +176,7 @@ $$.prototype = {
 			markNode.parentNode.insertBefore(node, markNode)
 		}
 	},
-	clone: function (key) {
+	clone: function(key) {
 		var $forNode = this
 		var forNode = this.node
 
@@ -187,24 +185,24 @@ $$.prototype = {
 		if (!$node) {
 			var node = forNode.cloneNode(true)
 
-			// 克隆元素标识，使能通过原节点标识找到克隆节点
-			// 原节点id.key
-			!function loop(forNode, node){
-				var uid = $$.getUid(forNode)
-				if (uid) {
-					var _$node = $$(node, uid+'.'+key)
-					if (!$node) { // root
-						$node = _$node
+				// 克隆元素标识，使能通过原节点标识找到克隆节点
+				// 原节点id.key
+				! function loop(forNode, node) {
+					var uid = $$.getUid(forNode)
+					if (uid) {
+						var _$node = $$(node, uid + '.' + key)
+						if (!$node) { // root
+							$node = _$node
+						}
 					}
-				}
 
-				var forChildNodes = forNode.childNodes
-				var childNodes = node.childNodes
-				for (var i = 0; i < forChildNodes.length; i++) {
-					loop(forChildNodes[i], childNodes[i])
-				}
+					var forChildNodes = forNode.childNodes
+					var childNodes = node.childNodes
+					for (var i = 0; i < forChildNodes.length; i++) {
+						loop(forChildNodes[i], childNodes[i])
+					}
 
-			}(forNode, node)
+				}(forNode, node)
 
 
 			node.setAttribute('_for', $forNode.uid) // @dev
@@ -216,165 +214,230 @@ $$.prototype = {
 
 		return $node
 	},
-	for: function (list, fn) {
+	for: function(list, fn) {
 		var $forNode = this
 
-		this.mark()
+		// this.mark()
 		this.remove()
 
 		var forKeyPath = $$.forKeyPath
-		$$.each(list, function (item, key, index) {
+		try{
+			$$.each(list, function(item, key, index) {
 
-			// clone
-			$$.forKeyPath = forKeyPath + '.' + key
-			var $node = $forNode.clone(key)
-			// 当 for, if 同时存在，for insert, if false remove, 会造成dom更新
-			!$node.isIf && $node.insert()
+				// clone
+				$$.forKeyPath = forKeyPath + '.' + key
+				var $node = $forNode.clone(key)
+				// 当 for, if 同时存在，for insert, if false remove, 会造成dom更新
+				$node.isIf || $node.insert()
 
-			fn(item, key, index)
-		})
+				fn(item, key, index)
+			})
+		} catch(e){
+			// 避免报错时 forKeyPath 混乱
+			setTimeout(function(){
+				throw e
+			}, 1)
+		}
 		$$.forKeyPath = forKeyPath
 
 		// remove
 		var clones = this.clones
-		for(var key in clones){
+		for (var key in clones) {
 			var $node = clones[key]
 			if (!list || !(key in list)) {
 				$node.remove()
 			}
 		}
 	},
-	on: function (type, args, fn) {
-		
+	on: function(type, args, fn) {
+
 	},
+	is: function(name) {
+		if (this.componmentMounted) return
+		var node = this.node
+
+		var options = V.componments[name]
+		// 同步在 for 里会打乱 forKeyPath
+		setTimeout(function() {
+			var componment = V(options)
+			componment.$mounte(node)
+		}, 1)
+		this.componmentMounted = true
+	}
 }
 
 
-/*
+var V = function(options) {
+	// V() -> new V()
+	if (!(this instanceof V)) return new V(options)
 
-$$(uid).if(bool, function(){
-	$$(uid).text()
-})
+	// data
+	var data = typeof options.data == 'function' ? options.data() : options.data
+	this.$data = data
+	$$.extend(this, data)
 
-$$(uid).for(list, function (item) {
+	// el
+	this.$el = typeof options.el == 'string' ? document.querySelector(options.el) : options.el
 
-	$$(uid).text(item.name)
+	// template
+	this.$template = options.template || V.outerHTML(this.$el)
 
-	$$(uid).for(item.children, function (sub) {
-		$$(uid).text(sub)
+	// dom
+	this.$dom = V.parseHTML(this.$template)
+
+	// render function
+	this.$render = V.compile(this.$dom)
+
+	// @dev
+	console.log(this.$render)
+
+	// mounte
+	if (this.$el) {
+		this.$mounte(this.$el)
+	}
+}
+V.prototype = {
+	$mounte: function(el) {
+		el.parentNode.replaceChild(this.$dom, el)
+		this.$el = el
+
+		// first render
+		this.$render()
+	}
+}
+V.compile = function(node) {
+	/*
+	$$(uid).if(bool, function(){
+		$$(uid).text()
 	})
-
-
-	$$(uid).on('click', function ($event) {remove(item)})
-
-})
-
-$$(uid).is('com')
-
-*/
-function compile(node) {
+	$$(uid).for(list, function (item) {
+		$$(uid).for(item.children, function (sub) {
+			$$(uid).text(sub)
+		})
+		$$(uid).on('click', function ($event) {remove(item)})
+	})
+	$$(uid).is('com')
+	*/
 	var code = ''
 
+		! function scan(node) {
+			// console.log(node)
 
-	!function scan(node){
-		// console.log(node)
+			switch (node.nodeType) {
+				case 1: // element
 
-		switch(node.nodeType){
-			case 1: // element
+					// for
+					var for_ = node.getAttribute('for')
+					if (for_ && for_.match(' in ')) {
+						var item_list = for_.split(' in ')
+						var list_ = item_list[1]
+						var item_ = item_list[0]
+						var key_ = '$key'
+						var index_ = '$index'
 
-				// for
-				var for_ = node.getAttribute('for')
-				if (for_ && for_.match(' in ')) {
-					var item_list = for_.split(' in ')
-					var list_ = item_list[1]
-					var item_ = item_list[0]
-					var key_ = '$key'
-					var index_ = '$index'
-
-					var item_m = item_.match(/\((.*)\)/)
-					if (item_m) {
-						var item_key_index = item_m[1].split(',')
-						item_ = item_key_index[0]
-						key_ = item_key_index[1]
-						index_ = item_key_index[2]
+						var item_m = item_.match(/\((.*)\)/)
+						if (item_m) {
+							var item_key_index = item_m[1].split(',')
+							item_ = item_key_index[0]
+							key_ = item_key_index[1]
+							index_ = item_key_index[2]
+						}
+						code += $$.replaceVars('$$( @id ).for( @list, function( @item, @key, @index ){ ', {
+							'@id': $$(node).uid,
+							'@list': list_,
+							'@item': item_,
+							'@key': key_,
+							'@index': index_
+						})
 					}
-					code += $$.replaceVars('$$( @id ).for( @list, function( @item, @key, @index ){ ', {
-						'@id': $$(node).uid,
-						'@list': list_,
-						'@item': item_,
-						'@key': key_,
-						'@index': index_
-					})
-				}
 
-				// if
-				var if_ = node.getAttribute('if')
-				if (if_) {
-					code += $$.replaceVars('$$( @id ).if( @value, function(){ ', {
-						'@id': $$(node).uid,
-						'@value': if_
-					})
-				}
+					// if
+					var if_ = node.getAttribute('if')
+					if (if_) {
+						code += $$.replaceVars('$$( @id ).if( @value, function(){ ', {
+							'@id': $$(node).uid,
+							'@value': if_
+						})
+					}
 
 
-				// dirs
-				var attributes = $$.toArray(node.attributes);
-				for (var i = 0; i < attributes.length; i++) {
-					// todo
-					attributes[i].specified
-				}
+					// is componment
+					var is_ = node.getAttribute('is')
+					if (is_) {
+						code += $$.replaceVars('$$( @id ).is("@name")', {
+							'@id': $$(node).uid,
+							'@name': is_
+						})
+					}
 
 
-				// childNodes
-				var childNodes = $$.toArray(node.childNodes)
-				for (var i = 0; i < childNodes.length; i++) {
-					scan(childNodes[i])
-				}
+					// on
+					var on_ = node.getAttribute('on')
+					if (on_) {
+						code += $$.replaceVars('$$( @id ).on("@name")', {
+							'@id': $$(node).uid,
+							'@name': is_
+						})
+					}
 
 
-				// end if
-				if (if_) {
-					code+='})\n'
-				}
-				// end for
-				if (for_) {
-					code+='})\n'
-				}
 
-				break;
-			case 3: // text
+					// childNodes
+					var childNodes = $$.toArray(node.childNodes)
+					for (var i = 0; i < childNodes.length; i++) {
+						scan(childNodes[i])
+					}
 
-				var nodeValue = String(node.nodeValue) // ie: null, boolean
 
-				// {{}}
-				if (nodeValue.match('{{')) {
-					code += $$.replaceVars('$$( @id ).text( @value )', {
-						'@id': $$(node).uid,
-						'@value': $$.parseText(nodeValue)
-					})
-				}
+					// end if
+					if (if_) {
+						code += '})\n'
+					}
+					// end for
+					if (for_) {
+						code += '})\n'
+					}
 
-				break;
-		}
+					break;
+				case 3: // text
 
-	}(node)
+					var nodeValue = String(node.nodeValue) // ie: null, boolean
 
-	var render = Function('data', 'with(data){'+code+'}')
+					// {{}}
+					if (nodeValue.match('{{')) {
+						code += $$.replaceVars('$$( @id ).text( @value )', {
+							'@id': $$(node).uid,
+							'@value': $$.parseText(nodeValue)
+						})
+					}
+
+					break;
+			}
+
+		}(node)
+
+	var render = Function('with(this){\n' + code + '\n}')
 	return render
 }
-
-
-function V(options) {
-	var el = options.el
-	el = document.querySelector(el)
-	var data = options.data
-
-	var render = compile(el)
-	render(data)
-	data.render = function () {
-		render(data)
+V.parseEl = document.createElement('div')
+V.parseHTML = function(html) {
+	V.parseEl.innerHTML = html
+	return V.parseEl.children[0] || V.parseEl.childNodes[0]
+}
+V.outerHTML = function(node) {
+	if (node.outerHTML) {
+		return node.outerHTML
 	}
-
-	return data
+	V.parseEl.innerHTML = ''
+	V.parseEl.appendChild(node)
+	return V.parseEl.innerHTML
+}
+V.injectFunction = function(argument) {
+	// body...
 }
 
+
+V.componments = {}
+V.componment = function(name, options) {
+	V.componments[name] = options
+}
