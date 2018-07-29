@@ -5,9 +5,12 @@
     <meta charset="utf-8">
     <title></title>
     <style type="text/css">
+    body{
+    	padding: 1em;
+    }
     table{
     	border-collapse: collapse;
-    	margin: 1em;
+    	margin: 1em 0;
     }
     td {
         border: solid 1px #ddd;
@@ -18,18 +21,19 @@
 
 <body>
     <div id="app">
+    	<h1>n:{{++n}}</h1>
+    	<h2 text="'text'"></h2>
+    	<h3 html="'html'"></h3>
+    	<h4 if="n%2==0">if n%2==0</h4>
+    	<h4 elseif="n%3==0">elseif n%3==0</h4>
+    	<h4 else>else</h4>
+    	<input autofocus on:keyup.enter="add">
         <table>
-        	<tr if="!list.length">
-        		<td>{{'没有数据'}}</td>
-        	</tr>
             <tr for="(item, i) in list" if="item.status!='delete'">
             	<td>{{i}}</td>
             	<td>
-            		<!-- <input model="item.text"> -->
             		{{item.text}}
-            	</td>
-            	<td>
-            		<span for="tag in item.tags"><i is="tag" ></i></span>
+            		<input model="item.text">
             	</td>
                 <td>
                 	<button on:click="item.status='done'">done</button>
@@ -40,31 +44,38 @@
         <!--  -->
         <table>
             <tr for="(item, key, index) in obj">
-                <!-- <td>{{index}}</td> -->
+                <td>{{index}}</td>
                 <td>{{key}}</td>
                 <td>{{item}}</td>
             </tr>
         </table>
         <!--  -->
-        <div is="tag"></div>
+        <div is="tag" for="item in list" if="n%2==0">todo is+for+if</div>
     </div>
     <div id="tag" style="display:none">
-        <b>{{date.getTime()}}</b>
+        <b>{{todo}}</b>
     </div>
     <script src="vm.js"></script>
-    <script>
+    <script x>
     V.componment('tag', {
         template: tag.innerHTML,
         data: function() {
             return {
+            	n: 0,
                 date: new Date
             }
+        },
+        methods: {
+        	x: function () {
+        		return new Date().getTime()
+        	}
         }
     })
 
-    var data = V({
+    var vm = V({
         el: '#app',
         data: {
+        	n: 0,
             bool: true,
             list: [
                 { id:1, text:'todo1', status:'open', tags:['abc'] },
@@ -75,8 +86,16 @@
                 id: 1,
                 name: 'wsf'
             }
+        },
+        methods: {
+        	add: function () {
+        		
+        	}
         }
     })
+    // setInterval(function(){
+    // 	vm.$render()
+    // }, 500)
     </script>
 </body>
 
