@@ -4,39 +4,37 @@
     // 虚拟节点： 封装与标记
     // 
     var $$ = function(node, cloneUid) {
-        // if ($$.forKeyPath) {
-            console.log(node, cloneUid, uid)
-        // }
-        // $$(node) -> new $$(node)
-        if (!(this instanceof $$)) return new $$(node, cloneUid)
 
         // $$(uid) get $node
-        var uid = node
-        // $$(node) get $node
-        if (node.nodeType) {
-            uid = $$.getUid(node)
-        }
-        var $node = $$.map[uid + $$.forKeyPath]  // !!!!!!!!!todo 只有通过 $$(uid) 才能 + $$.forKeyPath
-        if ($node) {
-            // is $$(node) -> $$($node.componment.$el)
-            if ($node.componment) {
-                return $$($node.componment.$dom)
+        if (typeof node != 'object') {
+            var uid = node
+            var $node = $$.map[node + $$.forKeyPath]
+            if ($node.$componment) {
+                return $node.$componment
             }
             return $node
         }
 
-        // new $node save
+        // $$(node) -> return saved
+        var uid = $$.getUid(node)
+        if (uid) {
+            return $$.map[uid]
+        }
+
+        // $$(node) -> new $$(node)
+        if (!(this instanceof $$)) return new $$(node, cloneUid)
+
         var uid = cloneUid || $$.incId()
         this.uid = uid
         this.node = node
-        $$.map[uid] = this
 
         // info
         if (node.nodeValue) { this.initNodeValue = node.nodeValue.replace(/\n/g, ' ') }
 
+        // save
+        $$.setUid(node, uid) // node -> uid
+        $$.map[uid] = this // uid -> $node
 
-        // for $(node) get
-        $$.setUid(node, uid)
     }
     $$.utils = {
         /*
@@ -66,8 +64,8 @@
                 if ($$.canSetUidOnTextNode) {
                     node.uid = uid
                 } else {
-                	var map = node.parentNode.uidNodeMap || (node.parentNode.uidNodeMap = {})
-                	map[uid] = node
+                    var map = node.parentNode.uidNodeMap || (node.parentNode.uidNodeMap = {})
+                    map[uid] = node
                 }
             }
         },
@@ -101,7 +99,7 @@
             }
             return arr
         },
-        indexOf: function (array, value) {
+        indexOf: function(array, value) {
             if (array.indexOf) {
                 return array.indexOf(value)
             } else {
@@ -170,7 +168,7 @@
             var dirs = Array(10) // 留位给 for 等特殊指令，位置代表优先级
             dirs.size = 0 // 通过 size 判断数量
 
-            $$.each($$.toArray(node.attributes), function(attribute){
+            $$.each($$.toArray(node.attributes), function(attribute) {
                 if (attribute.specified) { // ie
 
                     var nodeName = attribute.nodeName
@@ -179,8 +177,8 @@
                     // dir                           @|dir        :   arg      .mdf.13
                     var m = nodeName.match(/^(?:v-)?(@|[^.:]*)(?:[:]?([^.]+))?(.*)/) || []
                     var name = m[1] || 'attr'
-                    var name = name == 'bind'? 'attr': name
-                    var name = name == '@'? 'on': name
+                    var name = name == 'bind' ? 'attr' : name
+                    var name = name == '@' ? 'on' : name
                     if (name in $$.prototype) { // 指令就是虚拟节点的方法
                         node.removeAttribute(nodeName)
                         dirs.size += 1
@@ -192,7 +190,7 @@
                             mdfs: m[3] || '',
                             exp: nodeValue || '""'
                         }
-                        var $dirs = 'for,is,if,elseif,else'.split(',') // 优先级排序
+                        var $dirs = 'for,if,elseif,else,is'.split(',') // 优先级排序
                         var index = $$.indexOf($dirs, name)
                         if (index > -1) {
                             dirs[index] = dir
@@ -214,9 +212,9 @@
         autofocus: function() {
             if (!this.focused) {
                 var self = this
-                setTimeout(function(){ // ie?
+                setTimeout(function() { // ie?
                     self.node.focus()
-                },1)
+                }, 1)
                 this.focused = true
             }
         },
@@ -224,6 +222,7 @@
             if (value === this.innerText) return
             var node = this.node
             if (node.nodeType == 3) {
+            	console.log(this)
                 this.innerText = node.nodeValue = value
             } else if (node.nodeType == 1) {
                 this.innerText = node.innerText = value
@@ -313,7 +312,8 @@
                 var cloneNode = forNode.cloneNode(true)
 
                 // 克隆元素标识，使能通过原节点标识找到克隆节点
-                // 原节点id.key
+                // forNodeUid.key
+                'IIF',
                 function loop(forNode, cloneNode) {
                     var uid = $$.getUid(forNode)
                     if (uid) {
@@ -330,15 +330,10 @@
                         loop(forChildNodes[i], childNodes[i])
                     }
 
-                }
-                loop(forNode, cloneNode)
+                }(forNode, cloneNode)
 
-
-                cloneNode.setAttribute('_for', $forNode.uid) // @dev
                 $node = $$(cloneNode)
-                // console.log($node, cloneNode)
                 $node.$forNode = $forNode
-                $node.cloneNode = cloneNode
 
                 clones[key] = $node
             }
@@ -359,7 +354,14 @@
                     $$.forKeyPath = forKeyPath + '.' + key
                     var $node = $forNode.clone(key)
                     // 当 for, if 同时存在，for insert, if false remove, 会造成dom更新
-                    $node.isIf || $node.insert()
+                    // 当 is componment 时，被替换出不能再进来
+                    if (!$node.isIf) {
+                        if ($node.$componment) {
+                            $node.$componment.insert()
+                        } else {
+                            $node.insert()
+                        }
+                    }
 
                     fn(item, key, index)
                 })
@@ -376,7 +378,11 @@
             for (var key in clones) {
                 var $node = clones[key]
                 if (!list || !(key in list)) {
-                    $node.remove()
+                    if ($node.$componment) {
+                        $node.$componment.remove()
+                    } else {
+                        $node.remove()
+                    }
                 }
             }
         },
@@ -404,16 +410,25 @@
         is: function(name, data) {
             var self = this
             var node = this.node
-            if (!this.componment) {
+            // if (this.isCompoment) return // 已经新建 componment, 并且 $$(uid) -> $node.$componment
+
+            if (!this.isCompoment) {
                 var options = V.componments[name]
-                // 副本
+                if (!options) { setTimeout(function() { throw name + ' is not a componment' }, 1) }
+
+                // new componment
                 options = $$.extend({}, options)
+                data = $$.extend({}, data)
                 options.data = $$.extend(data, typeof options.data == 'function' ? options.data() : options.data)
-                this.componment = V(options)
+                var componment = V(options)
+
+                this.$componment = $$(componment.$dom) // $() -> $node.$componment
+                this.$componment.isCompoment = true
+                this.$componment.componment = componment
 
                 // 同步在 for 里会打乱 forKeyPath
                 setTimeout(function() {
-                    self.componment.$mount(node)
+                    componment.$mount(node)
                 }, 1)
             } else {
                 setTimeout(function() {
@@ -441,7 +456,7 @@
         V.setComputed(this, options.computed)
 
         // el
-        this.$el = typeof options.el == 'string' ? document.getElementById(options.el.replace('#','')) : options.el
+        this.$el = typeof options.el == 'string' ? document.getElementById(options.el.replace('#', '')) : options.el
 
         // template
         this.$template = options.template || V.outerHTML(this.$el)
@@ -495,7 +510,7 @@
             $$(uid).is('com')
             */
             var code = ''
-            // var code = 'console.log("r");' // @dev
+            // var code = 'console.trace("r");' // @dev
 
             scan(node)
 
@@ -589,7 +604,7 @@
                                     code += $$.replaceVars('$$(@id).is("@name", @attrs)', {
                                         '@id': $node.uid,
                                         '@name': dir.exp,
-                                        '@attrs': '{todo:"todo props"}'
+                                        '@attrs': '0' //'{todo:"todo props"}'
                                     })
                                     break
                                 default:
@@ -676,10 +691,10 @@
                 }
             }
         },
-        setComputed: function (vm, computed) {
-            for(var key in computed){
+        setComputed: function(vm, computed) {
+            for (var key in computed) {
                 var fn = computed[key]
-                fn.valueOf = function () {
+                fn.valueOf = function() {
                     return this.call(vm)
                 }
                 vm[key] = fn
