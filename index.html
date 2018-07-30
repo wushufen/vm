@@ -2,101 +2,129 @@
 <html>
 
 <head>
-    <meta charset="utf-8">
-    <title></title>
-    <style type="text/css">
-    body{
-    	padding: 1em;
-    }
-    table{
-    	border-collapse: collapse;
-    	margin: 1em 0;
-    }
-    td {
-        border: solid 1px #ddd;
-        padding: .5em;
-    }
-    </style>
+	<meta charset="utf-8">
+	<title></title>
+	<style type="text/css">
+	body{
+		padding: 1em;
+	}
+	table{
+		border-collapse: collapse;
+		margin: 1em 0;
+	}
+	td {
+		border: solid 1px #ddd;
+		padding: .5em;
+	}
+	</style>
 </head>
 
 <body>
-    <div id="app">
-    	<h1>n:{{++n}}</h1>
-    	<h2 text="'text'"></h2>
-    	<h3 html="'html'"></h3>
-    	<h4 if="n%2==0">if n%2==0</h4>
-    	<h4 elseif="n%3==0">elseif n%3==0</h4>
-    	<h4 else>else</h4>
-    	<input autofocus on:keyup.enter="add">
-        <table>
-            <tr for="(item, i) in list" if="item.status!='delete'">
-            	<td>{{i}}</td>
-            	<td>
-            		{{item.text}}
-            		<input model="item.text">
-            	</td>
-                <td>
-                	<button on:click="item.status='done'">done</button>
-                	<button on:click="item.status='delete'">delete</button>
-                </td>
-            </tr>
-        </table>
-        <!--  -->
-        <table>
-            <tr for="(item, key, index) in obj">
-                <td>{{index}}</td>
-                <td>{{key}}</td>
-                <td>{{item}}</td>
-            </tr>
-        </table>
-        <!--  -->
-        <div is="tag" for="item in list" if="n%2==0">todo is+for+if</div>
-    </div>
-    <div id="tag" style="display:none">
-        <b>{{todo}}</b>
-    </div>
-    <script src="vm.js"></script>
-    <script x>
-    V.componment('tag', {
-        template: tag.innerHTML,
-        data: function() {
-            return {
-            	n: 0,
-                date: new Date
-            }
-        },
-        methods: {
-        	x: function () {
-        		return new Date().getTime()
-        	}
-        }
-    })
+	<div id="app">
+		<h1>n:{{++n}} </h1>
+		<small>{{compute}}</small>
+		<h2 text="'text'"></h2>
+		<h3 html="'html'"></h3>
+		<h4 if="n%2==0">if n%2==0</h4>
+		<h4 elseif="n%3==0">elseif n%3==0</h4>
+		<h4 else>else</h4>
+		<h5 :title="'this is title: n=' + n">attr:title</h5>
+		<input autofocus model="model" on:keyup.enter="add(model)">
+		<table>
+			<tr for="(item, i) in list" if="item.status!='delete'">
+				<td>{{i}}/{{list.length}}:{{item.status}}</td>
+				<td>
+					{{item.text}}
+					<input model="item.text" xautofocus="">
+				</td>
+				<td>
+					<button if="item.status!='done'" @click="item.status='done'">done</button>
+					<button if="item.status=='done'" @click="item.status='open'">open</button>
+				</td>
+			</tr>
+		</table>
+		<!--  -->
+		<table>
+			<tr for="(item, key, index) in obj">
+				<td>{{index}}</td>
+				<td>{{key}}</td>
+				<td>{{item}}</td>
+			</tr>
+		</table>
+		<!--  -->
+		<div is="tag" for="item in list" xif="n%2==0">todo is+for+if</div>
+	</div>
+	<div id="tag" style="display:none">
+		<b>{{todo}}</b>
+	</div>
+	<script src="vm.js"></script>
+	<script x>
+	Vue.componment('tag', {
+		template: tag.innerHTML,
+		data: function() {
+			return {
+				n: 0,
+				date: new Date
+			}
+		},
+		methods: {
+			x: function () {
+				return new Date().getTime()
+			}
+		}
+	})
 
-    var vm = V({
-        el: '#app',
-        data: {
-        	n: 0,
-            bool: true,
-            list: [
-                { id:1, text:'todo1', status:'open', tags:['abc'] },
-                { id:2, text:'todo2', status:'open', tags:['abc'] },
-                { id:3, text:'todo3', status:'open', tags:['abc'] },
-            ],
-            obj: {
-                id: 1,
-                name: 'wsf'
-            }
-        },
-        methods: {
-        	add: function () {
-        		
-        	}
-        }
-    })
-    // setInterval(function(){
-    // 	vm.$render()
-    // }, 500)
-    </script>
+	/*
+	todo:
+	V({
+		el: '#app',
+		data: {
+			model: 'V.js',
+			compute: function(){
+				return this.model + '!'
+			},
+			sayHello: function(){
+				alert('Hello, ' + this.compute)
+			}
+		}
+	})
+	*/
+	vm = vue = new Vue({
+		el: '#app',
+		data: {
+			n: 0,
+			bool: true,
+			model: '',
+			list: [
+				{ id:1, text:'todo1', status:'open', tags:['abc'] },
+				{ id:2, text:'todo2', status:'open', tags:['abc'] },
+				{ id:3, text:'todo3', status:'open', tags:['abc'] }
+			],
+			obj: {
+				id: 1,
+				name: 'wsf'
+			}
+		},
+		computed: {
+			compute: function () {
+				return 'computed: n*2= ' + this.n * 2
+			}
+		},
+		methods: {
+			add: function (text) {
+				this.list.push({
+					text: text
+				})
+			}
+		},
+		mounted: function(){
+			this.add('mounted')
+		}
+	})
+	// setInterval(function(){
+	// 	vm.$render()
+	// }, 5)
+	</script>
 </body>
 
 </html>

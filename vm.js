@@ -1,7 +1,7 @@
 ! function(document) {
 
     // 
-    // 虚拟节点 封装与标记
+    // 虚拟节点： 封装与标记
     // 
     var $$ = function(node, cloneUid) {
         // $$(node) -> new $$(node)
@@ -49,7 +49,7 @@
             return this._inc = (this._inc || 0) + 1
         },
         canSetUidOnTextNode: (function() { // ie
-            try { return xxxxxxxdocument.createTxextNode('').uid = true } catch (e) {}
+            try { return document.createTxextNode('').uid = false } catch (e) {}
         })(),
         setUid: function(node, uid) {
             if (node.nodeType == 1) {
@@ -59,9 +59,8 @@
                 if ($$.canSetUidOnTextNode) {
                     node.uid = uid
                 } else {
-                	var map = node.parentNode.uidNodeMap || {}
+                	var map = node.parentNode.uidNodeMap || (node.parentNode.uidNodeMap = {})
                 	map[uid] = node
-                	node.parentNode.uidNodeMap = map
                 }
             }
         },
@@ -94,6 +93,17 @@
                 arr[length] = list[length]
             }
             return arr
+        },
+        indexOf: function (array, value) {
+            if (array.indexOf) {
+                return array.indexOf(value)
+            } else {
+                for (var i = 0; i < array.length; i++) {
+                    if (array[i] == value) {
+                        return i
+                    }
+                }
+            }
         },
         each: function(list, fn) {
             if (list instanceof Array) {
@@ -151,19 +161,19 @@
         },
         getDirs: function(node) {
             var dirs = Array(10) // 留位给 for 等特殊指令，位置代表优先级
-            dirs.size = 0 // 通过 siize 判断数量
+            dirs.size = 0 // 通过 size 判断数量
 
-            var attributes = $$.toArray(node.attributes)
-            for (var i = 0; i < attributes.length; i++) {
-                var attribute = attributes[i]
-                if (attribute.specified) {
+            $$.each($$.toArray(node.attributes), function(attribute){
+                if (attribute.specified) { // ie
 
                     var nodeName = attribute.nodeName
                     var nodeValue = attribute.nodeValue
 
-                    // dir                    on            :click   .stop.13
-                    var m = nodeName.match(/^((?:\w|-])+)(?::(\w+))?(.*?)?$/) || []
-                    var name = m[1]
+                    // dir                           @|dir        :   arg      .mdf.13
+                    var m = nodeName.match(/^(?:v-)?(@|[^.:]*)(?:[:]?([^.]+))?(.*)/) || []
+                    var name = m[1] || 'attr'
+                    var name = name == 'bind'? 'attr': name
+                    var name = name == '@'? 'on': name
                     if (name in $$.prototype) { // 指令就是虚拟节点的方法
                         node.removeAttribute(nodeName)
                         dirs.size += 1
@@ -171,12 +181,12 @@
                         var dir = {
                             nodeName: nodeName,
                             name: name,
-                            arg: m[2],
+                            arg: m[2] || '',
                             mdfs: m[3] || '',
-                            exp: nodeValue
+                            exp: nodeValue || '""'
                         }
-                        var $dirs = 'for,is,if,elseif,else'.split(',')
-                        var index = $dirs.indexOf(name)
+                        var $dirs = 'for,is,if,elseif,else'.split(',') // 优先级排序
+                        var index = $$.indexOf($dirs, name)
                         if (index > -1) {
                             dirs[index] = dir
                         } else {
@@ -188,15 +198,18 @@
                     }
 
                 }
-            }
+            })
             return dirs
-        },
+        }
     }
     $$.utils.extend($$, $$.utils)
     $$.prototype = {
         autofocus: function() {
             if (!this.focused) {
-                this.node.focus()
+                var self = this
+                setTimeout(function(){ // ie?
+                    self.node.focus()
+                },1)
                 this.focused = true
             }
         },
@@ -213,40 +226,47 @@
             if (value === this.innerHTML) return
             this.innerHTML = this.node.innerHTML = value
         },
-        if: function(value, fn) {
+        attr: function(value, name) {
+            var attrs = this.attrs || {}
+            if (value === attrs[name]) return
+            attrs[name] = this.node[name] = value
+            this.attrs = attrs
+            return this
+        },
+        'if': function(value, fn) {
             this.isIf = true // for clone insert?
             if (value) {
-                fn()
                 this.insert()
+                fn()
             } else {
                 this.remove()
             }
             return {
                 value: value,
-                elseif: this.elseif,
-                else: this.else
+                'elseif': this['elseif'],
+                'else': this['else']
             }
         },
-        elseif: function($node, value, fn) {
+        'elseif': function($node, value, fn) {
             if (this.value) {
                 $node.remove()
             } else if (value) {
-                fn()
                 $node.insert()
+                fn()
             } else {
                 $node.remove()
             }
             return {
                 value: this.value || value,
-                else: this.else
+                'else': this['else']
             }
         },
-        else: function($node, fn) {
+        'else': function($node, fn) {
             if (this.value) {
                 $node.remove()
             } else {
-                fn()
                 $node.insert()
+                fn()
             }
         },
         mark: function() {
@@ -262,14 +282,16 @@
         },
         remove: function() {
             var node = this.node
-            if (document.contains(node)) {
+            var parentNode = node.parentNode
+            if (parentNode && parentNode.nodeType == 1) {
                 this.mark()
-                node.parentNode.removeChild(node)
+                parentNode.removeChild(node)
             }
         },
         insert: function() {
             var node = this.node
-            if (!document.contains(node)) {
+            var parentNode = node.parentNode
+            if (!parentNode || parentNode.nodeType != 1) {
                 var markNode = this.markNode || this.$forNode.markNode
                 markNode.parentNode.insertBefore(node, markNode)
             }
@@ -290,7 +312,7 @@
                     if (uid) {
                         var $cloneNode = $$(cloneNode, uid + '.' + key)
                         // 复制指令信息
-                        console.log(uid)
+                        // console.log(uid)
                         var $forNode = $$.map[uid]
                         $cloneNode.dirs = $forNode.dirs
                     }
@@ -314,7 +336,7 @@
 
             return $node
         },
-        for: function(list, fn) {
+        'for': function(list, fn) {
             var $forNode = this
 
             // this.mark()
@@ -373,7 +395,7 @@
         is: function(name, data) {
             // '?? $$(18).is(, function(){   $$(18重定向到当前组件)   })'
 
-            var _this = this
+            var self = this
             var node = this.node
             if (!this.componment) {
                 var options = V.componments[name]
@@ -383,13 +405,13 @@
                 this.componment = V(options)
                 // 同步在 for 里会打乱 forKeyPath
                 setTimeout(function() {
-                    _this.componment.$mount(node)
+                    self.componment.$mount(node)
                     // uid 重定向
                     // todo
                 }, 1)
             } else {
                 setTimeout(function() {
-                    _this.componment.$render()
+                    self.componment.$render()
                 }, 1)
             }
         }
@@ -397,7 +419,7 @@
 
 
     // 
-    // VM 编译，生成dom，更新dom
+    // 视图模型： 编译，生成dom，更新dom
     // 
     var V = function(options) {
         // V() -> new V()
@@ -408,11 +430,12 @@
         this.$data = data
         $$.extend(this, data)
         // methods
-        $$.extend(this, options.methods)
-        V.injectMethods(this, options.methods)
+        V.setMethods(this, options.methods)
+        // computed
+        V.setComputed(this, options.computed)
 
         // el
-        this.$el = typeof options.el == 'string' ? document.querySelector(options.el) : options.el
+        this.$el = typeof options.el == 'string' ? document.getElementById(options.el.replace('#','')) : options.el
 
         // template
         this.$template = options.template || V.outerHTML(this.$el)
@@ -422,9 +445,9 @@
 
         // compile render
         this.$$ = $$
-        this.$foceRender = V.compile(this.$dom)
+        this.$foceUpdate = V.compile(this.$dom)
         this.$render = function() {
-            var _this = this
+            var self = this
 
             var fps = 24
             var timeGap = 1000 / fps
@@ -436,13 +459,15 @@
             if (now > lastTime + timeGap) {
                 this.$render.lastTime = now
                 setTimeout(function() {
-                    _this.$foceRender()
+                    self.$foceUpdate()
                 }, timeGap + 2) // +2 确保不漏
             }
         }
 
         // @dev
         // console.log(this.$render)
+
+        this.$mounted = options.mounted && V.injectFunction(this, options.mounted)
 
         // mount
         if (this.$el) {
@@ -506,7 +531,7 @@
                                         key_ = item_key_index[1]
                                         index_ = item_key_index[2]
                                     }
-                                    code += $$.replaceVars('$$(@id).for( @list, function( @item, @key, @index ){ ', {
+                                    code += $$.replaceVars('$$(@id)["for"]( @list, function( @item, @key, @index ){ ', {
                                         '@id': $node.uid,
                                         '@list': list_,
                                         '@item': item_,
@@ -516,21 +541,21 @@
                                     break
                                 case 'if':
                                     hasIf = true
-                                    code += $$.replaceVars('$$(@id).if( @value, function(){ ', {
+                                    code += $$.replaceVars('$$(@id)["if"]( @value, function(){ ', {
                                         '@id': $node.uid,
                                         '@value': dir.exp
                                     })
                                     break
                                 case 'elseif':
                                     hasElseIf = true
-                                    code += $$.replaceVars('.elseif( $$(@id), @value, function(){ ', {
+                                    code += $$.replaceVars('["elseif"]( $$(@id), @value, function(){ ', {
                                         '@id': $node.uid,
                                         '@value': dir.exp
                                     })
                                     break
                                 case 'else':
                                     hasElse = true
-                                    code += $$.replaceVars('.else( $$(@id), function(){ ', {
+                                    code += $$.replaceVars('["else"]( $$(@id), function(){ ', {
                                         '@id': $node.uid
                                     })
                                     break
@@ -562,10 +587,13 @@
                                     })
                                     break
                                 default:
-                                    code += $$.replaceVars('$$(@id)["@name"](@value)', {
+                                    code += $$.replaceVars('$$(@id)["@name"](@value, "@arg", "@mdfs")', {
                                         '@id': $node.uid,
                                         '@name': dir.name,
+                                        '@arg': dir.arg,
+                                        '@mdfs': dir.mdfs,
                                         '@value': dir.exp
+
                                     })
                             }
                         })
@@ -620,11 +648,9 @@
             return V.parseEl.children[0] || V.parseEl.childNodes[0]
         },
         outerHTML: function(node) {
-            if (node.outerHTML) {
-                return node.outerHTML
-            }
+            if (node.outerHTML) return node.outerHTML
             V.parseEl.innerHTML = ''
-            V.parseEl.appendChild(node)
+            V.parseEl.appendChild(node.cloneNode(true))
             return V.parseEl.innerHTML
         },
         injectFunction: function(vm, fn) {
@@ -636,12 +662,21 @@
             $fn.fn = fn
             return $fn
         },
-        injectMethods: function(vm, methods) {
+        setMethods: function(vm, methods) {
             for (var key in methods) {
                 var method = methods[key]
                 if (typeof method == 'function') {
                     vm[key] = V.injectFunction(vm, method)
                 }
+            }
+        },
+        setComputed: function (vm, computed) {
+            for(var key in computed){
+                var fn = computed[key]
+                fn.valueOf = function () {
+                    return this.call(vm)
+                }
+                vm[key] = fn
             }
         }
     }
@@ -652,14 +687,18 @@
             this.$el = this.$dom
 
             // first render
-            this.$foceRender()
+            this.$foceUpdate()
+
+            // mounted
+            this.$mounted && this.$mounted()
+
         }
     }
 
 
     // 
     // 组件 保存生成 vm 的 options
-    // $$().is()->V(options)->$mouted()
+    // $$().is()->V(options)->$mount()
     // 
     V.componments = {}
     V.componment = function(name, options) {
@@ -669,10 +708,11 @@
 
     // export
     V.$$ = $$
-    if (typeof module != 'undefined') {
+    if (typeof module == 'object') {
         module.exports = V
     } else {
-        window.V = V
+        window.V = V // todo name: ve, vme, vne, vie, wu, wue, ...
+        window.Vue = V
         window.$$ = $$ // @dev
     }
 }(document)
