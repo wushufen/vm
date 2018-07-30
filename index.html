@@ -20,6 +20,9 @@
 </head>
 
 <body>
+	<div id="test">
+		<div for="item in list">1</div>
+	</div>
 	<div id="app">
 		<h1>n:{{++n}} </h1>
 		<small>{{compute}}</small>
@@ -31,7 +34,7 @@
 		<h5 :title="'this is title: n=' + n">attr:title</h5>
 		<input autofocus model="model" on:keyup.enter="add(model)">
 		<table>
-			<tr for="(item, i) in list" if="item.status!='delete'">
+			<tr for="(item, i) in list" if="item.status!='delete'" :title="i">
 				<td>{{i}}/{{list.length}}:{{item.status}}</td>
 				<td>
 					{{item.text}}
@@ -52,13 +55,13 @@
 			</tr>
 		</table>
 		<!--  -->
-		<div is="tag" for="item in list" xif="n%2==0">todo is+for+if</div>
+		<div for="item in list" vis="tag" xif="n%2==0" :title="'comp.title'">todo is+for+if</div>
 	</div>
 	<div id="tag" style="display:none">
-		<b>{{todo}}</b>
+		<b>{{'{tag}'}}</b>
 	</div>
 	<script src="vm.js"></script>
-	<script x>
+	<script>
 	Vue.componment('tag', {
 		template: tag.innerHTML,
 		data: function() {
@@ -90,7 +93,7 @@
 	})
 	*/
 	vm = vue = new Vue({
-		el: '#app',
+		el: '#test',
 		data: {
 			n: 0,
 			bool: true,

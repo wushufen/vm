@@ -4,6 +4,9 @@
     // 虚拟节点： 封装与标记
     // 
     var $$ = function(node, cloneUid) {
+        // if ($$.forKeyPath) {
+            console.log(node, cloneUid, uid)
+        // }
         // $$(node) -> new $$(node)
         if (!(this instanceof $$)) return new $$(node, cloneUid)
 
@@ -13,8 +16,12 @@
         if (node.nodeType) {
             uid = $$.getUid(node)
         }
-        var $node = $$.map[uid + $$.forKeyPath]
+        var $node = $$.map[uid + $$.forKeyPath]  // !!!!!!!!!todo 只有通过 $$(uid) 才能 + $$.forKeyPath
         if ($node) {
+            // is $$(node) -> $$($node.componment.$el)
+            if ($node.componment) {
+                return $$($node.componment.$dom)
+            }
             return $node
         }
 
@@ -311,8 +318,8 @@
                     var uid = $$.getUid(forNode)
                     if (uid) {
                         var $cloneNode = $$(cloneNode, uid + '.' + key)
+                        // console.log($cloneNode, cloneNode)
                         // 复制指令信息
-                        // console.log(uid)
                         var $forNode = $$.map[uid]
                         $cloneNode.dirs = $forNode.dirs
                     }
@@ -327,9 +334,11 @@
                 loop(forNode, cloneNode)
 
 
-                // cloneNode.setAttribute('_for', $forNode.uid) // @dev
+                cloneNode.setAttribute('_for', $forNode.uid) // @dev
                 $node = $$(cloneNode)
+                // console.log($node, cloneNode)
                 $node.$forNode = $forNode
+                $node.cloneNode = cloneNode
 
                 clones[key] = $node
             }
@@ -393,8 +402,6 @@
             // todo
         },
         is: function(name, data) {
-            // '?? $$(18).is(, function(){   $$(18重定向到当前组件)   })'
-
             var self = this
             var node = this.node
             if (!this.componment) {
@@ -403,11 +410,10 @@
                 options = $$.extend({}, options)
                 options.data = $$.extend(data, typeof options.data == 'function' ? options.data() : options.data)
                 this.componment = V(options)
+
                 // 同步在 for 里会打乱 forKeyPath
                 setTimeout(function() {
                     self.componment.$mount(node)
-                    // uid 重定向
-                    // todo
                 }, 1)
             } else {
                 setTimeout(function() {
