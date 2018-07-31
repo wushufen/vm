@@ -8,7 +8,9 @@
         // $(uid) get $node
         if (typeof node != 'object') {
             var uid = node
-            var $node = $.map[node + $.forKeyPath]
+            // $(number) -> $node: uid+'.key.0'
+            var $node = $.map[uid + $.forKeyPath]
+            // $(uid) -> $node.$componment
             if ($node.$componment) {
                 return $node.$componment
             }
@@ -27,9 +29,6 @@
         var uid = cloneUid || $.incId()
         this.uid = uid
         this.node = node
-
-        // info
-        if (node.nodeValue) { this.initNodeValue = node.nodeValue.replace(/\n/g, ' ') }
 
         // save
         $.setUid(node, uid) // node -> uid
@@ -84,10 +83,10 @@
                 }
             }
         },
-        extend: function(obj, _obj) {
-            for (var key in _obj) {
-                if (!_obj.hasOwnProperty(key)) continue
-                obj[key] = _obj[key]
+        extend: function(obj, map) {
+            for (var key in map) {
+                if (!map.hasOwnProperty(key)) continue
+                obj[key] = map[key]
             }
             return obj
         },
@@ -133,11 +132,11 @@
         },
         parseText: function(text) {
             return '"' + text
-                // 边界符外的("\) -> "\"text\\"
+                // }}(["\]){{ -> "\"text\\"
                 .replace(/(^|}}).*?({{|$)/g, function($) {
                     return $.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
                 })
-                // 换行符 -> "\n code"
+                // \n -> "\n code"
                 .replace(/\r?\n/g, '\\n')
                 // {{exp}} -> "+(exp)+"
                 .replace(/{{(.*?)}}/g, '"+($1)+"')
@@ -147,14 +146,14 @@
         },
         addEventListener: function(type, fn) {
             return document.addEventListener ? function(type, fn) {
-                // 1 事件捕捉， 因为 focus, blur 等事件不支持冒泡
+                // 1: 事件捕捉。 focus, blur 等事件不支持冒泡
                 document.body.addEventListener(type, fn, 1)
             } : function(type, fn) {
-                document.attachEvent('on' + type, function() {
+                document.attachEvent('on' + type, function() { // ie
                     var event = window.event
                     event.target = event.srcElement
                     fn(event)
-                });
+                })
             }
         }(),
         on: function(type, node, fn) {
@@ -169,45 +168,47 @@
             dirs.size = 0 // 通过 size 判断数量
 
             $.each($.toArray(node.attributes), function(attribute) {
-                if (attribute.specified) { // ie
+                if (!attribute.specified) return // ie
 
-                    var nodeName = attribute.nodeName
-                    var nodeValue = attribute.nodeValue
+                var nodeName = attribute.nodeName
+                var nodeValue = attribute.nodeValue
 
-                    // dir                           @|dir        :   arg      .mdf.13
-                    var m = nodeName.match(/^(?:v-)?(@|[^.:]*)(?:[:]?([^.]+))?(.*)/) || []
-                    var name = m[1] || 'attr'
-                    var name = name == 'bind' ? 'attr' : name
-                    var name = name == '@' ? 'on' : name
-                    if (name in $.prototype) { // 指令就是虚拟节点的方法
-                        node.removeAttribute(nodeName)
-                        dirs.size += 1
+                // dir                           @|dir        :   arg      .mdf.13
+                var m = nodeName.match(/^(?:v-)?(@|[^.:]*)(?:[:]?([^.]+))?(.*)/) || []
+                var name = m[1] || 'attr'
+                var name = name == 'bind' ? 'attr' : name
+                var name = name == '@' ? 'on' : name
 
-                        var dir = {
-                            nodeName: nodeName,
-                            name: name,
-                            arg: m[2] || '',
-                            mdfs: m[3] || '',
-                            exp: nodeValue || '""'
-                        }
-                        var $dirs = 'for,if,elseif,else,is'.split(',') // 优先级排序
-                        var index = $.indexOf($dirs, name)
-                        if (index > -1) {
-                            dirs[index] = dir
-                        } else {
-                            dirs.push(dir)
-                        }
+                if (name in $.prototype) { // 指令就是虚拟节点的方法
+                    node.removeAttribute(nodeName)
+                    dirs.size += 1
 
-                        // 可通过key取
-                        dirs[nodeName] = dir
+                    var dir = {
+                        nodeName: nodeName,
+                        name: name,
+                        arg: m[2] || '',
+                        mdfs: m[3] || '',
+                        exp: nodeValue || '""'
+                    }
+
+                    var $dirs = 'for,if,elseif,else,is'.split(',') // 特殊指令优先级排序
+                    var index = $.indexOf($dirs, name)
+                    if (index > -1) {
+                        dirs[index] = dir
+                        // dirs.for = true
+                        dirs[name] = dir
+                    } else {
+                        dirs.push(dir)
                     }
 
                 }
+
             })
             return dirs
         }
     }
     $.utils.extend($, $.utils)
+    // dir methods
     $.prototype = {
         autofocus: function() {
             if (!this.focused) {
@@ -222,7 +223,6 @@
             if (value === this.innerText) return
             var node = this.node
             if (node.nodeType == 3) {
-            	console.log(this)
                 this.innerText = node.nodeValue = value
             } else if (node.nodeType == 1) {
                 this.innerText = node.innerText = value
@@ -278,8 +278,8 @@
         mark: function() {
             var node = this.node
             if (!this.markNode) {
-                var mark = document.createComment(this.uid)
-                // var mark = document.createTextNode('')
+                var mark = document.createTextNode('')
+                var mark = document.createComment(this.uid)  // @dev
                 // var mark = document.createComment(node.outerHTML) // @dev
                 node.parentNode.insertBefore(mark, node)
                 this.markNode = mark
@@ -386,23 +386,24 @@
                 }
             }
         },
-        on: function(type, nodeName, fn) {
+        on: function(type, mdfs, fn) {
             var $node = this
             this.eventMap = this.eventMap || {}
-            var handler = this.eventMap[nodeName]
+            var key = type + mdfs
+            var handler = this.eventMap[key]
             // 首次注册
             if (!handler) {
-                var dir = this.dirs[nodeName]
-                var mdfs = dir.mdfs
                 $.on(type, this.node, function(event) {
                     // todo mfds
 
+                    if (mdfs.match('.enter') && event.keyCode != 13) return
+
                     // call handler
-                    $node.eventMap[nodeName](event)
+                    $node.eventMap[key](event)
                 })
             }
             // 保存更新 handler
-            this.eventMap[nodeName] = fn
+            this.eventMap[key] = fn
         },
         model: function() {
             // todo
@@ -420,7 +421,7 @@
                 options = $.extend({}, options)
                 data = $.extend({}, data)
                 options.data = $.extend(data, typeof options.data == 'function' ? options.data() : options.data)
-                var componment = V(options)
+                var componment = V(options, true)
 
                 this.$componment = $(componment.$dom) // $() -> $node.$componment
                 this.$componment.isCompoment = true
@@ -463,6 +464,7 @@
 
         // dom
         this.$dom = V.parseHTML(this.$template)
+        console.log(this.$dom.innerHTML)
 
         // compile render
         this.$ = $
@@ -527,17 +529,12 @@
                             $node.dirs = dirs
                         }
 
-                        var hasFor
-                        var hasIf
-                        var hasElseIf
-                        var hasElse
                         $.each(dirs, function(dir) {
                             if (!dir) return
 
                             var name = dir.name
                             switch (dir.name) {
                                 case 'for':
-                                    hasFor = true
                                     var for_ = dir.exp
                                     var item_list = for_.split(' in ')
                                     var list_ = item_list[1]
@@ -561,42 +558,38 @@
                                     })
                                     break
                                 case 'if':
-                                    hasIf = true
                                     code += $.replaceVars('$(@id)["if"]( @value, function(){ ', {
                                         '@id': $node.uid,
                                         '@value': dir.exp
                                     })
                                     break
                                 case 'elseif':
-                                    hasElseIf = true
                                     code += $.replaceVars('["elseif"]( $(@id), @value, function(){ ', {
                                         '@id': $node.uid,
                                         '@value': dir.exp
                                     })
                                     break
                                 case 'else':
-                                    hasElse = true
                                     code += $.replaceVars('["else"]( $(@id), function(){ ', {
                                         '@id': $node.uid
                                     })
                                     break
                                 case 'on':
-                                    code += $.replaceVars('$(@id).on("@type", "@nodeName", function($event){' +
-                                        '!function(fn){if(typeof fn=="function")fn($event)}(@code)' +
-                                        ';$thisVm.$render()})', {
+                                    code += $.replaceVars('$(@id).on("@type", "@mdfs", function($event){ @code ;$THISVM.$render()})', {
                                             '@id': $node.uid,
                                             '@type': dir.arg,
-                                            '@nodeName': dir.nodeName,
-                                            '@code': dir.exp
+                                            '@mdfs': dir.mdfs,
+                                            '@code': dir.exp.match(/[=;]/)? dir.exp: // 语句
+                                                '!function(fn){typeof fn=="function"&&fn($event)}(' + dir.exp + ')' // 表达式
                                         })
                                     break
                                 case 'model':
-                                    code += $.replaceVars('$(@id).on("@type", "@nodeName", function($event){' +
+                                    code += $.replaceVars('$(@id).on("@type", "@mdfs", function($event){' +
                                         '@model=$event.target.value' +
-                                        ';$thisVm.$render()})', {
+                                        ';$THISVM.$render()})', {
                                             '@id': $node.uid,
                                             '@type': 'input',
-                                            '@nodeName': dir.nodeName,
+                                            '@mdfs': dir.nodeName,
                                             '@model': dir.exp
                                         })
                                     break
@@ -619,28 +612,17 @@
                             }
                         })
 
-                        // childNodes
+                        // compile childNodes
                         var childNodes = $.toArray(node.childNodes)
                         for (var i = 0; i < childNodes.length; i++) {
                             scan(childNodes[i])
                         }
 
-                        // end if
-                        if (hasFor) {
-                            code += '})\n'
-                        }
-                        // end elseif
-                        if (hasElseIf) {
-                            code += '})\n'
-                        }
-                        // end else
-                        if (hasElse) {
-                            code += '})\n'
-                        }
-                        // end for
-                        if (hasIf) {
-                            code += '})\n'
-                        }
+                        // end: for if elseif else
+                        if (dirs['for']) code += '})\n'
+                        if (dirs['if']) code += '})\n'
+                        if (dirs['elseif']) code += '})\n'
+                        if (dirs['else']) code += '})\n'
 
                         break;
                     case 3: // text
@@ -649,8 +631,11 @@
 
                         // {{}}
                         if (nodeValue.match('{{')) {
+                            var $node = $(node)
+                            $node.initNodeValue = node.nodeValue.replace(/\n/g, ' ')
+
                             code += $.replaceVars('$(@id).text( @value )', {
-                                '@id': $(node).uid,
+                                '@id': $node.uid,
                                 '@value': $.parseText(nodeValue)
                             })
                         }
@@ -660,7 +645,7 @@
 
             }
 
-            var render = Function('var $thisVm=this;with(this){\n' + code + '\n}')
+            var render = Function('var $THISVM=this;with(this){\n' + code + '\n}')
             return render
         },
         parseEl: document.createElement('div'),
@@ -709,6 +694,7 @@
 
             // first render
             this.$foceUpdate()
+            // this.$render()
 
             // mounted
             this.$mounted && this.$mounted()
