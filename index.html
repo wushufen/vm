@@ -21,11 +21,11 @@
 
 <body>
 	<div id="test">
-		<div for="item in Array(5)" is="tag" if="window" :title="'comp.title'+$index">todo is+for+if</div>
+		<div is="tag"></div>
+		<div is="tag"></div>
+		<div for="item in [1,2,3]" is="tag" xif="window" :title="'comp.title'+$index">todo is+for+if</div>
 	</div>
-	<div id="com">
-		<div id="tag1"></div>
-		<div id="tag2"></div>
+	<div id="test2">
 	</div>
 	<div id="app">
 		<h1>n:{{++n}} </h1>
@@ -85,7 +85,7 @@
 		},
 		mounted: function () {
 			var self = this
-			// console.log(self)
+			console.log(self)
 		}
 	})
 
@@ -105,7 +105,7 @@
 	})
 	*/
 	vm = vue = new Vue({
-		el: '#com',
+		el: '#test',
 		data: {
 			n: 0,
 			bool: true,

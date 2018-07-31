@@ -4,17 +4,16 @@
     // 虚拟节点： 封装与标记
     // 
     var $ = function(node, cloneUid) {
+        // $(node) -> new $(node)
+        if (!(this instanceof $)) return new $(node, cloneUid)
 
         // $(uid) get $node
         if (typeof node != 'object') {
             var uid = node
             // $(number) -> $node: uid+'.key.0'
-            var $node = $.map[uid + $.forKeyPath]
+            var $node = $.map[uid + $.forKeyPath] // **!!!**
             // $(uid) -> $node.$componment
-            if ($node.$componment) {
-                return $node.$componment
-            }
-            return $node
+            return $node.$componment || $node
         }
 
         // $(node) -> return saved
@@ -23,17 +22,13 @@
             return $.map[uid]
         }
 
-        // $(node) -> new $(node)
-        if (!(this instanceof $)) return new $(node, cloneUid)
-
+        // save
         var uid = cloneUid || $.incId()
         this.uid = uid
         this.node = node
 
-        // save
         $.setUid(node, uid) // node -> uid
         $.map[uid] = this // uid -> $node
-
     }
     $.utils = {
         /*
@@ -53,7 +48,7 @@
             return this._inc = (this._inc || 0) + 1
         },
         canSetUidOnTextNode: (function() { // ie
-            try { return document.createTxextNode('').uid = false } catch (e) {}
+            try { return document.createTextNode('').uid = true } catch (e) {}
         })(),
         setUid: function(node, uid) {
             if (node.nodeType == 1) {
@@ -180,7 +175,7 @@
                 var name = name == '@' ? 'on' : name
 
                 if (name in $.prototype) { // 指令就是虚拟节点的方法
-                    node.removeAttribute(nodeName)
+                    node.removeAttribute(nodeName) // !@dev
                     dirs.size += 1
 
                     var dir = {
@@ -239,8 +234,22 @@
             this.attrs = attrs
             return this
         },
+        style: function (map) {
+        	
+        },
+        hasClass: function (name) {
+        	
+        },
+        addClass: function (name) {
+        	
+        },
+        removeClass: function (name) {
+        	
+        },
+        'class': function(map) {
+        	
+        },
         'if': function(value, fn) {
-            this.isIf = true // for clone insert?
             if (value) {
                 this.insert()
                 fn()
@@ -299,7 +308,6 @@
             var parentNode = node.parentNode
             if (!parentNode || parentNode.nodeType != 1) {
                 var markNode = this.markNode || this.$forNode.markNode
-                console.log(this, markNode)
                 markNode.parentNode.insertBefore(node, markNode)
             }
         },
@@ -317,25 +325,20 @@
                 'IIF',
                 function loop(forNode, cloneNode) {
                     var uid = $.getUid(forNode)
-                    if (uid) {
-                        var $cloneNode = $(cloneNode, uid + '.' + key)
-                        // console.log($cloneNode, cloneNode)
-                        // 复制指令信息
-                        var $forNode = $.map[uid]
-                        $cloneNode.dirs = $forNode.dirs
-                    }
+                    // save cloneNode
+                    uid && $(cloneNode, uid + '.' + key) // **!!!**
 
                     var forChildNodes = forNode.childNodes
                     var childNodes = cloneNode.childNodes
                     for (var i = 0; i < forChildNodes.length; i++) {
                         loop(forChildNodes[i], childNodes[i])
                     }
-
                 }(forNode, cloneNode)
 
                 $node = $(cloneNode)
-                $node.$forNode = $forNode
+                $node.$forNode = $forNode // $forName.mackNode -> insert
 
+                // cache
                 clones[key] = $node
             }
 
@@ -347,22 +350,15 @@
             // this.mark()
             this.remove()
 
-            var forKeyPath = $.forKeyPath
+            var forKeyPath = $.forKeyPath // **!!!**
             try {
                 $.each(list, function(item, key, index) {
 
                     // clone
-                    $.forKeyPath = forKeyPath + '.' + key
+                    $.forKeyPath = forKeyPath + '.' + key // **!!!**
                     var $node = $forNode.clone(key)
                     // 当 for, if 同时存在，for insert, if false remove, 会造成dom更新
-                    // 当 is componment 时，被替换出不能再进来
-                    if (!$node.isIf) {
-                        if ($node.$componment) {
-                            $node.$componment.insert()
-                        } else {
-                            $node.insert()
-                        }
-                    }
+                    !$node.isIf && $node.insert()
 
                     fn(item, key, index)
                 })
@@ -372,25 +368,21 @@
                     throw e
                 }, 1)
             }
-            $.forKeyPath = forKeyPath
+            $.forKeyPath = forKeyPath // **!!!**
 
             // remove
             var clones = this.clones
             for (var key in clones) {
                 var $node = clones[key]
                 if (!list || !(key in list)) {
-                    if ($node.$componment) {
-                        $node.$componment.remove()
-                    } else {
-                        $node.remove()
-                    }
+                    $node.remove()
                 }
             }
         },
         on: function(type, mdfs, fn) {
             var $node = this
             this.eventMap = this.eventMap || {}
-            var key = type + mdfs
+            var key = type + mdfs // click.mdfs.ctrl
             var handler = this.eventMap[key]
             // 首次注册
             if (!handler) {
@@ -403,7 +395,7 @@
                     $node.eventMap[key](event)
                 })
             }
-            // 保存更新 handler
+            // 保存||更新 handler
             this.eventMap[key] = fn
         },
         model: function() {
@@ -421,20 +413,16 @@
                 // new componment
                 var componment = V(options, data)
 
-                this.$componment = $(componment.$el) // $() -> $node.$componment -> self
-                this.$componment.isCompoment = true
-                this.$componment.componment = componment // self.componment.$render()
+                this.$componment = $(componment.$el) // $node -> $componment
+                // this.$componment.$node = this // $componment -> $node
+                self = this.$componment // $() -> $node.$componment -> self
+                self.isCompoment = true
+                self.componment = componment // self.componment.$render()
 
-                // 同步在 for 里会打乱 forKeyPath
-                setTimeout(function() {
-                    componment.$mount(node)
-                }, 1)
-
+                componment.$mount(node)
             } else {
                 // render
-                setTimeout(function() {
-                    self.componment.$render()
-                }, 1)
+                self.componment.$render()
             }
         }
     }
@@ -446,6 +434,7 @@
     var V = function(options, propsData) {
         // V() -> new V()
         if (!(this instanceof V)) return new V(options)
+        options = options || {}
 
         // data
         var data = typeof options.data == 'function' ? options.data() : options.data
@@ -461,12 +450,11 @@
         var el = typeof options.el == 'string' ? document.getElementById(options.el.replace('#', '')) : options.el
 
         // template
-        var template = options.template || (el&&V.outerHTML(el)) || ''
-        this.$template = template // @dev
+        var template = options.template || (el&&V.outerHTML(el)) || '<div> @ </div>'
+        // this.$template = template // @dev
 
-        // dom
+        // $el
         this.$el = V.parseHTML(template)
-        this.$innerHTML = this.$el.innerHTML
 
         // compile render
         this.$ = $
@@ -476,7 +464,7 @@
 
             var fps = 24
             var timeGap = 1000 / fps
-            // var timeGap = 100
+            var timeGap = 1000
 
             var now = +new Date
             var lastTime = this.$render.lastTime || 0
@@ -525,9 +513,6 @@
                         // dirs
                         var dirs = $.getDirs(node)
                         var $node = dirs.size ? $(node) : null
-                        if ($node) {
-                            $node.dirs = dirs
-                        }
 
                         $.each(dirs, function(dir) {
                             if (!dir) return
@@ -558,6 +543,7 @@
                                     })
                                     break
                                 case 'if':
+                                	$node.isIf = true // if for insert
                                     code += $.replaceVars('$(@id)["if"]( @value, function(){ ', {
                                         '@id': $node.uid,
                                         '@value': dir.exp
@@ -693,8 +679,7 @@
             this.$el = this.$el
 
             // first render
-            this.$foceUpdate()
-            // this.$render()
+            this.$render() // 必须异步，每个vm $.forKeyPath 独立
 
             // mounted
             this.$mounted && this.$mounted()
