@@ -23,6 +23,10 @@
 	<div id="test">
 		<div for="item in Array(5)" is="tag" if="window" :title="'comp.title'+$index">todo is+for+if</div>
 	</div>
+	<div id="com">
+		<div id="tag1"></div>
+		<div id="tag2"></div>
+	</div>
 	<div id="app">
 		<h1>n:{{++n}} </h1>
 		<small>{{compute}}</small>
@@ -78,6 +82,10 @@
 			x: function () {
 				return new Date().getTime()
 			}
+		},
+		mounted: function () {
+			var self = this
+			// console.log(self)
 		}
 	})
 
@@ -97,7 +105,7 @@
 	})
 	*/
 	vm = vue = new Vue({
-		el: '#test',
+		el: '#com',
 		data: {
 			n: 0,
 			bool: true,

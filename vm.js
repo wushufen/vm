@@ -299,6 +299,7 @@
             var parentNode = node.parentNode
             if (!parentNode || parentNode.nodeType != 1) {
                 var markNode = this.markNode || this.$forNode.markNode
+                console.log(this, markNode)
                 markNode.parentNode.insertBefore(node, markNode)
             }
         },
@@ -411,24 +412,26 @@
         is: function(name, data) {
             var self = this
             var node = this.node
-            // if (this.isCompoment) return // 已经新建 componment, 并且 $(uid) -> $node.$componment
 
-            if (!this.isCompoment) {
-                var options = V.componments[name]
+            if (!this.isCompoment) { // 新建 componment, 并且 $(uid) -> $node.$componment
+
+                var options = V.componmentOptions[name]
                 if (!options) { setTimeout(function() { throw name + ' is not a componment' }, 1) }
 
                 // new componment
                 var componment = V(options, data)
 
-                this.$componment = $(componment.$dom) // $() -> $node.$componment
+                this.$componment = $(componment.$el) // $() -> $node.$componment -> self
                 this.$componment.isCompoment = true
-                this.$componment.componment = componment
+                this.$componment.componment = componment // self.componment.$render()
 
                 // 同步在 for 里会打乱 forKeyPath
                 setTimeout(function() {
                     componment.$mount(node)
                 }, 1)
+
             } else {
+                // render
                 setTimeout(function() {
                     self.componment.$render()
                 }, 1)
@@ -455,18 +458,19 @@
         V.setComputed(this, options.computed)
 
         // el
-        this.$el = typeof options.el == 'string' ? document.getElementById(options.el.replace('#', '')) : options.el
+        var el = typeof options.el == 'string' ? document.getElementById(options.el.replace('#', '')) : options.el
 
         // template
-        this.$template = options.template || V.outerHTML(this.$el)
+        var template = options.template || (el&&V.outerHTML(el)) || ''
+        this.$template = template // @dev
 
         // dom
-        this.$dom = V.parseHTML(this.$template)
-        console.log(this.$dom.innerHTML)
+        this.$el = V.parseHTML(template)
+        this.$innerHTML = this.$el.innerHTML
 
         // compile render
         this.$ = $
-        this.$foceUpdate = V.compile(this.$dom)
+        this.$foceUpdate = V.compile(this.$el)
         this.$render = function() {
             var self = this
 
@@ -491,9 +495,7 @@
         this.$mounted = options.mounted && V.injectFunction(this, options.mounted)
 
         // mount
-        if (this.$el) {
-            this.$mount(this.$el)
-        }
+        el && this.$mount(el)
     }
     V.utils = {
         compile: function(node) {
@@ -687,8 +689,8 @@
     $.extend(V, V.utils)
     V.prototype = {
         $mount: function(el) {
-            el.parentNode.replaceChild(this.$dom, el)
-            this.$el = this.$dom
+            el.parentNode.replaceChild(this.$el, el)
+            this.$el = this.$el
 
             // first render
             this.$foceUpdate()
@@ -705,9 +707,9 @@
     // 组件 保存生成 vm 的 options
     // $().is()->V(options)->$mount()
     // 
-    V.componments = {}
+    V.componmentOptions = {}
     V.componment = function(name, options) {
-        V.componments[name] = options
+        V.componmentOptions[name] = options
     }
 
 
