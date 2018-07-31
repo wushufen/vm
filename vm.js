@@ -418,10 +418,7 @@
                 if (!options) { setTimeout(function() { throw name + ' is not a componment' }, 1) }
 
                 // new componment
-                options = $.extend({}, options)
-                data = $.extend({}, data)
-                options.data = $.extend(data, typeof options.data == 'function' ? options.data() : options.data)
-                var componment = V(options, true)
+                var componment = V(options, data)
 
                 this.$componment = $(componment.$dom) // $() -> $node.$componment
                 this.$componment.isCompoment = true
@@ -443,13 +440,14 @@
     // 
     // 视图模型： 编译，生成dom，更新dom
     // 
-    var V = function(options) {
+    var V = function(options, propsData) {
         // V() -> new V()
         if (!(this instanceof V)) return new V(options)
 
         // data
         var data = typeof options.data == 'function' ? options.data() : options.data
         this.$data = data
+        $.extend(this, propsData) // propsData
         $.extend(this, data)
         // methods
         V.setMethods(this, options.methods)
