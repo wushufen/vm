@@ -3,28 +3,28 @@
     // 
     // 虚拟节点： 封装与标记
     // 
-    var $$ = function(node, cloneUid) {
+    var $ = function(node, cloneUid) {
 
-        // $$(uid) get $node
+        // $(uid) get $node
         if (typeof node != 'object') {
             var uid = node
-            var $node = $$.map[node + $$.forKeyPath]
+            var $node = $.map[node + $.forKeyPath]
             if ($node.$componment) {
                 return $node.$componment
             }
             return $node
         }
 
-        // $$(node) -> return saved
-        var uid = $$.getUid(node)
+        // $(node) -> return saved
+        var uid = $.getUid(node)
         if (uid) {
-            return $$.map[uid]
+            return $.map[uid]
         }
 
-        // $$(node) -> new $$(node)
-        if (!(this instanceof $$)) return new $$(node, cloneUid)
+        // $(node) -> new $(node)
+        if (!(this instanceof $)) return new $(node, cloneUid)
 
-        var uid = cloneUid || $$.incId()
+        var uid = cloneUid || $.incId()
         this.uid = uid
         this.node = node
 
@@ -32,20 +32,20 @@
         if (node.nodeValue) { this.initNodeValue = node.nodeValue.replace(/\n/g, ' ') }
 
         // save
-        $$.setUid(node, uid) // node -> uid
-        $$.map[uid] = this // uid -> $node
+        $.setUid(node, uid) // node -> uid
+        $.map[uid] = this // uid -> $node
 
     }
-    $$.utils = {
+    $.utils = {
         /*
-        forKeyPath = $$.forKeyPath
+        forKeyPath = $.forKeyPath
         for(key in list){
-        	$$.forKeyPath += '.' + key
+        	$.forKeyPath += '.' + key
         }
-        $$.forKeyPath = forKeyPath
+        $.forKeyPath = forKeyPath
 
         $(uid){
-        	return $$.map[uid + $$.forKeyPath]
+        	return $.map[uid + $.forKeyPath]
         }
         */
         forKeyPath: '', // uid.for1ItemKey.for2ItemKey...
@@ -61,7 +61,7 @@
                 node.uid = uid
                 node.setAttribute('uid', uid) // @dev
             } else if (node.nodeType == 3) {
-                if ($$.canSetUidOnTextNode) {
+                if ($.canSetUidOnTextNode) {
                     node.uid = uid
                 } else {
                     var map = node.parentNode.uidNodeMap || (node.parentNode.uidNodeMap = {})
@@ -73,7 +73,7 @@
             if (node.nodeType == 1) {
                 return node.uid
             } else if (node.nodeType == 3) {
-                if ($$.canSetUidOnTextNode) {
+                if ($.canSetUidOnTextNode) {
                     return node.uid
                 }
                 var map = node.parentNode.uidNodeMap
@@ -158,7 +158,7 @@
             }
         }(),
         on: function(type, node, fn) {
-            $$.addEventListener(type, function(event) {
+            $.addEventListener(type, function(event) {
                 if (event.target == node) {
                     fn(event)
                 }
@@ -168,7 +168,7 @@
             var dirs = Array(10) // 留位给 for 等特殊指令，位置代表优先级
             dirs.size = 0 // 通过 size 判断数量
 
-            $$.each($$.toArray(node.attributes), function(attribute) {
+            $.each($.toArray(node.attributes), function(attribute) {
                 if (attribute.specified) { // ie
 
                     var nodeName = attribute.nodeName
@@ -179,7 +179,7 @@
                     var name = m[1] || 'attr'
                     var name = name == 'bind' ? 'attr' : name
                     var name = name == '@' ? 'on' : name
-                    if (name in $$.prototype) { // 指令就是虚拟节点的方法
+                    if (name in $.prototype) { // 指令就是虚拟节点的方法
                         node.removeAttribute(nodeName)
                         dirs.size += 1
 
@@ -191,7 +191,7 @@
                             exp: nodeValue || '""'
                         }
                         var $dirs = 'for,if,elseif,else,is'.split(',') // 优先级排序
-                        var index = $$.indexOf($dirs, name)
+                        var index = $.indexOf($dirs, name)
                         if (index > -1) {
                             dirs[index] = dir
                         } else {
@@ -207,8 +207,8 @@
             return dirs
         }
     }
-    $$.utils.extend($$, $$.utils)
-    $$.prototype = {
+    $.utils.extend($, $.utils)
+    $.prototype = {
         autofocus: function() {
             if (!this.focused) {
                 var self = this
@@ -315,12 +315,12 @@
                 // forNodeUid.key
                 'IIF',
                 function loop(forNode, cloneNode) {
-                    var uid = $$.getUid(forNode)
+                    var uid = $.getUid(forNode)
                     if (uid) {
-                        var $cloneNode = $$(cloneNode, uid + '.' + key)
+                        var $cloneNode = $(cloneNode, uid + '.' + key)
                         // console.log($cloneNode, cloneNode)
                         // 复制指令信息
-                        var $forNode = $$.map[uid]
+                        var $forNode = $.map[uid]
                         $cloneNode.dirs = $forNode.dirs
                     }
 
@@ -332,7 +332,7 @@
 
                 }(forNode, cloneNode)
 
-                $node = $$(cloneNode)
+                $node = $(cloneNode)
                 $node.$forNode = $forNode
 
                 clones[key] = $node
@@ -346,12 +346,12 @@
             // this.mark()
             this.remove()
 
-            var forKeyPath = $$.forKeyPath
+            var forKeyPath = $.forKeyPath
             try {
-                $$.each(list, function(item, key, index) {
+                $.each(list, function(item, key, index) {
 
                     // clone
-                    $$.forKeyPath = forKeyPath + '.' + key
+                    $.forKeyPath = forKeyPath + '.' + key
                     var $node = $forNode.clone(key)
                     // 当 for, if 同时存在，for insert, if false remove, 会造成dom更新
                     // 当 is componment 时，被替换出不能再进来
@@ -371,7 +371,7 @@
                     throw e
                 }, 1)
             }
-            $$.forKeyPath = forKeyPath
+            $.forKeyPath = forKeyPath
 
             // remove
             var clones = this.clones
@@ -394,7 +394,7 @@
             if (!handler) {
                 var dir = this.dirs[nodeName]
                 var mdfs = dir.mdfs
-                $$.on(type, this.node, function(event) {
+                $.on(type, this.node, function(event) {
                     // todo mfds
 
                     // call handler
@@ -410,19 +410,19 @@
         is: function(name, data) {
             var self = this
             var node = this.node
-            // if (this.isCompoment) return // 已经新建 componment, 并且 $$(uid) -> $node.$componment
+            // if (this.isCompoment) return // 已经新建 componment, 并且 $(uid) -> $node.$componment
 
             if (!this.isCompoment) {
                 var options = V.componments[name]
                 if (!options) { setTimeout(function() { throw name + ' is not a componment' }, 1) }
 
                 // new componment
-                options = $$.extend({}, options)
-                data = $$.extend({}, data)
-                options.data = $$.extend(data, typeof options.data == 'function' ? options.data() : options.data)
+                options = $.extend({}, options)
+                data = $.extend({}, data)
+                options.data = $.extend(data, typeof options.data == 'function' ? options.data() : options.data)
                 var componment = V(options)
 
-                this.$componment = $$(componment.$dom) // $() -> $node.$componment
+                this.$componment = $(componment.$dom) // $() -> $node.$componment
                 this.$componment.isCompoment = true
                 this.$componment.componment = componment
 
@@ -449,7 +449,7 @@
         // data
         var data = typeof options.data == 'function' ? options.data() : options.data
         this.$data = data
-        $$.extend(this, data)
+        $.extend(this, data)
         // methods
         V.setMethods(this, options.methods)
         // computed
@@ -465,7 +465,7 @@
         this.$dom = V.parseHTML(this.$template)
 
         // compile render
-        this.$$ = $$
+        this.$ = $
         this.$foceUpdate = V.compile(this.$dom)
         this.$render = function() {
             var self = this
@@ -498,16 +498,16 @@
     V.utils = {
         compile: function(node) {
             /*
-            $$(uid).if(bool, function(){
-            	$$(uid).text()
+            $(uid).if(bool, function(){
+            	$(uid).text()
             })
-            $$(uid).for(list, function (item) {
-            	$$(uid).for(item.children, function (sub) {
-            		$$(uid).text(sub)
+            $(uid).for(list, function (item) {
+            	$(uid).for(item.children, function (sub) {
+            		$(uid).text(sub)
             	})
-            	$$(uid).on('click', function ($event) {remove(item)})
+            	$(uid).on('click', function ($event) {remove(item)})
             })
-            $$(uid).is('com')
+            $(uid).is('com')
             */
             var code = ''
             // var code = 'console.trace("r");' // @dev
@@ -521,8 +521,8 @@
                     case 1: // element
 
                         // dirs
-                        var dirs = $$.getDirs(node)
-                        var $node = dirs.size ? $$(node) : null
+                        var dirs = $.getDirs(node)
+                        var $node = dirs.size ? $(node) : null
                         if ($node) {
                             $node.dirs = dirs
                         }
@@ -531,7 +531,7 @@
                         var hasIf
                         var hasElseIf
                         var hasElse
-                        $$.each(dirs, function(dir) {
+                        $.each(dirs, function(dir) {
                             if (!dir) return
 
                             var name = dir.name
@@ -552,7 +552,7 @@
                                         key_ = item_key_index[1]
                                         index_ = item_key_index[2]
                                     }
-                                    code += $$.replaceVars('$$(@id)["for"]( @list, function( @item, @key, @index ){ ', {
+                                    code += $.replaceVars('$(@id)["for"]( @list, function( @item, @key, @index ){ ', {
                                         '@id': $node.uid,
                                         '@list': list_,
                                         '@item': item_,
@@ -562,26 +562,26 @@
                                     break
                                 case 'if':
                                     hasIf = true
-                                    code += $$.replaceVars('$$(@id)["if"]( @value, function(){ ', {
+                                    code += $.replaceVars('$(@id)["if"]( @value, function(){ ', {
                                         '@id': $node.uid,
                                         '@value': dir.exp
                                     })
                                     break
                                 case 'elseif':
                                     hasElseIf = true
-                                    code += $$.replaceVars('["elseif"]( $$(@id), @value, function(){ ', {
+                                    code += $.replaceVars('["elseif"]( $(@id), @value, function(){ ', {
                                         '@id': $node.uid,
                                         '@value': dir.exp
                                     })
                                     break
                                 case 'else':
                                     hasElse = true
-                                    code += $$.replaceVars('["else"]( $$(@id), function(){ ', {
+                                    code += $.replaceVars('["else"]( $(@id), function(){ ', {
                                         '@id': $node.uid
                                     })
                                     break
                                 case 'on':
-                                    code += $$.replaceVars('$$(@id).on("@type", "@nodeName", function($event){' +
+                                    code += $.replaceVars('$(@id).on("@type", "@nodeName", function($event){' +
                                         '!function(fn){if(typeof fn=="function")fn($event)}(@code)' +
                                         ';$thisVm.$render()})', {
                                             '@id': $node.uid,
@@ -591,7 +591,7 @@
                                         })
                                     break
                                 case 'model':
-                                    code += $$.replaceVars('$$(@id).on("@type", "@nodeName", function($event){' +
+                                    code += $.replaceVars('$(@id).on("@type", "@nodeName", function($event){' +
                                         '@model=$event.target.value' +
                                         ';$thisVm.$render()})', {
                                             '@id': $node.uid,
@@ -601,14 +601,14 @@
                                         })
                                     break
                                 case 'is':
-                                    code += $$.replaceVars('$$(@id).is("@name", @attrs)', {
+                                    code += $.replaceVars('$(@id).is("@name", @attrs)', {
                                         '@id': $node.uid,
                                         '@name': dir.exp,
                                         '@attrs': '0' //'{todo:"todo props"}'
                                     })
                                     break
                                 default:
-                                    code += $$.replaceVars('$$(@id)["@name"](@value, "@arg", "@mdfs")', {
+                                    code += $.replaceVars('$(@id)["@name"](@value, "@arg", "@mdfs")', {
                                         '@id': $node.uid,
                                         '@name': dir.name,
                                         '@arg': dir.arg,
@@ -620,7 +620,7 @@
                         })
 
                         // childNodes
-                        var childNodes = $$.toArray(node.childNodes)
+                        var childNodes = $.toArray(node.childNodes)
                         for (var i = 0; i < childNodes.length; i++) {
                             scan(childNodes[i])
                         }
@@ -649,9 +649,9 @@
 
                         // {{}}
                         if (nodeValue.match('{{')) {
-                            code += $$.replaceVars('$$(@id).text( @value )', {
-                                '@id': $$(node).uid,
-                                '@value': $$.parseText(nodeValue)
+                            code += $.replaceVars('$(@id).text( @value )', {
+                                '@id': $(node).uid,
+                                '@value': $.parseText(nodeValue)
                             })
                         }
 
@@ -701,7 +701,7 @@
             }
         }
     }
-    $$.extend(V, V.utils)
+    $.extend(V, V.utils)
     V.prototype = {
         $mount: function(el) {
             el.parentNode.replaceChild(this.$dom, el)
@@ -719,7 +719,7 @@
 
     // 
     // 组件 保存生成 vm 的 options
-    // $$().is()->V(options)->$mount()
+    // $().is()->V(options)->$mount()
     // 
     V.componments = {}
     V.componment = function(name, options) {
@@ -728,12 +728,12 @@
 
 
     // export
-    V.$$ = $$
+    V.$ = $
     if (typeof module == 'object') {
         module.exports = V
     } else {
         window.V = V // todo name: ve, vme, vne, vie, wu, wue, ...
         window.Vue = V
-        window.$$ = $$ // @dev
+        window.$ = $ // @dev
     }
 }(document)
