@@ -53,7 +53,7 @@
 		<table>
 			<tr>
 				<td colspan="3" style="text-align:center">
-					<input autofocus model.number="model" @keyup.enter.prevent="add(model)" @blur="console.log('blur')">
+					<input autofocus model.number="model" @keyup.enter.prevent="add(model);model=''" @blur="console.log('blur')">
 				</td>
 			</tr>
 			<tr for="(item, i) in list" if="item.status!='delete'">
@@ -175,7 +175,6 @@
 		},
 		methods: {
 			add: function (text) {
-				this.model = ''
 				this.list.push({
 					text: text
 				})
