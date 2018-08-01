@@ -123,10 +123,10 @@
                 }
             }
         },
-        trim: function (value) {
+        trim: function(value) {
             return String(value).replace(/^\s+|\s+$/g, '')
         },
-        number: function (value) {
+        number: function(value) {
             if (!isNaN(value)) return Number(value)
             return value
         },
@@ -153,20 +153,20 @@
         addEventListener: function(type, fn) {
             return document.addEventListener ? function(type, fn) {
                 // true: 事件捕捉。 focus, blur 等事件不支持冒泡
-                document.addEventListener(type, fn, 'focus,blur'.match(type)?1:0)
+                document.addEventListener(type, fn, 'focus,blur'.match(type) ? 1 : 0)
             } : function(type, fn) {
                 if (type == 'input') type = 'keyup'
                 document.attachEvent('on' + type, function() { // ie
                     var event = window.event
                     event.target = event.srcElement
-                    event.preventDefault = function(){event.returnValue=false}
-                    event.stopPropagation = function(){event.cancelBubble=true}
+                    event.preventDefault = function() { event.returnValue = false }
+                    event.stopPropagation = function() { event.cancelBubble = true }
                     fn(event)
                 })
             }
         }(),
         on: function(type, node, fn) {
-            $.each(type.split(/, */), function(type){ // "type1, type2"
+            $.each(type.split(/, */), function(type) { // "type1, type2"
                 $.addEventListener(type, function(event) {
                     if ($.contains(node, event.target)) {
                         fn(event)
@@ -174,7 +174,7 @@
                 })
             })
         },
-        contains: function (node, child) {
+        contains: function(node, child) {
             return node == child || function loop(child) {
                 var parentNode = child.parentNode
                 return parentNode == node || (parentNode && loop(parentNode))
@@ -249,11 +249,11 @@
             this.innerHTML = this.node.innerHTML = value
         },
         attr: function(value, name) {
-            if (name=='class') {
+            if (name == 'class') {
                 this.setClass(value)
                 return
             }
-            if (name=='style') {
+            if (name == 'style') {
                 this.setStyle(value)
                 return
             }
@@ -262,31 +262,31 @@
             attrs[name] = this.node[name] = value
             this.attrs = attrs
         },
-        setStyle: function (map) {
+        setStyle: function(map) {
             var style = this.style || {}
-            for(var key in map){
+            for (var key in map) {
                 var value = map[key]
                 if (style[key] === value) continue
-                try{ // ie
+                try { // ie
                     style[key] = this.node.style[key] = value
-                }catch(e){}
+                } catch (e) {}
             }
             this.style = style
         },
-        hasClass: function (name) {
-        	return this.node.className.match(RegExp('(^| )' + name + '( |$)', 'i'))
+        hasClass: function(name) {
+            return this.node.className.match(RegExp('(^| )' + name + '( |$)', 'i'))
         },
-        addClass: function (name) {
-        	this.node.className += ' ' + name.replace(/, ?/g, ' ')
+        addClass: function(name) {
+            this.node.className += ' ' + name.replace(/, ?/g, ' ')
         },
-        removeClass: function (name) {
-        	this.node.className = this.node.className.replace(RegExp('(^| )' + name + '(?= |$)', 'ig'), '')
+        removeClass: function(name) {
+            this.node.className = this.node.className.replace(RegExp('(^| )' + name + '(?= |$)', 'ig'), '')
         },
         'setClass': function(map) {
-        	var classes = this.classes || {}
-            for(var name in map){
+            var classes = this.classes || {}
+            for (var name in map) {
                 var bool = map[name]
-                if (bool && !classes[name]){
+                if (bool && !classes[name]) {
                     this.addClass(name)
                     classes[name] = true
                 }
@@ -297,11 +297,11 @@
             }
             this.classes = classes
         },
-        show: function (value) {
-        	this.setStyle({display: value?'':'none'})
+        show: function(value) {
+            this.setStyle({ display: value ? '' : 'none' })
         },
-        hide: function (value) {
-        	this.show(!value)
+        hide: function(value) {
+            this.show(!value)
         },
         'if': function(value, fn) {
             if (value) {
@@ -342,7 +342,7 @@
             var node = this.node
             if (!this.markNode) {
                 var mark = document.createTextNode('')
-                var mark = document.createComment(this.uid)  // @dev
+                var mark = document.createComment(this.uid) // @dev
                 // var mark = document.createComment(node.outerHTML) // @dev
                 node.parentNode.insertBefore(mark, node)
                 this.markNode = mark
@@ -418,8 +418,8 @@
                     $.forKeyPath = forKeyPath + '.' + key // **!!!**
                     var $node = $forNode.clone(key)
 
-                    // 当 for, if 同时存在，for insert, if false remove, 会造成dom更新
-                    !$node.isIf && $node.insert()
+                        // 当 for, if 同时存在，for insert, if false remove, 会造成dom更新
+                        !$node.isIf && $node.insert()
 
                     fn(item, key, index)
                 })
@@ -469,7 +469,7 @@
             // v -> m
             this.on(type, '.model', fn)
         },
-        setValue: function (value) {
+        setValue: function(value) {
             this.node.value = value
         },
         is: function(name, data) {
@@ -521,7 +521,7 @@
         var el = typeof options.el == 'string' ? document.getElementById(options.el.replace('#', '')) : options.el
 
         // template
-        var template = options.template || (el&&V.outerHTML(el)) || '<div> @ </div>'
+        var template = options.template || (el && V.outerHTML(el)) || '<div> @ </div>'
         // this.$template = template // @dev
 
         // $el
@@ -614,7 +614,7 @@
                                     })
                                     break
                                 case 'if':
-                                	$node.isIf = true // if for insert
+                                    $node.isIf = true // if for insert
                                     code += $.replaceVars('$(@id)["if"]( @value, function(){ ', {
                                         '@id': $node.uid,
                                         '@value': dir.exp
@@ -633,20 +633,20 @@
                                     break
                                 case 'on':
                                     code += $.replaceVars('$(@id).on("@type", "@mdfs", function($event){ @code ;$THISVM.$render()})', {
-                                            '@id': $node.uid,
-                                            '@type': dir.arg,
-                                            '@mdfs': dir.mdfs,
-                                            '@code': dir.exp.match(/[=;]/)? dir.exp: // 语句
-                                                '!function(fn){typeof fn=="function"&&fn($event)}(' + dir.exp + ')' // 表达式
-                                        })
+                                        '@id': $node.uid,
+                                        '@type': dir.arg,
+                                        '@mdfs': dir.mdfs,
+                                        '@code': dir.exp.match(/[=;]/) ? dir.exp : // 语句
+                                            '!function(fn){typeof fn=="function"&&fn($event)}(' + dir.exp + ')' // 表达式
+                                    })
                                     break
                                 case 'model':
                                     code += $.replaceVars('$(@id).model(@value,"@type",function($event){ @value=@Number(@trim($event.target.value)); $THISVM.$render()})', {
                                         '@id': $node.uid,
                                         '@value': dir.exp,
-                                        '@type': dir.mdfs.match('.lazy')? 'change': 'input',
-                                        '@Number': dir.mdfs.match('.number')? '$.number': '',
-                                        '@trim': dir.mdfs.match('.trim')? '$.trim': ''
+                                        '@type': dir.mdfs.match('.lazy') ? 'change' : 'input',
+                                        '@Number': dir.mdfs.match('.number') ? '$.number' : '',
+                                        '@trim': dir.mdfs.match('.trim') ? '$.trim' : ''
                                     })
                                     // v -> d
                                     // code += $.replaceVars('$(@id).setValue( @value )', {
