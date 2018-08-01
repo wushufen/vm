@@ -16,6 +16,9 @@
 		border: solid 1px #ddd;
 		padding: .5em;
 	}
+	.selected{
+		color: #0f0
+	}
 	</style>
 </head>
 
@@ -23,26 +26,35 @@
 	<div id="test">
 		<div is="tag"></div>
 		<div is="tag"></div>
-		<div for="item in [1,2,3]" is="tag" xif="window" :title="'comp.title'+$index">todo is+for+if</div>
-	</div>
-	<div id="test2">
 	</div>
 	<div id="app">
-		<h1>n:{{++n}} </h1>
-		<small>{{compute}}</small>
-		<h2 text="'text'"></h2>
-		<h3 html="'html'"></h3>
-		<h4 if="n%2==0">if n%2==0</h4>
-		<h4 elseif="n%3==0">elseif n%3==0</h4>
-		<h4 else>else</h4>
-		<h5 :title="'this is title: n=' + n">attr:title</h5>
-		<input autofocus model="model" on:keyup.enter="add(model);model=''">
 		<table>
-			<tr for="(item, i) in list" if="item.status!='delete'" :title="i">
+			<tr>
+				<td>n:{{++n}} </td>
+				<td>{{compute}}</td>
+				<td text="'text:'+model"></td>
+				<td html="'html:'+'<b>'+model"></td>
+				<td>
+					<i if="n%2==0">if {{n}}%2==0</i>
+					<i elseif="n%3==0">elseif {{n}}%3==0</i>
+					<i else>else {{n}}</i>
+				</td>
+				<td :title="'this is title: ' + model">:title</td>
+				<td :class={selected:model}>:class</td>
+				<td :style="{color:model}">:style</td>
+			</tr>
+		</table>
+		<!--  -->
+		<table>
+			<tr>
+				<td colspan="3" style="text-align:center">
+					<input autofocus model.number="model" @keyup.enter="add(model); model=''">
+				</td>
+			</tr>
+			<tr for="(item, i) in list" if="item.status!='delete'">
 				<td>{{i}}/{{list.length}}:{{item.status}}</td>
 				<td>
-					{{item.text}}
-					<input model="item.text" xautofocus="">
+					<input model="item.text" :title="item.text">
 				</td>
 				<td>
 					<button if="item.status!='done'" @click="item.status='done'">done</button>
@@ -60,15 +72,47 @@
 			</tr>
 		</table>
 		<!--  -->
-		<div for="item in list" is="tag" if="n%3==0" :title="'comp.title'+$index">todo is+for+if</div>
-	</div>
-	<div id="tag" style="display:none">
+		<div for="item in list" is="tag">todo is+for+if</div>
 		<div>
-			<b>h3</b>
-			<button @click="n++"> {{n}} </button>
+			<div is="ul"></div>
 		</div>
 	</div>
+	<div id="tag" style="display:none">
+		<span>
+			<i>tag:</i>
+			<button @click="n++"> {{n}} </button>
+		</span>
+	</div>
+	<div id="ul" style="display:none">
+		<ul>
+			<li v-for="item in list">
+				{{item}}
+				<div is="ol"></div>
+			</li>
+		</ul>
+	</div>
+	<div id="ol" style="display:none">
+		<ol>
+			<li v-for="item in list">
+				{{item}}
+			</li>
+		</ol>
+	</div>
 	<script src="vm.js"></script>
+	<script>
+		Vue.componment('ul', {
+			template: ul.innerHTML,
+			data: {
+				list: [1,2,3]
+			}
+		})
+		Vue.componment('ol', {
+			template: ol.innerHTML,
+			data: {
+				list: [7,8,9]
+			}
+		})
+	</script>
 	<script>
 	Vue.componment('tag', {
 		template: tag.innerHTML,
@@ -105,15 +149,14 @@
 	})
 	*/
 	vm = vue = new Vue({
-		el: '#test',
+		el: '#app',
 		data: {
 			n: 0,
 			bool: true,
-			model: '',
+			model: 'vm.js',
 			list: [
 				{ id:1, text:'todo1', status:'open', tags:['abc'] },
-				{ id:2, text:'todo2', status:'open', tags:['abc'] },
-				{ id:3, text:'todo3', status:'open', tags:['abc'] }
+				{ id:2, text:'todo2', status:'open', tags:['abc'] }
 			],
 			obj: {
 				id: 1,
@@ -122,7 +165,7 @@
 		},
 		computed: {
 			compute: function () {
-				return 'computed: n*2= ' + this.n * 2
+				return 'computed:' + String(this.model).toUpperCase()
 			}
 		},
 		methods: {

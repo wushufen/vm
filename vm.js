@@ -17,12 +17,14 @@
         }
 
         // $(node) -> return saved
-        var uid = $.getUid(node)
-        if (uid) {
-            return $.map[uid]
+        if (cloneUid === undefined) { // !cloneUid: ie会把 node.uid 复制到克隆节点
+            var uid = $.getUid(node)
+            if (uid) {
+                return $.map[uid]
+            }
         }
 
-        // save
+        // $(unSavedNode) || $(node, cloneUid) -> save
         var uid = cloneUid || $.incId()
         this.uid = uid
         this.node = node
@@ -50,6 +52,7 @@
         canSetUidOnTextNode: (function() { // ie
             try { return document.createTextNode('').uid = true } catch (e) {}
         })(),
+        hasOnInput: 'oninput' in document,
         setUid: function(node, uid) {
             if (node.nodeType == 1) {
                 node.uid = uid
@@ -58,6 +61,7 @@
                 if ($.canSetUidOnTextNode) {
                     node.uid = uid
                 } else {
+                    // save on parentNode
                     var map = node.parentNode.uidNodeMap || (node.parentNode.uidNodeMap = {})
                     map[uid] = node
                 }
@@ -119,6 +123,13 @@
                 }
             }
         },
+        trim: function (value) {
+            return String(value).replace(/^\s+|\s+$/g, '')
+        },
+        number: function (value) {
+            if (!isNaN(value)) return Number(value)
+            return value
+        },
         replaceVars: function(s, vs) {
             for (var k in vs) {
                 s = s.replace(RegExp(k, 'g'), vs[k])
@@ -144,18 +155,21 @@
                 // 1: 事件捕捉。 focus, blur 等事件不支持冒泡
                 document.body.addEventListener(type, fn, 1)
             } : function(type, fn) {
-                document.attachEvent('on' + type, function() { // ie
+                if (type == 'input' && !$.hasOnInput) type = 'keyup'
+                document.body.attachEvent('on' + type, function() { // ie
                     var event = window.event
                     event.target = event.srcElement
                     fn(event)
                 })
             }
         }(),
-        on: function(type, node, fn) {
-            $.addEventListener(type, function(event) {
-                if (event.target == node) {
-                    fn(event)
-                }
+        on: function(type, node, fn) { // keypress, keyup
+            $.each(type.split(/, */), function(type){
+                $.addEventListener(type, function(event) {
+                    if (event.target == node) {
+                        fn(event)
+                    }
+                })
             })
         },
         getDirs: function(node) {
@@ -206,13 +220,12 @@
     // dir methods
     $.prototype = {
         autofocus: function() {
-            if (!this.focused) {
-                var self = this
-                setTimeout(function() { // ie?
-                    self.node.focus()
-                }, 1)
-                this.focused = true
-            }
+            if (this.focused) return
+            var self = this
+            setTimeout(function() { // ie?
+                self.node.focus()
+            }, 1)
+            this.focused = true
         },
         text: function(value) {
             if (value === this.innerText) return
@@ -228,26 +241,53 @@
             this.innerHTML = this.node.innerHTML = value
         },
         attr: function(value, name) {
+            if (name=='class') {
+                this.setClass(value)
+                return
+            }
+            if (name=='style') {
+                this.setStyle(value)
+                return
+            }
             var attrs = this.attrs || {}
             if (value === attrs[name]) return
             attrs[name] = this.node[name] = value
             this.attrs = attrs
-            return this
         },
-        style: function (map) {
-        	
+        setStyle: function (map) {
+            var style = this.style || {}
+            for(var key in map){
+                var value = map[key]
+                if (style[key] === value) continue
+                try{ // ie
+                    style[key] = this.node.style[key] = value
+                }catch(e){}
+            }
+            this.style = style
         },
         hasClass: function (name) {
-        	
+        	return this.node.className.match(RegExp('(^| )' + name + '( |$)', 'i'))
         },
         addClass: function (name) {
-        	
+        	this.node.className += ' ' + name.replace(/, ?/g, ' ')
         },
         removeClass: function (name) {
-        	
+        	this.node.className = this.node.className.replace(RegExp('(^| )' + name + '(?= |$)', 'ig'), '')
         },
-        'class': function(map) {
-        	
+        'setClass': function(map) {
+        	var classes = this.classes || {}
+            for(var name in map){
+                var bool = map[name]
+                if (bool && !classes[name]){
+                    this.addClass(name)
+                    classes[name] = true
+                }
+                if (!bool && classes[name]) {
+                    this.removeClass(name)
+                    classes[name] = false
+                }
+            }
+            this.classes = classes
         },
         'if': function(value, fn) {
             if (value) {
@@ -296,6 +336,9 @@
             }
         },
         remove: function() {
+            if (this.$componment) {
+                this.$componment.remove()
+            }
             var node = this.node
             var parentNode = node.parentNode
             if (parentNode && parentNode.nodeType == 1) {
@@ -303,11 +346,15 @@
                 parentNode.removeChild(node)
             }
         },
-        insert: function() {
+        insert: function(to) {
+            if (this.$componment) {
+                this.$componment.insert()
+                return
+            }
             var node = this.node
             var parentNode = node.parentNode
             if (!parentNode || parentNode.nodeType != 1) {
-                var markNode = this.markNode || this.$forNode.markNode
+                var markNode = to || this.markNode || this.$forNode.markNode
                 markNode.parentNode.insertBefore(node, markNode)
             }
         },
@@ -353,10 +400,10 @@
             var forKeyPath = $.forKeyPath // **!!!**
             try {
                 $.each(list, function(item, key, index) {
-
                     // clone
                     $.forKeyPath = forKeyPath + '.' + key // **!!!**
                     var $node = $forNode.clone(key)
+
                     // 当 for, if 同时存在，for insert, if false remove, 会造成dom更新
                     !$node.isIf && $node.insert()
 
@@ -398,8 +445,16 @@
             // 保存||更新 handler
             this.eventMap[key] = fn
         },
-        model: function() {
-            // todo
+        model: function(value, type, fn) {
+            // m -> v
+            var node = this.node
+            node.value = value
+
+            // v -> m
+            this.on(type, '.model', fn)
+        },
+        setValue: function (value) {
+            this.node.value = value
         },
         is: function(name, data) {
             var self = this
@@ -464,7 +519,7 @@
 
             var fps = 24
             var timeGap = 1000 / fps
-            var timeGap = 1000
+            // var timeGap = 1000
 
             var now = +new Date
             var lastTime = this.$render.lastTime || 0
@@ -570,14 +625,26 @@
                                         })
                                     break
                                 case 'model':
-                                    code += $.replaceVars('$(@id).on("@type", "@mdfs", function($event){' +
-                                        '@model=$event.target.value' +
-                                        ';$THISVM.$render()})', {
-                                            '@id': $node.uid,
-                                            '@type': 'input',
-                                            '@mdfs': dir.nodeName,
-                                            '@model': dir.exp
-                                        })
+                                    code += $.replaceVars('$(@id).model(@value,"@type",function($event){ @value=@Number(@trim($event.target.value)); $THISVM.$render()})', {
+                                        '@id': $node.uid,
+                                        '@value': dir.exp,
+                                        '@type': dir.mdfs.match('.lazy')? 'change': 'input',
+                                        '@Number': dir.mdfs.match('.number')? '$.number': '',
+                                        '@trim': dir.mdfs.match('.trim')? '$.trim': ''
+                                    })
+                                    // v -> d
+                                    // code += $.replaceVars('$(@id).setValue( @value )', {
+                                    //     '@id': $node.uid,
+                                    //     '@value': dir.exp
+                                    // })
+                                    // code += $.replaceVars('$(@id).on("@type","@mdfs",function($event){ @model=@Number(@trim($event.target.value)); $THISVM.$render()})', {
+                                    //     '@id': $node.uid,
+                                    //     '@type': dir.mdfs.match('.lazy')? 'change': 'input',
+                                    //     '@mdfs': '.model',
+                                    //     '@model': dir.exp,
+                                    //     '@Number': dir.mdfs.match('.number')? '$.number': '',
+                                    //     '@trim': dir.mdfs.match('.trim')? '$.trim': ''
+                                    //     })
                                     break
                                 case 'is':
                                     code += $.replaceVars('$(@id).is("@name", @attrs)', {
@@ -637,7 +704,9 @@
         parseEl: document.createElement('div'),
         parseHTML: function(html) {
             V.parseEl.innerHTML = html
-            return V.parseEl.children[0] || V.parseEl.childNodes[0]
+            var el = V.parseEl.children[0] || V.parseEl.childNodes[0]
+            // V.parseEl.innerHTML = ''
+            return el
         },
         outerHTML: function(node) {
             if (node.outerHTML) return node.outerHTML
