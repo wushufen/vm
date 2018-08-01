@@ -153,7 +153,7 @@
         addEventListener: function(type, fn) {
             return document.addEventListener ? function(type, fn) {
                 // true: 事件捕捉。 focus, blur 等事件不支持冒泡
-                document.addEventListener(type, fn, 1)
+                document.addEventListener(type, fn, 'focus,blur'.match(type)?1:0)
             } : function(type, fn) {
                 if (type == 'input') type = 'keyup'
                 document.attachEvent('on' + type, function() { // ie
