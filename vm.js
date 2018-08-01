@@ -785,23 +785,27 @@
 
     // debug
     'dev' && function() {
+        var devopened
+        var timer
+
         function ondevopen() {
-            !ondevopen.opened && setInterval(function() {
+            if (devopened) return
+            devopened = true
+            timer = setInterval(function() {
                 $.each(V.componments, function(item) {
                     item.$render()
                 })
             }, 500)
-            ondevopen.opened = true
+        }
+
+        function ondevclose() {
+            devopened = false
+            clearInterval(timer)
         }
         if (window.outerWidth - window.innerWidth > 200 ||
             window.outerHeight - window.innerHeight > 200) {
             ondevopen()
         }
-        $.docOn('keyup', function(e) {
-            if (e.keyCode == 123) {
-                ondevopen()
-            }
-        })
         var el = new Image;
         Object.defineProperty(el, 'id', {
             get: function() {
@@ -809,6 +813,19 @@
             }
         })
         console.log('%c', el)
+        $.docOn('keyup', function(e) {
+            if (e.keyCode == 123 ||
+                (e.metaKey && e.altKey && e.keyCode == 73) ||
+                (e.ctrlKey && e.shiftKey && e.keyCode == 73) ||
+                (e.ctrlKey && e.shiftKey && e.keyCode == 74)
+            ) {
+                if (!devopened) {
+                    ondevopen()
+                } else {
+                    ondevclose()
+                }
+            }
+        })
     }()
 
 
