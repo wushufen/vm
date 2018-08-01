@@ -473,14 +473,12 @@
         },
         model: function(value, type, fn) {
             // m -> v
-            var node = this.node
-            node.value = value
+            if (value !== this.value) {
+                this.value = this.node.value = value
+            }
 
             // v -> m
             this.on(type, '.model', fn)
-        },
-        setValue: function(value) {
-            this.node.value = value
         },
         is: function(name, data) {
             var self = this
@@ -565,6 +563,9 @@
 
         // mount
         el && this.$mount(el)
+
+        // save
+        V.componments.push(this)
     }
     V.utils = {
         compile: function(node) {
@@ -775,9 +776,22 @@
     // $().is()->V(options)->$mount()
     // 
     V.componmentOptions = {}
+    V.componments = []
     V.componment = function(name, options) {
         V.componmentOptions[name] = options
     }
+
+
+    // debug
+    var devtools = /./
+    devtools.toString = function () {
+        setInterval(function(){
+            $.each(V.componments, function (item) {
+                item.$render()
+            })
+        }, 300)
+    }
+    console.log('%c', devtools)
 
 
     // export
