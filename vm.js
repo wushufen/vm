@@ -36,12 +36,12 @@
         /*
         forKeyPath = $.forKeyPath
         for(key in list){
-        	$.forKeyPath += '.' + key
+            $.forKeyPath += '.' + key
         }
         $.forKeyPath = forKeyPath
 
         $(uid){
-        	return $.map[uid + $.forKeyPath]
+            return $.map[uid + $.forKeyPath]
         }
         */
         // 每个vm须重新开始
@@ -150,7 +150,7 @@
                 +
                 '"'
         },
-        addEventListener: function(type, fn) {
+        docOn: function(type, fn) {
             return document.addEventListener ? function(type, fn) {
                 // true: 事件捕捉。 focus, blur 等事件不支持冒泡
                 document.addEventListener(type, fn, 'focus,blur'.match(type) ? 1 : 0)
@@ -169,9 +169,9 @@
                 })
             }
         }(),
-        on: function(type, node, fn) {
+        on: function(node, type, fn) {
             $.each(type.split(/, */), function(type) { // "type1, type2"
-                $.addEventListener(type, function(event) {
+                $.docOn(type, function(event) {
                     if ($.contains(node, event.target)) {
                         fn(event)
                     }
@@ -454,16 +454,16 @@
             // 首次注册
             var $node = this
             var node = this.node
-        	$.on(type, node, function(event) {
-        	    // mfds
-        	    if (mdfs.match('.prevent')) event.preventDefault()
-        	    if (mdfs.match('.stop')) event.stopPropagation()
-        	    if (mdfs.match('.self') && event.target != node) return
-        	    if (mdfs.match('.enter') && event.keyCode != 13) return
+            $.on(node, type, function(event) {
+                // mfds
+                if (mdfs.match('.prevent')) event.preventDefault()
+                if (mdfs.match('.stop')) event.stopPropagation()
+                if (mdfs.match('.self') && event.target != node) return
+                if (mdfs.match('.enter') && event.keyCode != 13) return
 
-        	    // call handler
-        	    $node.eventMap[key](event)
-        	})
+                // call handler
+                $node.eventMap[key](event)
+            })
         },
         model: function(value, type, fn) {
             // m -> v
@@ -564,13 +564,13 @@
         compile: function(node) {
             /*
             $(uid).if(bool, function(){
-            	$(uid).text()
+                $(uid).text()
             })
             $(uid).for(list, function (item) {
-            	$(uid).for(item.children, function (sub) {
-            		$(uid).text(sub)
-            	})
-            	$(uid).on('click', function ($event) {remove(item)})
+                $(uid).for(item.children, function (sub) {
+                    $(uid).text(sub)
+                })
+                $(uid).on('click', function ($event) {remove(item)})
             })
             $(uid).is('com')
             */
