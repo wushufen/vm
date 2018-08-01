@@ -28,7 +28,7 @@
 		<div is="tag"></div>
 	</div>
 	<div id="app">
-		<div @click.stop="console.log('div')">
+		<div @click.stop.self="console.log('div')">
 			div
 			<button>button</button>
 			<a href="http://baidu.com" @click.prevent.stop="console.log('a')">baidu</a>
@@ -55,7 +55,8 @@
 		<table>
 			<tr>
 				<td colspan="3" style="text-align:center">
-					<input autofocus model.number="model" @keyup.enter.prevent="add(model);model=''" @blur="console.log('blur')">
+					<input autofocus model="model" @keyup.enter.prevent="add(model);model=''">
+					<input model.number.lazy="model" @focus="alert()">
 				</td>
 			</tr>
 			<tr for="(item, i) in list" if="item.status!='delete'">

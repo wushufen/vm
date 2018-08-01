@@ -155,7 +155,11 @@
                 // true: 事件捕捉。 focus, blur 等事件不支持冒泡
                 document.addEventListener(type, fn, 'focus,blur'.match(type) ? 1 : 0)
             } : function(type, fn) {
-                if (type == 'input') type = 'keyup'
+                type = {
+                	input: 'keyup',
+                	focus: 'focusin',
+                	blur: 'focusout'
+                }[type]
                 document.attachEvent('on' + type, function() { // ie
                     var event = window.event
                     event.target = event.srcElement
@@ -442,16 +446,17 @@
         },
         on: function(type, mdfs, fn) {
             var $node = this
-            this.eventMap = this.eventMap || {}
+            var node = this.node
+            $node.eventMap = $node.eventMap || {}
             var key = type + mdfs // click.mdfs.ctrl
-            var handler = this.eventMap[key]
+            var handler = $node.eventMap[key]
             // 首次注册
             if (!handler) {
-                $.on(type, this.node, function(event) {
-                    // todo mfds
-
+                $.on(type, node, function(event) {
+                    // mfds
                     if (mdfs.match('.prevent')) event.preventDefault()
                     if (mdfs.match('.stop')) event.stopPropagation()
+                    if (mdfs.match('.self') && event.target != node) return
                     if (mdfs.match('.enter') && event.keyCode != 13) return
 
                     // call handler
@@ -641,26 +646,13 @@
                                     })
                                     break
                                 case 'model':
-                                    code += $.replaceVars('$(@id).model(@value,"@type",function($event){ @value=@Number(@trim($event.target.value)); $THISVM.$render()})', {
+                                    code += $.replaceVars('$(@id).model(@value,"@type",function($event){ @value=@Number(@trim($event.target.value)); $THISVM.$foceUpdate()})', {
                                         '@id': $node.uid,
                                         '@value': dir.exp,
                                         '@type': dir.mdfs.match('.lazy') ? 'change' : 'input',
                                         '@Number': dir.mdfs.match('.number') ? '$.number' : '',
                                         '@trim': dir.mdfs.match('.trim') ? '$.trim' : ''
                                     })
-                                    // v -> d
-                                    // code += $.replaceVars('$(@id).setValue( @value )', {
-                                    //     '@id': $node.uid,
-                                    //     '@value': dir.exp
-                                    // })
-                                    // code += $.replaceVars('$(@id).on("@type","@mdfs",function($event){ @model=@Number(@trim($event.target.value)); $THISVM.$render()})', {
-                                    //     '@id': $node.uid,
-                                    //     '@type': dir.mdfs.match('.lazy')? 'change': 'input',
-                                    //     '@mdfs': '.model',
-                                    //     '@model': dir.exp,
-                                    //     '@Number': dir.mdfs.match('.number')? '$.number': '',
-                                    //     '@trim': dir.mdfs.match('.trim')? '$.trim': ''
-                                    //     })
                                     break
                                 case 'is':
                                     code += $.replaceVars('$(@id).is("@name", @attrs)', {
