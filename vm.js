@@ -44,6 +44,7 @@
         	return $.map[uid + $.forKeyPath]
         }
         */
+        // 每个vm须重新开始
         forKeyPath: '', // uid.for1ItemKey.for2ItemKey...
         map: {},
         incId: function() {
@@ -52,7 +53,6 @@
         canSetUidOnTextNode: (function() { // ie
             try { return document.createTextNode('').uid = true } catch (e) {}
         })(),
-        hasOnInput: 'oninput' in document,
         setUid: function(node, uid) {
             if (node.nodeType == 1) {
                 node.uid = uid
@@ -153,10 +153,10 @@
         addEventListener: function(type, fn) {
             return document.addEventListener ? function(type, fn) {
                 // 1: 事件捕捉。 focus, blur 等事件不支持冒泡
-                document.body.addEventListener(type, fn, 1)
+                document.addEventListener(type, fn, 1)
             } : function(type, fn) {
-                if (type == 'input' && !$.hasOnInput) type = 'keyup'
-                document.body.attachEvent('on' + type, function() { // ie
+                if (type == 'input') type = 'keyup'
+                document.attachEvent('on' + type, function() { // ie
                     var event = window.event
                     event.target = event.srcElement
                     fn(event)
