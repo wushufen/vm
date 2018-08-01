@@ -28,10 +28,10 @@
 		<div is="tag"></div>
 	</div>
 	<div id="app">
-		<div @click.stop="alert('div')">
+		<div @click.stop="console.log('div')">
 			div
 			<button>button</button>
-			<a href="http://baidu.com" @click.prevent.stop="alert('a')">baidu</a>
+			<a href="http://baidu.com" @click.prevent.stop="console.log('a')">baidu</a>
 		</div>
 		<table>
 			<tr>
@@ -53,7 +53,7 @@
 		<table>
 			<tr>
 				<td colspan="3" style="text-align:center">
-					<input autofocus model.number="model" @keyup.enter.prevent="add(model)" @blur="alert('blur')">
+					<input autofocus model.number="model" @keyup.enter.prevent="add(model)" @blur="console.log('blur')">
 				</td>
 			</tr>
 			<tr for="(item, i) in list" if="item.status!='delete'">

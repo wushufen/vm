@@ -165,8 +165,8 @@
                 })
             }
         }(),
-        on: function(type, node, fn) { // keypress, keyup
-            $.each(type.split(/, */), function(type){
+        on: function(type, node, fn) {
+            $.each(type.split(/, */), function(type){ // "type1, type2"
                 $.addEventListener(type, function(event) {
                     if ($.contains(node, event.target)) {
                         fn(event)
