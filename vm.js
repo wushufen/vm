@@ -783,7 +783,7 @@
     }
 
 
-    // debug
+    // dev
     'dev' && function() {
         var devopened
         var timer
@@ -807,7 +807,7 @@
             ondevopen()
         }
         var el = new Image;
-        Object.defineProperty(el, 'id', {
+        Object.defineProperty&&Object.defineProperty(el, 'id', {
             get: function() {
                 ondevopen()
             }
