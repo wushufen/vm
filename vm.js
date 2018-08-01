@@ -459,6 +459,12 @@
                 if (mdfs.match('.prevent')) event.preventDefault()
                 if (mdfs.match('.stop')) event.stopPropagation()
                 if (mdfs.match('.self') && event.target != node) return
+
+                if (mdfs.match('.ctrl') && !event.ctrlKey) return
+                if (mdfs.match('.alt') && !event.altKey) return
+                if (mdfs.match('.shift') && !event.shiftKey) return
+                if (mdfs.match('.meta') && !event.metaKey) return
+
                 if (mdfs.match('.enter') && event.keyCode != 13) return
 
                 // call handler

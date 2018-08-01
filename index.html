@@ -55,8 +55,8 @@
 		<table>
 			<tr>
 				<td colspan="3" style="text-align:center">
-					<input autofocus model="model" @keyup.enter.prevent="add(model);model=''">
-					<input model.number.lazy="model" @focus="console.log('focus')">
+					<input autofocus model="model" @keyup.ctrl.alt.meta.enter.prevent.stop="add(model);model=''">
+					<input model.number.lazy="model" @keyup="console.log($event)">
 				</td>
 			</tr>
 			<tr for="(item, i) in list" if="item.status!='delete'">
