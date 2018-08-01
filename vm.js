@@ -151,16 +151,17 @@
                 '"'
         },
         docOn: function(type, fn) {
-            return document.addEventListener ? function(type, fn) {
+            var node = document
+            return window.addEventListener ? function(type, fn) {
                 // true: 事件捕捉。 focus, blur 等事件不支持冒泡
-                document.addEventListener(type, fn, 'focus,blur'.match(type) ? 1 : 0)
+                node.addEventListener(type, fn, 'focus,blur'.match(type) ? 1 : 0)
             } : function(type, fn) {
                 type = {
                     input: 'keyup',
                     focus: 'focusin',
                     blur: 'focusout'
                 }[type] || type
-                document.attachEvent('on' + type, function() { // ie
+                node.attachEvent('on' + type, function() { // ie
                     var event = window.event
                     event.target = event.srcElement
                     event.preventDefault = function() { event.returnValue = false }
@@ -783,15 +784,32 @@
 
 
     // debug
-    var devtools = /./
-    devtools.toString = function () {
-        setInterval(function(){
-            $.each(V.componments, function (item) {
-                item.$render()
-            })
-        }, 300)
-    }
-    console.log('%c', devtools)
+    'dev' && function() {
+        function ondevopen() {
+            !ondevopen.opened && setInterval(function() {
+                $.each(V.componments, function(item) {
+                    item.$render()
+                })
+            }, 500)
+            ondevopen.opened = true
+        }
+        if (window.outerWidth - window.innerWidth > 200 ||
+            window.outerHeight - window.innerHeight > 200) {
+            ondevopen()
+        }
+        $.docOn('keyup', function(e) {
+            if (e.keyCode == 123) {
+                ondevopen()
+            }
+        })
+        var el = new Image;
+        Object.defineProperty(el, 'id', {
+            get: function() {
+                ondevopen()
+            }
+        })
+        console.log('%c', el)
+    }()
 
 
     // export

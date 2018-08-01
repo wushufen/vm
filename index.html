@@ -39,16 +39,16 @@
 				<td>{{compute}}</td>
 				<td text="'text:'+model"></td>
 				<td html="'html:'+'<b>'+model"></td>
-				<td>
-					<i if="n%2==0">if {{n}}%2==0</i>
-					<i elseif="n%3==0">elseif {{n}}%3==0</i>
-					<i else>else {{n}}</i>
-				</td>
 				<td :title="'this is title: ' + model">:title</td>
 				<td :class={selected:model}>:class</td>
 				<td :style="{color:model}">:style</td>
 				<td show="model">show</td>
 				<td hide="model">hide</td>
+				<td>
+					<i if="n%2==0">if {{n}}%2==0</i>
+					<i elseif="n%3==0">elseif {{n}}%3==0</i>
+					<i else>else {{n}}</i>
+				</td>
 			</tr>
 		</table>
 		<!--  -->
