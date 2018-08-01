@@ -159,7 +159,7 @@
                     input: 'keyup',
                     focus: 'focusin',
                     blur: 'focusout'
-                }[type]
+                }[type] || type
                 document.attachEvent('on' + type, function() { // ie
                     var event = window.event
                     event.target = event.srcElement
