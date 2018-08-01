@@ -56,7 +56,7 @@
 			<tr>
 				<td colspan="3" style="text-align:center">
 					<input autofocus model="model" @keyup.enter.prevent="add(model);model=''">
-					<input model.number.lazy="model" @focus="alert()">
+					<input model.number.lazy="model" @focus="console.log('focus')">
 				</td>
 			</tr>
 			<tr for="(item, i) in list" if="item.status!='delete'">

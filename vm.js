@@ -156,9 +156,9 @@
                 document.addEventListener(type, fn, 'focus,blur'.match(type) ? 1 : 0)
             } : function(type, fn) {
                 type = {
-                	input: 'keyup',
-                	focus: 'focusin',
-                	blur: 'focusout'
+                    input: 'keyup',
+                    focus: 'focusin',
+                    blur: 'focusout'
                 }[type]
                 document.attachEvent('on' + type, function() { // ie
                     var event = window.event
@@ -343,15 +343,15 @@
             }
         },
         mark: function() {
+            if (this.markNode) return
             var node = this.node
-            if (!this.markNode) {
-                var mark = document.createTextNode('')
-                var mark = document.createComment(this.uid) // @dev
-                // var mark = document.createComment(node.outerHTML) // @dev
-                node.parentNode.insertBefore(mark, node)
-                this.markNode = mark
-                mark.node = node // @dev
-            }
+            var mark = document.createTextNode('')
+            var mark = document.createComment(this.uid) // @dev
+            // var mark = document.createComment(node.outerHTML) // @dev
+            node.parentNode.insertBefore(mark, node)
+            this.markNode = mark
+            mark.node = node // @dev
+
         },
         remove: function() {
             if (this.$componment) {
@@ -377,44 +377,43 @@
             }
         },
         clone: function(key) {
-            var $forNode = this
-            var forNode = this.node
-
             var clones = this.clones = this.clones || {}
             var $node = clones[key]
-            if (!$node) {
-                var cloneNode = forNode.cloneNode(true)
+            if ($node) return $node // cache
 
-                // 克隆元素标识，使能通过原节点标识找到克隆节点
-                // forNodeUid.key
-                'IIF',
-                function loop(forNode, cloneNode) {
-                    var uid = $.getUid(forNode)
-                    // save cloneNode
-                    uid && $(cloneNode, uid + '.' + key) // **!!!**
+            // clone
+            var $forNode = this
+            var forNode = this.node
+            var cloneNode = forNode.cloneNode(true)
 
-                    var forChildNodes = forNode.childNodes
-                    var childNodes = cloneNode.childNodes
-                    for (var i = 0; i < forChildNodes.length; i++) {
-                        loop(forChildNodes[i], childNodes[i])
-                    }
-                }(forNode, cloneNode)
+            // 克隆元素标识，使能通过原节点标识找到克隆节点
+            // forNodeUid.key
+            'IIF',
+            function loop(forNode, cloneNode) {
+                var uid = $.getUid(forNode)
+                // save cloneNode
+                uid && $(cloneNode, uid + '.' + key) // **!!!**
 
-                $node = $(cloneNode)
-                $node.$forNode = $forNode // $forName.mackNode -> insert
+                var forChildNodes = forNode.childNodes
+                var childNodes = cloneNode.childNodes
+                for (var i = 0; i < forChildNodes.length; i++) {
+                    loop(forChildNodes[i], childNodes[i])
+                }
+            }(forNode, cloneNode)
 
-                // cache
-                clones[key] = $node
-            }
+            $node = $(cloneNode)
+            $node.$forNode = $forNode // $forName.mackNode -> insert
+
+            // cache
+            clones[key] = $node
 
             return $node
         },
         'for': function(list, fn) {
-            var $forNode = this
-
             // this.mark()
             this.remove()
 
+            var $forNode = this
             var forKeyPath = $.forKeyPath // **!!!**
             try {
                 $.each(list, function(item, key, index) {
@@ -445,26 +444,26 @@
             }
         },
         on: function(type, mdfs, fn) {
+            this.eventMap = this.eventMap || {}
+            var key = type + mdfs // click.mdfs.ctrl
+            var handler = this.eventMap[key]
+            // 保存||更新 handler
+            this.eventMap[key] = fn //旧的fn有旧的闭包
+            if (handler) return
+
+            // 首次注册
             var $node = this
             var node = this.node
-            $node.eventMap = $node.eventMap || {}
-            var key = type + mdfs // click.mdfs.ctrl
-            var handler = $node.eventMap[key]
-            // 首次注册
-            if (!handler) {
-                $.on(type, node, function(event) {
-                    // mfds
-                    if (mdfs.match('.prevent')) event.preventDefault()
-                    if (mdfs.match('.stop')) event.stopPropagation()
-                    if (mdfs.match('.self') && event.target != node) return
-                    if (mdfs.match('.enter') && event.keyCode != 13) return
+        	$.on(type, node, function(event) {
+        	    // mfds
+        	    if (mdfs.match('.prevent')) event.preventDefault()
+        	    if (mdfs.match('.stop')) event.stopPropagation()
+        	    if (mdfs.match('.self') && event.target != node) return
+        	    if (mdfs.match('.enter') && event.keyCode != 13) return
 
-                    // call handler
-                    $node.eventMap[key](event)
-                })
-            }
-            // 保存||更新 handler
-            this.eventMap[key] = fn
+        	    // call handler
+        	    $node.eventMap[key](event)
+        	})
         },
         model: function(value, type, fn) {
             // m -> v
