@@ -33,6 +33,7 @@
 			<button>button</button>
 			<a href="http://baidu.com" @click.prevent.stop="console.log('a')">baidu</a>
 		</div>
+		<!--  -->
 		<table>
 			<tr>
 				<td>n:{{++n}} </td>
@@ -48,6 +49,33 @@
 					<i if="n%2==0">if {{n}}%2==0</i>
 					<i elseif="n%3==0">elseif {{n}}%3==0</i>
 					<i else>else {{n}}</i>
+				</td>
+			</tr>
+		</table>
+		<!--  -->
+		<table>
+			<tr>
+				<td> <input model="model"> </td>
+				<td> <textarea model="model"></textarea> </td>
+				<td>
+					<select model="model">
+						<option>option1</option>
+						<option>option2</option>
+					</select>
+				</td>
+				<td>
+					<input model="model" type="checkbox">
+				</td>
+				<td>
+					<label><input model="model" type="checkbox">1</label>
+					<label><input model="model" type="checkbox">2</label>
+				</td>
+				<td>
+					<input model="model" type="radio">
+				</td>
+				<td>
+					<label><input model="model" type="radio">1</label>
+					<label><input model="model" type="radio">2</label>
 				</td>
 			</tr>
 		</table>
