@@ -28,6 +28,11 @@
 		<div is="tag"></div>
 	</div>
 	<div id="app">
+		<div @click.stop="alert('div')">
+			div
+			<button>button</button>
+			<a href="http://baidu.com" @click.prevent.stop="alert('a')">baidu</a>
+		</div>
 		<table>
 			<tr>
 				<td>n:{{++n}} </td>
@@ -48,7 +53,7 @@
 		<table>
 			<tr>
 				<td colspan="3" style="text-align:center">
-					<input autofocus model.number="model" @keyup.enter="add(model); model=''">
+					<input autofocus model.number="model" @keyup.enter.prevent="add(model)">
 				</td>
 			</tr>
 			<tr for="(item, i) in list" if="item.status!='delete'">
@@ -170,6 +175,7 @@
 		},
 		methods: {
 			add: function (text) {
+				this.model = ''
 				this.list.push({
 					text: text
 				})

@@ -152,13 +152,15 @@
         },
         addEventListener: function(type, fn) {
             return document.addEventListener ? function(type, fn) {
-                // 1: 事件捕捉。 focus, blur 等事件不支持冒泡
+                // true: 事件捕捉。 focus, blur 等事件不支持冒泡
                 document.addEventListener(type, fn, 1)
             } : function(type, fn) {
                 if (type == 'input') type = 'keyup'
                 document.attachEvent('on' + type, function() { // ie
                     var event = window.event
                     event.target = event.srcElement
+                    event.preventDefault = function(){event.returnValue=false}
+                    event.stopPropagation = function(){event.cancelBubble=true}
                     fn(event)
                 })
             }
@@ -166,11 +168,17 @@
         on: function(type, node, fn) { // keypress, keyup
             $.each(type.split(/, */), function(type){
                 $.addEventListener(type, function(event) {
-                    if (event.target == node) {
+                    if ($.contains(node, event.target)) {
                         fn(event)
                     }
                 })
             })
+        },
+        contains: function (node, child) {
+            return node == child || function loop(child) {
+                var parentNode = child.parentNode
+                return parentNode == node || (parentNode && loop(parentNode))
+            }(child)
         },
         getDirs: function(node) {
             var dirs = Array(10) // 留位给 for 等特殊指令，位置代表优先级
@@ -436,6 +444,8 @@
                 $.on(type, this.node, function(event) {
                     // todo mfds
 
+                    if (mdfs.match('.prevent')) event.preventDefault()
+                    if (mdfs.match('.stop')) event.stopPropagation()
                     if (mdfs.match('.enter') && event.keyCode != 13) return
 
                     // call handler
