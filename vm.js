@@ -297,6 +297,12 @@
             }
             this.classes = classes
         },
+        show: function (value) {
+        	this.setStyle({display: value?'':'none'})
+        },
+        hide: function (value) {
+        	this.show(!value)
+        },
         'if': function(value, fn) {
             if (value) {
                 this.insert()
