@@ -150,12 +150,11 @@
                 +
                 '"'
         },
-        docOn: function(type, fn) {
-            var node = document
-            return window.addEventListener ? function(type, fn) {
-                // true: 事件捕捉。 focus, blur 等事件不支持冒泡
-                node.addEventListener(type, fn, 'focus,blur'.match(type) ? 1 : 0)
-            } : function(type, fn) {
+        on: function() {
+            return window.addEventListener ? function(node, type, fn, useCapture) {
+                node.addEventListener(type, fn, useCapture)
+
+            } : function(node, type, fn) {
                 type = {
                     input: 'keyup',
                     focus: 'focusin',
@@ -170,14 +169,21 @@
                 })
             }
         }(),
-        on: function(node, type, fn) {
-            $.each(type.split(/, */), function(type) { // "type1, type2"
-                $.docOn(type, function(event) {
-                    if ($.contains(node, event.target)) {
-                        fn(event)
-                    }
-                })
-            })
+        off: function () {
+            return window.removeEventListener? function (node, fn) {
+                node.removeEventListener(fn)
+            }: function (node, fn) {
+                // todo
+            }
+        }(),
+        live: function(node, type, fn, useCapture) {
+            // true: 事件捕捉。 focus, blur 等事件不支持冒泡
+            useCapture = 'focus,blur'.match(type) ? true : useCapture
+            $.on(document, type, function(event) {
+                if ($.contains(node, event.target)) {
+                    fn(event)
+                }
+            }, useCapture)
         },
         contains: function(node, child) {
             return node == child || function loop(child) {
@@ -473,12 +479,17 @@
             })
         },
         model: function(value, type, fn) {
+            var node = this.node
+
             // m -> v
             if (value !== this.value) {
-                this.value = this.node.value = value
+                this.value = node.value = value
+                this.checked = node.checked = value
             }
 
             // v -> m
+            if (node.nodeName.match(/select/i)) type = 'change'
+            if (node.type == 'checkbox') type = 'click'
             this.on(type, '.model', fn)
         },
         is: function(name, data) {
@@ -813,7 +824,7 @@
             }
         })
         console.log('%c', el)
-        $.docOn('keyup', function(e) {
+        $.on(window, 'keyup', function(e) {
             if (e.keyCode == 123 ||
                 (e.metaKey && e.altKey && e.keyCode == 73) ||
                 (e.ctrlKey && e.shiftKey && e.keyCode == 73) ||
