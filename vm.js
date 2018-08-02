@@ -24,10 +24,13 @@
             }
         }
 
-        // $(unSavedNode) || $(node, cloneUid) -> save
+        // save
+        // $(unSavedNode) || $(node, cloneUid)
         var uid = cloneUid || $.incId()
         this.uid = uid
         this.node = node
+        var attrs = $.getAttrs(node)
+        $.orExtend(this, attrs)
 
         $.setUid(node, uid) // node -> uid
         $.map[uid] = this // uid -> $node
@@ -82,6 +85,15 @@
                 }
             }
         },
+        getAttrs: function (node) {
+            var attrs = {}  
+            $.each($.toArray(node.attributes), function (attribute) {
+                if (attribute.specified || attribute.nodeName == 'value'){ // ie || <= ie7
+                    attrs[attribute.nodeName] = attribute.nodeValue
+                }
+            })
+            return attrs
+        },
         extend: function(obj, map) {
             for (var key in map) {
                 if (!map.hasOwnProperty(key)) continue
@@ -89,7 +101,16 @@
             }
             return obj
         },
+        orExtend: function (obj, map) {
+            for (var key in map) {
+                if (!map.hasOwnProperty(key)) continue
+                if (key in obj) continue
+                obj[key] = map[key]
+            }
+            return obj
+        },
         toArray: function(list) {
+            if (!list) return []
             var length = list.length
             var arr = new Array(length)
             while (length--) {
@@ -107,6 +128,17 @@
                     }
                 }
             }
+            return -1
+        },
+        has: function (array, value) {
+            return $.indexOf(array, value) != -1
+        },
+        remove: function (array, value) {
+            for (var i = 0; i < array.length; i++) {
+                var item = array[i]
+                if (item === value) array.splice(i, 1), i--
+            }
+            return array
         },
         each: function(list, fn) {
             if (list instanceof Array) {
@@ -219,7 +251,7 @@
                         exp: nodeValue || '""'
                     }
 
-                    var $dirs = 'for,if,elseif,else,is'.split(',') // 特殊指令优先级排序
+                    var $dirs = 'for,if,elseif,else,attr,model,is'.split(',') // 特殊指令优先级排序
                     var index = $.indexOf($dirs, name)
                     if (index > -1) {
                         dirs[index] = dir
@@ -238,6 +270,8 @@
     $.utils.extend($, $.utils)
     // dir methods
     $.prototype = {
+        uid: null,
+        node: null,
         autofocus: function() {
             if (this.focused) return
             var self = this
@@ -259,7 +293,12 @@
             if (value === this.innerHTML) return
             this.innerHTML = this.node.innerHTML = value
         },
-        attr: function(value, name) {
+        attr: function(name, value) {
+            // get
+            if (arguments.length == 1) {
+                return name in this ? this[name] : this.node[name]
+            }
+            // set
             if (name == 'class') {
                 this.setClass(value)
                 return
@@ -268,10 +307,9 @@
                 this.setStyle(value)
                 return
             }
-            var attrs = this.attrs || {}
-            if (value === attrs[name]) return
-            attrs[name] = this.node[name] = value
-            this.attrs = attrs
+            if (value === this[name]) return
+            if (name in $.prototype) return // @warn?
+            this[name] = this.node[name] = value
         },
         setStyle: function(map) {
             var style = this.style || {}
@@ -475,22 +513,80 @@
                 if (mdfs.match('.enter') && event.keyCode != 13) return
 
                 // call handler
-                $node.eventMap[key](event)
+                $node.eventMap[key].call($node, event) // $node.on bind $node
             })
         },
-        model: function(value, type, fn) {
+        model: function(obj, key, mdfs, vm) {
             var node = this.node
+            var value = obj[key]
 
             // m -> v
-            if (value !== this.value) {
-                this.value = node.value = value
-                this.checked = node.checked = value
+            // checkbox
+            if (node.type == 'checkbox') {
+                // array
+                if (value instanceof Array) {
+                    var array = value
+                    this.checked = node.checked = $.has(array, this.value)
+                } else {
+                    // boolean
+                    if (this.checked !== value) {
+                        this.checked = node.checked = value
+                    }
+                }
+            }
+            // radio
+            else if (node.type == 'radio') {
+                var bool = this.value === value
+                if (this.checked !== bool) {
+                    this.checked = node.checked = bool
+                }
+            }
+            // todo
+            // ...
+            // input textarea ..
+            else {
+                if (this.value !== value) {
+                    this.value = node.value = value
+                }
             }
 
             // v -> m
-            if (node.nodeName.match(/select/i)) type = 'change'
+            var type = 'input'
             if (node.type == 'checkbox') type = 'click'
-            this.on(type, '.model', fn)
+            if (node.type == 'radio') type = 'click'
+            this.on(type, '.model', function (e) {
+                var node = this.node
+
+                // checkbox
+                if (node.type == 'checkbox') {
+                    // array
+                    if (value instanceof Array) {
+                        var array = value
+                        if (node.checked) {
+                            array.push(this.value)
+                        } else {
+                            $.remove(array, this.value)
+                        }
+                    } else {
+                        obj[key] = node.checked
+                    }
+                }
+                else if (node.type == 'radio') {
+                    console.log(node.checked)
+                    obj[key] = this.value
+                    this.checked = true
+                    node.checked = true // <=ie7: 没有name属性无法选中 ![name] -> click false
+                }
+                // todo
+                // ...
+                // input textarea ..
+                else {
+                    this.value = obj[key] = node.value
+                }
+
+                // update view
+                vm.$foceUpdate()
+            })
         },
         is: function(name, data) {
             var self = this
@@ -541,7 +637,7 @@
         var el = typeof options.el == 'string' ? document.getElementById(options.el.replace('#', '')) : options.el
 
         // template
-        var template = options.template || (el && V.outerHTML(el)) || '<div> @ </div>'
+        var template = options.template || (el && V.outerHTML(el)) || '<div> no template </div>'
         // this.$template = template // @dev
 
         // $el
@@ -606,7 +702,7 @@
 
                         // dirs
                         var dirs = $.getDirs(node)
-                        var $node = dirs.size ? $(node) : null
+                        var $node =$(node)
 
                         $.each(dirs, function(dir) {
                             if (!dir) return
@@ -664,12 +760,12 @@
                                     })
                                     break
                                 case 'model':
-                                    code += $.replaceVars('$(@id).model(@value,"@type",function($event){ @value=@Number(@trim($event.target.value)); $THISVM.$foceUpdate()})', {
+                                    // todo obj[key]
+                                    code += $.replaceVars('$(@id).model( @obj, "@key", "@mdfs", $THISVM )', {
                                         '@id': $node.uid,
-                                        '@value': dir.exp,
-                                        '@type': dir.mdfs.match('.lazy') ? 'change' : 'input',
-                                        '@Number': dir.mdfs.match('.number') ? '$.number' : '',
-                                        '@trim': dir.mdfs.match('.trim') ? '$.trim' : ''
+                                        '@obj': '$THISVM',
+                                        '@key': dir.exp,
+                                        '@mdfs': dir.mdfs
                                     })
                                     break
                                 case 'is':
@@ -679,6 +775,13 @@
                                         '@attrs': '0' //'{todo:"todo props"}'
                                     })
                                     break
+                                case 'attr':
+                                    code += $.replaceVars('$(@id).attr("@arg", @value)', {
+                                        '@id': $node.uid,
+                                        '@arg': dir.arg,
+                                        '@value': dir.exp
+                                    })
+                                    break
                                 default:
                                     code += $.replaceVars('$(@id)["@name"](@value, "@arg", "@mdfs")', {
                                         '@id': $node.uid,
@@ -686,7 +789,6 @@
                                         '@arg': dir.arg,
                                         '@mdfs': dir.mdfs,
                                         '@value': dir.exp
-
                                     })
                             }
                         })
@@ -795,7 +897,7 @@
 
 
     // dev
-    'dev' && function() {
+    '' && function() {
         var devopened
         var timer
 
