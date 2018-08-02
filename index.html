@@ -15,6 +15,7 @@
 	td {
 		border: solid 1px #ddd;
 		padding: .5em;
+		vertical-align: middle;
 	}
 	.selected{
 		color: #0f0
@@ -53,29 +54,36 @@
 			</tr>
 		</table>
 		<!--  -->
-		<table>
+		<table id="form">
 			<tr>
 				<td> <input model="model"> </td>
 				<td> <textarea model="model"></textarea> </td>
 				<td>
 					<select model="model">
-						<option>option1</option>
-						<option>option2</option>
+						<option :value="{o:1}">{o:1}??</option>
+						<option for="item in array" :value="item">{{item}}</option>
+					</select>
+					<select model="array" multiple>
+						<option value="value">value</option>
+						<option :value="string">string</option>
+						<option :value="number">number</option>
+						<option :value="object">object</option>
 					</select>
 				</td>
 				<td>
 					<input model="model" type="checkbox">
 				</td>
 				<td>
-					<label><input model="model" type="checkbox">1</label>
-					<label><input model="model" type="checkbox">2</label>
+					<label><input type="checkbox" model="array" value="value">value</label>
+					<label><input type="checkbox" model="array" :value="string">string</label>
+					<label><input type="checkbox" model="array" :value="number">number</label>
+					<label><input type="checkbox" model="array" :value="object">object</label>
 				</td>
 				<td>
-					<input model="model" type="radio">
-				</td>
-				<td>
-					<label><input model="model" type="radio">1</label>
-					<label><input model="model" type="radio">2</label>
+					<label><input type="radio" model="model" value="value">value</label>
+					<label><input type="radio" model="model" :value="string">string</label>
+					<label><input type="radio" model="model" :value="number">number</label>
+					<label><input type="radio" model="model" :value="object">object</label>
 				</td>
 			</tr>
 		</table>
@@ -90,7 +98,7 @@
 			<tr for="(item, i) in list" if="item.status!='delete'">
 				<td>{{i}}/{{list.length}}:{{item.status}}</td>
 				<td>
-					<input model="item.text" :title="item.text">
+					<input model="model" :title="item.text">
 				</td>
 				<td>
 					<button if="item.status!='done'" @click="item.status='done'">done</button>
@@ -101,7 +109,7 @@
 		</table>
 		<!--  -->
 		<table>
-			<tr for="(item, key, index) in obj">
+			<tr for="(item, key, index) in object">
 				<td>{{index}}</td>
 				<td>{{key}}</td>
 				<td>{{item}}</td>
@@ -185,19 +193,19 @@
 	})
 	*/
 	vm = vue = new Vue({
-		el: '#app',
+		el: '#form',
 		data: {
 			n: 0,
-			bool: true,
+			string: 'string',
+			number: 1,
+			boolean: true,
+			array: [1, 'string'],
+			object: { key: 'value' },
 			model: 'vm.js',
 			list: [
 				{ id:1, text:'todo1', status:'open', tags:['abc'] },
 				{ id:2, text:'todo2', status:'open', tags:['abc'] }
-			],
-			obj: {
-				id: 1,
-				name: 'wsf'
-			}
+			]
 		},
 		computed: {
 			compute: function () {
