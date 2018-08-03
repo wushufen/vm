@@ -28,16 +28,18 @@
 
 <body>
 	<div id="test">
-		<select model="model" size="4"></select>
 	</div>
 	<div id="app">
-		<div @click.stop.self="console.log('div')">
-			div
-			<button>button</button>
-			<a href="http://baidu.com" @click.prevent.stop="console.log('a')">baidu</a>
+		<div id="event">
+			<div @click.stop.self="console.log('div')">
+				div
+				<button>button</button>
+				<a href="http://baidu.com" @click.prevent.stop="console.log('a')">baidu</a>
+				<input @keyup.13="console.log($event)">
+			</div>
 		</div>
 		<!--  -->
-		<table>
+		<table id="base">
 			<tr>
 				<td>n:{{++n}} </td>
 				<td>{{compute}}</td>
@@ -98,8 +100,8 @@
 			</tr>
 			<tr for="(item, i) in list" if="item.status!='delete'">
 				<td>{{i}}/{{list.length}}:{{item.status}}</td>
-				<td>
-					<input model="model" :title="item.text">
+				<td :title="item.text">
+					<input model="item.text">
 				</td>
 				<td>
 					<button if="item.status!='done'" @click="item.status='done'">done</button>
@@ -174,7 +176,7 @@
 		},
 		mounted: function () {
 			var self = this
-			console.log(self)
+			// console.log(self)
 		}
 	})
 
@@ -194,7 +196,7 @@
 	})
 	*/
 	vm = vue = new Vue({
-		el: '#form',
+		el: '#app',
 		data: {
 			n: 0,
 			string: 'string',
