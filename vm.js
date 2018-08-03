@@ -85,10 +85,10 @@
                 }
             }
         },
-        getAttrs: function (node) {
-            var attrs = {}  
-            $.each($.toArray(node.attributes), function (attribute) {
-                if (attribute.specified || attribute.nodeName == 'value'){ // ie || <= ie7
+        getAttrs: function(node) {
+            var attrs = {}
+            $.each($.toArray(node.attributes), function(attribute) {
+                if (attribute.specified || attribute.nodeName == 'value') { // ie || <= ie7
                     attrs[attribute.nodeName] = attribute.nodeValue
                 }
             })
@@ -101,7 +101,7 @@
             }
             return obj
         },
-        orExtend: function (obj, map) {
+        orExtend: function(obj, map) {
             for (var key in map) {
                 if (!map.hasOwnProperty(key)) continue
                 if (key in obj) continue
@@ -109,7 +109,7 @@
             }
             return obj
         },
-        hasOwn: function (obj, property) { // ie nodes
+        hasOwn: function(obj, property) { // ie nodes
             return Object.hasOwnProperty.call(obj, property)
         },
         toArray: function(list) {
@@ -133,10 +133,10 @@
             }
             return -1
         },
-        has: function (array, value) {
+        has: function(array, value) {
             return $.indexOf(array, value) != -1
         },
-        remove: function (array, value) {
+        remove: function(array, value) {
             for (var i = 0; i < array.length; i++) {
                 var item = array[i]
                 if (item === value) array.splice(i, 1), i--
@@ -204,10 +204,10 @@
                 })
             }
         }(),
-        off: function () {
-            return window.removeEventListener? function (node, fn) {
+        off: function() {
+            return window.removeEventListener ? function(node, fn) {
                 node.removeEventListener(fn)
-            }: function (node, fn) {
+            } : function(node, fn) {
                 // todo
             }
         }(),
@@ -533,7 +533,7 @@
                     if (this.checked != bool) {
                         this.checked = node.checked = bool
                     }
-                } 
+                }
                 // boolean
                 else {
                     if (this.checked !== value) {
@@ -549,10 +549,10 @@
                 }
             }
             // select
-            else if (node.nodeName.match(/^select$/i)){
+            else if (node.nodeName.match(/^select$/i)) {
                 if ($node.value !== value) {
-                    setTimeout(function(){ // wait $(option).attr('value', 'value')
-                        $.each(node.options, function (option) {
+                    setTimeout(function() { // wait $(option).attr('value', 'value')
+                        $.each(node.options, function(option) {
                             var $option = $(option)
                             // array [multiple]
                             if (value instanceof Array) {
@@ -586,7 +586,7 @@
             if (node.type == 'checkbox') type = 'click'
             if (node.type == 'radio') type = 'click'
             if (node.nodeName.match(/^select$/i)) type = 'change'
-            this.on(type, '.model', function (e) {
+            this.on(type, '.model', function(e) {
                 var node = this.node
 
                 // checkbox
@@ -602,16 +602,15 @@
                     } else {
                         obj[key] = node.checked
                     }
-                }
-                else if (node.type == 'radio') {
+                } else if (node.type == 'radio') {
                     obj[key] = this.value
                     this.checked = true
                     node.checked = true // <=ie7: 没有name属性无法选中 ![name] -> click false
                 }
                 // select
-                else if (node.nodeName.match(/^select$/i)){
+                else if (node.nodeName.match(/^select$/i)) {
                     var options = node.options
-                    $.each(options, function (option) {
+                    $.each(options, function(option) {
                         var $option = $(option)
                         if (value instanceof Array) {
                             if (option.selected) {
@@ -756,7 +755,7 @@
 
                         // dirs
                         var dirs = $.getDirs(node)
-                        var $node =$(node)
+                        var $node = $(node)
 
                         $.each(dirs, function(dir) {
                             if (!dir) return
@@ -974,7 +973,7 @@
             ondevopen()
         }
         var el = new Image;
-        Object.defineProperty&&Object.defineProperty(el, 'id', {
+        Object.defineProperty && Object.defineProperty(el, 'id', {
             get: function() {
                 ondevopen()
             }

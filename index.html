@@ -17,6 +17,9 @@
 		padding: .5em;
 		vertical-align: middle;
 	}
+	td label{
+		display: block;
+	}
 	.selected{
 		color: #0f0
 	}
@@ -25,8 +28,7 @@
 
 <body>
 	<div id="test">
-		<div is="tag"></div>
-		<div is="tag"></div>
+		<select model="model" size="4"></select>
 	</div>
 	<div id="app">
 		<div @click.stop.self="console.log('div')">
@@ -57,10 +59,9 @@
 		<table id="form">
 			<tr>
 				<td> <input model="model"> </td>
-				<td> <textarea model="model"></textarea> </td>
+				<td> <textarea model.number="model"></textarea> </td>
 				<td>
-					<select model="model">
-						<option :value="{o:1}">{o:1}??</option>
+					<select model="model" size="4">
 						<option for="item in array" :value="item">{{item}}</option>
 					</select>
 					<select model="array" multiple>
@@ -193,13 +194,13 @@
 	})
 	*/
 	vm = vue = new Vue({
-		el: '#for',
+		el: '#form',
 		data: {
 			n: 0,
 			string: 'string',
 			number: 1,
 			boolean: true,
-			array: [1, 'string'],
+			array: [],
 			object: { key: 'value' },
 			model: 'vm.js',
 			list: [
