@@ -550,10 +550,15 @@
             }
             // select
             else if (node.nodeName.match(/^select$/i)) {
-                if ($node.value !== value) {
+                if ($node.value !== value) { // one
+
                     setTimeout(function() { // wait $(option).attr('value', 'value')
+
+                        if (!(value instanceof Array)) node.selectedIndex = -1 // ie (&all)
+
                         $.each(node.options, function(option) {
                             var $option = $(option)
+
                             // array [multiple]
                             if (value instanceof Array) {
                                 var bool = $.has(value, $option.value)
@@ -565,10 +570,10 @@
                             else {
                                 if ($option.value === value) { // ==?
                                     option.selected = true
-                                    $node.value = value
                                 } else {
-                                    option.selected = false
+                                    // option.selected = false // !ie
                                 }
+                                $node.value = value
                             }
                         })
                     }, 1)
