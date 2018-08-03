@@ -970,29 +970,26 @@
 
 
     // console
-    '' && function() {
-
-        function isConsoleOpen() {
-            return window.outerWidth - window.innerWidth > 200 ||
-                window.outerHeight - window.innerHeight > 200
-        }
-
-        var timer
-        var onresize
-        $.on(window, 'resize', onresize = function () {
-            if (isConsoleOpen() && !timer) {
-                timer = setInterval(function() {
-                    $.each(V.componments, function(item) {
-                        item.$render()
+    if (typeof Proxy != 'undefined') {
+        setTimeout(function(){
+            for(name in window){
+                if(name.match('webkit')) continue
+                var vm = window[name]
+                if(vm && typeof vm.$render == 'function'){
+                    window[name] = new Proxy(vm, {
+                        set: function(vm, key, value) {
+                            vm[key] = value
+                            vm.$render()
+                        },
+                        get: function(vm, key) {
+                            vm.$render()
+                            return vm[key]
+                        }
                     })
-                }, 500)
-            } else {
-                timer = clearInterval(timer)
+                }
             }
-        })
-        onresize()
-
-    }()
+        }, 500)
+    }
 
 
     // export
