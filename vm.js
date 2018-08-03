@@ -109,7 +109,7 @@
             }
             return obj
         },
-        hasOwn: function(obj, property) { // ie nodes
+        hasOwn: function(obj, property) { // ie node
             return Object.hasOwnProperty.call(obj, property)
         },
         toArray: function(list) {
@@ -187,6 +187,7 @@
         },
         on: function() {
             return window.addEventListener ? function(node, type, fn, useCapture) {
+
                 node.addEventListener(type, fn, useCapture)
 
             } : function(node, type, fn) {
@@ -195,6 +196,7 @@
                     focus: 'focusin',
                     blur: 'focusout'
                 }[type] || type
+
                 node.attachEvent('on' + type, function() { // ie
                     var event = window.event
                     event.target = event.srcElement
@@ -412,7 +414,7 @@
                 parentNode.removeChild(node)
             }
         },
-        insert: function(to) {
+        insert: function(toNode) {
             if (this.$componment) {
                 this.$componment.insert()
                 return
@@ -420,7 +422,7 @@
             var node = this.node
             var parentNode = node.parentNode
             if (!parentNode || parentNode.nodeType != 1) {
-                var markNode = to || this.markNode || this.$forNode.markNode
+                var markNode = toNode || this.markNode || this.$forNode.markNode
                 markNode.parentNode.insertBefore(node, markNode)
             }
         },
@@ -450,7 +452,7 @@
             }(forNode, cloneNode)
 
             $node = $(cloneNode)
-            $node.$forNode = $forNode // $forName.mackNode -> insert
+            $node.$forNode = $forNode // $node.$forNone.mackNode -> insert node
 
             // cache
             clones[key] = $node
@@ -504,16 +506,19 @@
             var node = this.node
             $.on(node, type, function(event) {
                 // mfds
-                if (mdfs.match('.prevent')) event.preventDefault()
-                if (mdfs.match('.stop')) event.stopPropagation()
-                if (mdfs.match('.self') && event.target != node) return
+                if (mdfs.match(/\.prevent\b/)) event.preventDefault()
+                if (mdfs.match(/\.stop\b/)) event.stopPropagation()
+                if (mdfs.match(/\.self\b/) && event.target != node) return
 
-                if (mdfs.match('.ctrl') && !event.ctrlKey) return
-                if (mdfs.match('.alt') && !event.altKey) return
-                if (mdfs.match('.shift') && !event.shiftKey) return
-                if (mdfs.match('.meta') && !event.metaKey) return
+                if (mdfs.match(/\.ctrl\b/) && !event.ctrlKey) return
+                if (mdfs.match(/\.alt\b/) && !event.altKey) return
+                if (mdfs.match(/\.shift\b/) && !event.shiftKey) return
+                if (mdfs.match(/\.meta\b/) && !event.metaKey) return
 
-                if (mdfs.match('.enter') && event.keyCode != 13) return
+                if (mdfs.match(/\.enter\b/) && event.keyCode != 13) return
+
+                var m = mdfs.match(/\.(\d+)/)
+                if (m && event.keyCode != m[1]) return
 
                 // call handler
                 $node.eventMap[key].call($node, event) // $node.on bind $node
@@ -954,49 +959,29 @@
     }
 
 
-    // dev
-    '' && function() {
-        var devopened
+    // console
+    'console' && function() {
+
+        function isConsoleOpen() {
+            return window.outerWidth - window.innerWidth > 200 ||
+                window.outerHeight - window.innerHeight > 200
+        }
+
         var timer
-
-        function ondevopen() {
-            if (devopened) return
-            devopened = true
-            timer = setInterval(function() {
-                $.each(V.componments, function(item) {
-                    item.$render()
-                })
-            }, 500)
-        }
-
-        function ondevclose() {
-            devopened = false
-            clearInterval(timer)
-        }
-        if (window.outerWidth - window.innerWidth > 200 ||
-            window.outerHeight - window.innerHeight > 200) {
-            ondevopen()
-        }
-        var el = new Image;
-        Object.defineProperty && Object.defineProperty(el, 'id', {
-            get: function() {
-                ondevopen()
+        var onresize
+        $.on(window, 'resize', onresize = function () {
+            if (isConsoleOpen() && !timer) {
+                timer = setInterval(function() {
+                    $.each(V.componments, function(item) {
+                        item.$render()
+                    })
+                }, 500)
+            } else {
+                timer = clearInterval(timer)
             }
         })
-        console.log('%c', el)
-        $.on(window, 'keyup', function(e) {
-            if (e.keyCode == 123 ||
-                (e.metaKey && e.altKey && e.keyCode == 73) ||
-                (e.ctrlKey && e.shiftKey && e.keyCode == 73) ||
-                (e.ctrlKey && e.shiftKey && e.keyCode == 74)
-            ) {
-                if (!devopened) {
-                    ondevopen()
-                } else {
-                    ondevclose()
-                }
-            }
-        })
+        onresize()
+
     }()
 
 
