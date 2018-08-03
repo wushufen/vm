@@ -109,6 +109,9 @@
             }
             return obj
         },
+        hasOwn: function (obj, property) { // ie nodes
+            return Object.hasOwnProperty.call(obj, property)
+        },
         toArray: function(list) {
             if (!list) return []
             var length = list.length
@@ -141,7 +144,7 @@
             return array
         },
         each: function(list, fn) {
-            if (list && list.length) {
+            if (list && 'length' in list) {
                 for (var i = 0; i < list.length; i++) {
                     var item = list[i]
                     fn(item, i, i, list)
@@ -149,7 +152,7 @@
             } else {
                 var i = 0
                 for (var key in list) {
-                    if (!list.hasOwnProperty(key)) continue
+                    if (!$.hasOwn(list, key)) continue
                     var item = list[key]
                     fn(item, key, i++, list)
                 }
@@ -526,10 +529,13 @@
             if (node.type == 'checkbox') {
                 // array
                 if (value instanceof Array) {
-                    var array = value
-                    this.checked = node.checked = $.has(array, this.value)
-                } else {
-                    // boolean
+                    var bool = $.has(value, this.value)
+                    if (this.checked != bool) {
+                        this.checked = node.checked = bool
+                    }
+                } 
+                // boolean
+                else {
                     if (this.checked !== value) {
                         this.checked = node.checked = value
                     }
@@ -537,26 +543,35 @@
             }
             // radio
             else if (node.type == 'radio') {
-                var bool = this.value === value
+                var bool = this.value === value // ==?
                 if (this.checked !== bool) {
                     this.checked = node.checked = bool
                 }
             }
             // select
             else if (node.nodeName.match(/^select$/i)){
-                // todo multiple
-                // one
-                if (this.value !== value) {
+                if ($node.value !== value) {
                     setTimeout(function(){ // wait $(option).attr('value', 'value')
-                        var options = node.options
-                        $.each(options, function (option) {
+                        $.each(node.options, function (option) {
                             var $option = $(option)
-                            if ($option.value == value) { // ===
-                                option.selected = true
-                                $node.value = value
+                            // array [multiple]
+                            if (value instanceof Array) {
+                                var bool = $.has(value, $option.value)
+                                if ($option.selected !== bool) {
+                                    $option.selected = option.selected = bool
+                                }
+                            }
+                            // one
+                            else {
+                                if ($option.value === value) { // ==?
+                                    option.selected = true
+                                    $node.value = value
+                                } else {
+                                    option.selected = false
+                                }
                             }
                         })
-                    },1)
+                    }, 1)
                 }
             }
             // input textarea ..
@@ -589,19 +604,38 @@
                     }
                 }
                 else if (node.type == 'radio') {
-                    console.log(node.checked)
                     obj[key] = this.value
                     this.checked = true
                     node.checked = true // <=ie7: 没有name属性无法选中 ![name] -> click false
                 }
                 // select
                 else if (node.nodeName.match(/^select$/i)){
-                    // todo multiple
-                    this.value = obj[key] = node.value
+                    var options = node.options
+                    $.each(options, function (option) {
+                        var $option = $(option)
+                        if (value instanceof Array) {
+                            if (option.selected) {
+                                !$.has(value, $option.value) && value.push($option.value)
+                            } else {
+                                $.remove(value, $option.value)
+                            }
+                        } else {
+                            if (option.selected) {
+                                $option.value = obj[key] = $option.value
+                            }
+                        }
+                    })
                 }
                 // input textarea ..
                 else {
-                    this.value = obj[key] = node.value
+                    var nodeValue = node.value
+                    if (mdfs.match('.trim')) {
+                        nodeValue = $.trim(nodeValue)
+                    }
+                    if (mdfs.match('.number')) {
+                        nodeValue = $.number(nodeValue)
+                    }
+                    this.value = obj[key] = nodeValue
                 }
 
                 // update view
