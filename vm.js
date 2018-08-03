@@ -141,17 +141,17 @@
             return array
         },
         each: function(list, fn) {
-            if (list instanceof Array) {
+            if (list && list.length) {
                 for (var i = 0; i < list.length; i++) {
                     var item = list[i]
-                    fn(item, i, i)
+                    fn(item, i, i, list)
                 }
             } else {
                 var i = 0
                 for (var key in list) {
                     if (!list.hasOwnProperty(key)) continue
                     var item = list[key]
-                    fn(item, key, i++)
+                    fn(item, key, i++, list)
                 }
             }
         },
@@ -517,6 +517,7 @@
             })
         },
         model: function(obj, key, mdfs, vm) {
+            var $node = this
             var node = this.node
             var value = obj[key]
 
@@ -541,8 +542,23 @@
                     this.checked = node.checked = bool
                 }
             }
-            // todo
-            // ...
+            // select
+            else if (node.nodeName.match(/^select$/i)){
+                // todo multiple
+                // one
+                if (this.value !== value) {
+                    setTimeout(function(){ // wait $(option).attr('value', 'value')
+                        var options = node.options
+                        $.each(options, function (option) {
+                            var $option = $(option)
+                            if ($option.value == value) { // ===
+                                option.selected = true
+                                $node.value = value
+                            }
+                        })
+                    },1)
+                }
+            }
             // input textarea ..
             else {
                 if (this.value !== value) {
@@ -554,6 +570,7 @@
             var type = 'input'
             if (node.type == 'checkbox') type = 'click'
             if (node.type == 'radio') type = 'click'
+            if (node.nodeName.match(/^select$/i)) type = 'change'
             this.on(type, '.model', function (e) {
                 var node = this.node
 
@@ -577,8 +594,11 @@
                     this.checked = true
                     node.checked = true // <=ie7: 没有name属性无法选中 ![name] -> click false
                 }
-                // todo
-                // ...
+                // select
+                else if (node.nodeName.match(/^select$/i)){
+                    // todo multiple
+                    this.value = obj[key] = node.value
+                }
                 // input textarea ..
                 else {
                     this.value = obj[key] = node.value
