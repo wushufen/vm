@@ -823,13 +823,23 @@
                                     })
                                     break
                                 case 'model':
-                                    // todo obj[key]
-                                    code += $.replaceVars('$(@id).model( @obj, "@key", "@mdfs", $THISVM )', {
+                                    // "model"
+                                    var obj_ = '$THISVM'
+                                    var key_ = '"' + dir.exp + '"'
+                                    //                       obj     .key  | ['key' ]
+                                    var okm = dir.exp.match(/(.+)(?:\.(.+?)|\[(.+?)\])\s*$/)
+                                    if (okm) {
+                                        obj_ = okm[1]
+                                        key_ = okm[2]? '"' + okm[2] + '"' : okm[3]
+                                    }
+
+                                    code += $.replaceVars('$(@id).model( @obj, @key, "@mdfs", $THISVM )', {
                                         '@id': $node.uid,
-                                        '@obj': '$THISVM',
-                                        '@key': dir.exp,
+                                        '@obj': obj_,
+                                        '@key': key_,
                                         '@mdfs': dir.mdfs
                                     })
+                                    
                                     break
                                 case 'is':
                                     code += $.replaceVars('$(@id).is("@name", @attrs)', {
@@ -960,7 +970,7 @@
 
 
     // console
-    'console' && function() {
+    '' && function() {
 
         function isConsoleOpen() {
             return window.outerWidth - window.innerWidth > 200 ||
