@@ -88,7 +88,7 @@
 			</tr>
 		</table>
 		<!--  -->
-		<table>
+		<table id="for">
 			<tr>
 				<td colspan="3" style="text-align:center">
 					<input autofocus model="model" @keyup.ctrl.enter.prevent.stop="add(model);model=''">
@@ -193,7 +193,7 @@
 	})
 	*/
 	vm = vue = new Vue({
-		el: '#form',
+		el: '#for',
 		data: {
 			n: 0,
 			string: 'string',
