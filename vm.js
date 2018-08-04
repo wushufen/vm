@@ -1,6 +1,6 @@
 ! function(document) {
     var SHOW = {
-        uid: false,
+        uid: true,
         dir: false,
         mark: false
     }
@@ -17,8 +17,7 @@
             var uid = node
             // $(number) -> $node: uid+'.key.0'
             var $node = $.map[uid + $.forKeyPath] // **!!!**
-            // $(uid) -> $node.$componment
-            return $node.$componment || $node
+            return $node
         }
 
         // $(node) -> return saved
@@ -501,6 +500,7 @@
             }
         },
         on: function(type, mdfs, fn) {
+            fn = arguments[arguments.length - 1] // mdfs?
             this.eventMap = this.eventMap || {}
             var key = type + mdfs // click.mdfs.ctrl
             var handler = this.eventMap[key]
@@ -658,28 +658,28 @@
                 vm.$foceUpdate()
             })
         },
-        is: function(name, data) {
-            var self = this
-            var node = this.node
-
-            if (!this.isCompoment) { // 新建 componment, 并且 $(uid) -> $node.$componment
-
-                var options = V.componmentOptions[name]
-                if (!options) { setTimeout(function() { throw name + ' is not a componment' }, 1) }
-
+        is: function(name) {
+            if (!this.componment) {
                 // new componment
-                var componment = V(options, data)
+                var options = V.componmentOptions[name]
+                if (!options) { 
+                    setTimeout(function() { throw name + ' is not a componment' }, 1)
+                    return
+                }
+                this.componment = V(options)
+                this.$componment = $(this.componment.$el)
 
-                this.$componment = $(componment.$el) // $node -> $componment
-                // this.$componment.$node = this // $componment -> $node
-                self = this.$componment // $() -> $node.$componment -> self
-                self.isCompoment = true
-                self.componment = componment // self.componment.$render()
+                // props data
+                $.extend(this.componment, this)
 
-                componment.$mount(node)
+                // $mount && $render
+                this.componment.$mount(this.node)
             } else {
-                // render
-                self.componment.$render()
+                // props data
+                $.extend(this.componment, this)
+
+                // $render
+                this.componment.$render()
             }
         }
     }
@@ -693,6 +693,8 @@
         if (!(this instanceof V)) return new V(options)
         options = options || {}
 
+        // propsData
+        $.extend(this, options.propsData)
         // data
         var data = typeof options.data == 'function' ? options.data() : options.data
         this.$data = data
@@ -838,7 +840,7 @@
                                     var okm = dir.exp.match(/(.+)(?:\.(.+?)|\[(.+?)\])\s*$/)
                                     if (okm) {
                                         obj_ = okm[1]
-                                        key_ = okm[2]? '"' + okm[2] + '"' : okm[3]
+                                        key_ = okm[2] ? '"' + okm[2] + '"' : okm[3]
                                     }
 
                                     code += $.replaceVars('$(@id).model( @obj, @key, "@mdfs", $THISVM )', {
@@ -847,13 +849,12 @@
                                         '@key': key_,
                                         '@mdfs': dir.mdfs
                                     })
-                                    
+
                                     break
                                 case 'is':
-                                    code += $.replaceVars('$(@id).is("@name", @attrs)', {
+                                    code += $.replaceVars('$(@id).is("@name")', {
                                         '@id': $node.uid,
-                                        '@name': dir.exp,
-                                        '@attrs': '0' //'{todo:"todo props"}'
+                                        '@name': dir.exp
                                     })
                                     break
                                 case 'attr':
@@ -943,7 +944,7 @@
         setComputed: function(vm, computed) {
             for (var key in computed) {
                 var fn = computed[key]
-                fn.valueOf = function() {
+                fn.toJSON = fn.valueOf = function() {
                     return this.call(vm)
                 }
                 vm[key] = fn
@@ -979,11 +980,11 @@
 
     // console
     if (typeof Proxy != 'undefined') {
-        setTimeout(function(){
-            for(name in window){
-                if(name.match('webkit')) continue
+        setTimeout(function() {
+            for (name in window) {
+                if (name.match('webkit')) continue
                 var vm = window[name]
-                if(vm && typeof vm.$render == 'function'){
+                if (vm && typeof vm.$render == 'function') {
                     window[name] = new Proxy(vm, {
                         set: function(vm, key, value) {
                             vm[key] = value
