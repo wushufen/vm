@@ -1,7 +1,12 @@
 ! function(document) {
+    var SHOW = {
+        uid: false,
+        dir: false,
+        mark: false
+    }
 
     // 
-    // 虚拟节点： 封装与标记
+    // 虚拟节点
     // 
     var $ = function(node, cloneUid) {
         // $(node) -> new $(node)
@@ -49,21 +54,21 @@
         */
         // 每个vm须重新开始
         forKeyPath: '', // uid.for1ItemKey.for2ItemKey...
-        map: {},
+        map: {}, // uid: node
         incId: function() {
             return this._inc = (this._inc || 0) + 1
         },
-        canSetUidOnTextNode: (function() { // ie
+        canSetUidOnTextNode: (function() { // ie false
             try { return document.createTextNode('').uid = true } catch (e) {}
         })(),
         setUid: function(node, uid) {
             if (node.nodeType == 1) {
                 node.uid = uid
-                node.setAttribute('uid', uid) // @dev
+                SHOW.uid && node.setAttribute('uid', uid) // @dev
             } else if (node.nodeType == 3) {
                 if ($.canSetUidOnTextNode) {
                     node.uid = uid
-                } else {
+                } else { // ie
                     // save on parentNode
                     var map = node.parentNode.uidNodeMap || (node.parentNode.uidNodeMap = {})
                     map[uid] = node
@@ -94,6 +99,9 @@
             })
             return attrs
         },
+        hasOwn: function(obj, property) { // ie node
+            return Object.hasOwnProperty.call(obj, property)
+        },
         extend: function(obj, map) {
             for (var key in map) {
                 if (!map.hasOwnProperty(key)) continue
@@ -108,9 +116,6 @@
                 obj[key] = map[key]
             }
             return obj
-        },
-        hasOwn: function(obj, property) { // ie node
-            return Object.hasOwnProperty.call(obj, property)
         },
         toArray: function(list) {
             if (!list) return []
@@ -141,7 +146,7 @@
                 var item = array[i]
                 if (item === value) array.splice(i, 1), i--
             }
-            return array
+            // return array
         },
         each: function(list, fn) {
             if (list && 'length' in list) {
@@ -241,11 +246,11 @@
                 // dir                           @|dir        :   arg      .mdf.13
                 var m = nodeName.match(/^(?:v-)?(@|[^.:]*)(?:[:]?([^.]+))?(.*)/) || []
                 var name = m[1] || 'attr'
-                var name = name == 'bind' ? 'attr' : name
-                var name = name == '@' ? 'on' : name
+                if (name == 'bind') name = 'attr'
+                if (name == '@') name = 'on'
 
                 if (name in $.prototype) { // 指令就是虚拟节点的方法
-                    node.removeAttribute(nodeName) // !@dev
+                    SHOW.dir || node.removeAttribute(nodeName) // !@dev
                     dirs.size += 1
 
                     var dir = {
@@ -273,7 +278,7 @@
         }
     }
     $.utils.extend($, $.utils)
-    // dir methods
+    // 虚拟节点方法：可以执行的指令
     $.prototype = {
         uid: null,
         node: null,
@@ -396,8 +401,10 @@
             if (this.markNode) return
             var node = this.node
             var mark = document.createTextNode('')
-            var mark = document.createComment(this.uid) // @dev
-            // var mark = document.createComment(node.outerHTML) // @dev
+            if (SHOW.mark || !$.canSetUidOnTextNode) {
+                var mark = document.createComment(this.uid) // @dev
+                // var mark = document.createComment(node.outerHTML) // @dev
+            }
             node.parentNode.insertBefore(mark, node)
             this.markNode = mark
             mark.node = node // @dev
