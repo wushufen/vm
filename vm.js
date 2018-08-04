@@ -17,8 +17,8 @@
             var uid = node
             // $(number) -> $node: uid+'.key.0'
             var $node = $.map[uid + $.forKeyPath] // **!!!**
-            // is="componment"
-            return $node.$componment || $node
+            // is="component"
+            return $node.$component || $node
         }
 
         // $(node) -> return saved
@@ -34,8 +34,7 @@
         var uid = cloneUid || $.incId()
         this.uid = uid
         this.node = node
-        var attrs = $.getAttrs(node)
-        $.orExtend(this, attrs)
+        this.attrs = $.getAttrs(node)
 
         $.setUid(node, uid) // node -> uid
         $.map[uid] = this // uid -> $node
@@ -261,7 +260,7 @@
                         exp: nodeValue || '""'
                     }
 
-                    var $dirs = 'for,is,if,elseif,else,attr,model'.split(',') // 特殊指令优先级排序
+                    var $dirs = 'for,if,elseif,else,is,attr,model'.split(',') // 特殊指令优先级排序
                     var index = $.indexOf($dirs, name)
                     if (index > -1) {
                         dirs[index] = dir
@@ -280,8 +279,6 @@
     $.utils.extend($, $.utils)
     // 虚拟节点方法：可以执行的指令
     $.prototype = {
-        uid: null,
-        node: null,
         autofocus: function() {
             if (this.focused) return
             var self = this
@@ -317,9 +314,8 @@
                 this.setStyle(value)
                 return
             }
-            if (value === this[name]) return
-            if (name in $.prototype) return // @warn?
-            this[name] = this.node[name] = value
+            if (value === this.attrs[name]) return
+            this.attrs[name] = this.node[name] = value
         },
         setStyle: function(map) {
             var style = this.style || {}
@@ -411,8 +407,8 @@
 
         },
         remove: function() {
-            if (this.$componment) {
-                this.$componment.remove()
+            if (this.$component) {
+                this.$component.remove()
             }
             var node = this.node
             var parentNode = node.parentNode
@@ -422,8 +418,8 @@
             }
         },
         insert: function(toNode) {
-            if (this.$componment) {
-                this.$componment.insert()
+            if (this.$component) {
+                this.$component.insert()
                 return
             }
             var node = this.node
@@ -663,26 +659,25 @@
             })
         },
         is: function(name) {
-            if (this.$is) return
-            if (!this.$componment) {
-                // new componment
-                var options = V.componmentOptions[name]
+            var $is = this.$is || this
+            if (!$is.$component) {
+                // new component
+                var options = V.componentOptions[name]
                 if (!options) {
-                    setTimeout(function() { throw name + ' is not a componment' }, 1)
+                    setTimeout(function() { throw name + ' is not a component' }, 1)
                     return
                 }
-                var componment = V(options)
-                var $componment = $(componment.$el)
-                this.$componment = $componment
-                $componment.$is = this
+                var component = V(options)
+                var $component = $(component.$el)
+                $component.component = component
+                $is.$component = $component
+                $component.$is = $is
 
                 // $mount && $render
-                componment.$mount(this.node)
-            } else {
-
-                // $render
-                this.componment.$render()
+                component.$mount($is.node)
             }
+            var component = $is.$component.component
+            $.extend(component, $is.attrs)
         }
     }
 
@@ -690,17 +685,14 @@
     // 
     // 视图模型： 编译，生成dom，更新dom
     // 
-    var V = function(options, propsData) {
+    var V = function(options) {
         // V() -> new V()
         if (!(this instanceof V)) return new V(options)
         options = options || {}
 
-        // propsData
-        $.extend(this, options.propsData)
         // data
         var data = typeof options.data == 'function' ? options.data() : options.data
         this.$data = data
-        $.extend(this, propsData) // propsData
         $.extend(this, data)
         // methods
         V.setMethods(this, options.methods)
@@ -748,7 +740,7 @@
         el && this.$mount(el)
 
         // save
-        V.componments.push(this)
+        V.components.push(this)
     }
     V.utils = {
         compile: function(node) {
@@ -973,10 +965,10 @@
     // 组件 保存生成 vm 的 options
     // $().is()->V(options)->$mount()
     // 
-    V.componmentOptions = {}
-    V.componments = []
-    V.componment = function(name, options) {
-        V.componmentOptions[name] = options
+    V.componentOptions = {}
+    V.components = []
+    V.component = function(name, options) {
+        V.componentOptions[name] = options
     }
 
 
