@@ -726,6 +726,7 @@
             var now = +new Date
             var lastTime = this.$render.lastTime || 0
 
+            // timeGap 间隔内只更新一次
             if (now > lastTime + timeGap) {
                 this.$render.lastTime = now
                 setTimeout(function() {
