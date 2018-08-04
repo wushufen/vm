@@ -2,7 +2,7 @@
     var SHOW = {
         uid: true,
         dir: false,
-        mark: false
+        mark: true
     }
 
     // 
@@ -17,7 +17,8 @@
             var uid = node
             // $(number) -> $node: uid+'.key.0'
             var $node = $.map[uid + $.forKeyPath] // **!!!**
-            return $node
+            // is="componment"
+            return $node.$componment || $node
         }
 
         // $(node) -> return saved
@@ -260,7 +261,7 @@
                         exp: nodeValue || '""'
                     }
 
-                    var $dirs = 'for,if,elseif,else,attr,model,is'.split(',') // 特殊指令优先级排序
+                    var $dirs = 'for,is,if,elseif,else,attr,model'.split(',') // 特殊指令优先级排序
                     var index = $.indexOf($dirs, name)
                     if (index > -1) {
                         dirs[index] = dir
@@ -466,10 +467,11 @@
             return $node
         },
         'for': function(list, fn) {
-            // this.mark()
-            this.remove()
+            var $forNode = this.$is || this
 
-            var $forNode = this
+            // this.mark()
+            $forNode.remove()
+
             var forKeyPath = $.forKeyPath // **!!!**
             try {
                 $.each(list, function(item, key, index) {
@@ -477,8 +479,10 @@
                     $.forKeyPath = forKeyPath + '.' + key // **!!!**
                     var $node = $forNode.clone(key)
 
-                        // 当 for, if 同时存在，for insert, if false remove, 会造成dom更新
-                        !$node.isIf && $node.insert()
+                    // 当 for, if 同时存在，for insert, if false remove, 会造成dom更新
+                    if (!$node.isIf) {
+                        $node.insert()
+                    }
 
                     fn(item, key, index)
                 })
@@ -491,7 +495,7 @@
             $.forKeyPath = forKeyPath // **!!!**
 
             // remove
-            var clones = this.clones
+            var clones = $forNode.clones
             for (var key in clones) {
                 var $node = clones[key]
                 if (!list || !(key in list)) {
@@ -659,24 +663,22 @@
             })
         },
         is: function(name) {
-            if (!this.componment) {
+            if (this.$is) return
+            if (!this.$componment) {
                 // new componment
                 var options = V.componmentOptions[name]
-                if (!options) { 
+                if (!options) {
                     setTimeout(function() { throw name + ' is not a componment' }, 1)
                     return
                 }
-                this.componment = V(options)
-                this.$componment = $(this.componment.$el)
-
-                // props data
-                $.extend(this.componment, this)
+                var componment = V(options)
+                var $componment = $(componment.$el)
+                this.$componment = $componment
+                $componment.$is = this
 
                 // $mount && $render
-                this.componment.$mount(this.node)
+                componment.$mount(this.node)
             } else {
-                // props data
-                $.extend(this.componment, this)
 
                 // $render
                 this.componment.$render()
