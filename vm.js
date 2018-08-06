@@ -711,7 +711,17 @@
 
         // compile render
         this.$ = $
-        this.$foceUpdate = V.compile(this.$el)
+        var fn = V.compile(this.$el)
+        this.$foceUpdate = function () {
+            // propsData
+            var $node = $(this.$el)
+            if ($node.$is) {
+                $.extend(this, $node.$is.attrs)
+            }
+            $.extend(this, $node.attrs)
+            fn.call(this)
+        }
+        this.$foceUpdate.fn = fn
         this.$render = function() {
             var self = this
 

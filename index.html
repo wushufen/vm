@@ -27,7 +27,8 @@
 </head>
 
 <body>
-	<div id="test">
+	<div id="testx">
+		<div :abc="1" value="2" :efg="3">div</div>
 	</div>
 	<div id="app">
 		<div id="event">
@@ -111,7 +112,7 @@
 			</tr>
 		</table>
 		<!--  -->
-		<table>
+		<table id="for:object">
 			<tr for="(item, key, index) in object">
 				<td>{{index}}</td>
 				<td>{{key}}</td>
@@ -119,17 +120,23 @@
 			</tr>
 		</table>
 		<!--  -->
-		<div for="item in list" is="tag">todo is+for+if</div>
-		<div>
-			<div is="ul"></div>
+		<div id="component">
+			<span>{{model}}</span>
+			<div is="tag" class="isTag" @click="alert()"></div>
+			<div is="tag" :value="1+2"></div>
+			<button :abc="123" :efg="'efg'">button</button>
+			<hr>
+			<!-- <div is="tag" for="item in list" if="model!=n" :xtitle="item.textxx" :abc="item.abc" :jcc="123"></div> -->
 		</div>
 	</div>
+	<!-- tpl -->
 	<div id="tag" style="display:none">
-		<span>
-			<i>tag:</i>
-			<button @click="n++"> {{n}} </button>
+		<span class="tag">
+			<b>{{value}}</b>
+			<button @click="n++"> {{++ n}} </button>
 		</span>
 	</div>
+	<!--  -->
 	<div id="ul" style="display:none">
 		<ul>
 			<li v-for="item in list">
@@ -147,13 +154,13 @@
 	</div>
 	<script src="vm.js"></script>
 	<script>
-		Vue.componment('ul', {
+		Vue.component('ul', {
 			template: ul.innerHTML,
 			data: {
 				list: [1,2,3]
 			}
 		})
-		Vue.componment('ol', {
+		Vue.component('ol', {
 			template: ol.innerHTML,
 			data: {
 				list: [7,8,9]
@@ -161,18 +168,15 @@
 		})
 	</script>
 	<script>
-	Vue.componment('tag', {
+	Vue.component('tag', {
 		template: tag.innerHTML,
 		data: function() {
 			return {
 				n: 0,
-				date: new Date
+				value: 'init'
 			}
 		},
 		methods: {
-			x: function () {
-				return new Date().getTime()
-			}
 		},
 		mounted: function () {
 			var self = this
@@ -196,7 +200,7 @@
 	})
 	*/
 	vm = vue = new Vue({
-		el: '#app',
+		el: '#test',
 		data: {
 			n: 0,
 			string: 'string',
@@ -230,9 +234,6 @@
 		// 	this.add('mounted')
 		// }
 	})
-	// setInterval(function(){
-	// 	vm.$render()
-	// }, 5)
 	</script>
 </body>
 
