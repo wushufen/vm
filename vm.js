@@ -35,6 +35,7 @@
         this.uid = uid
         this.node = node
         this.attrs = $.getAttrs(node)
+        this.propertys = {}
 
         $.setUid(node, uid) // node -> uid
         $.map[uid] = this // uid -> $node
@@ -244,8 +245,8 @@
 
                 // dir                           @|dir        :   arg      .mdf.13
                 var m = nodeName.match(/^(?:v-)?(@|[^.:]*)(?:[:]?([^.]+))?(.*)/) || []
-                var name = m[1] || 'attr'
-                if (name == 'bind') name = 'attr'
+                var name = m[1] || 'property'
+                if (name == 'bind') name = 'property'
                 if (name == '@') name = 'on'
 
                 if (name in $.prototype) { // 指令就是虚拟节点的方法
@@ -260,7 +261,7 @@
                         exp: nodeValue || '""'
                     }
 
-                    var $dirs = 'for,if,elseif,else,is,attr,model'.split(',') // 特殊指令优先级排序
+                    var $dirs = 'for,if,elseif,else,is,property,model'.split(',') // 特殊指令优先级排序
                     var index = $.indexOf($dirs, name)
                     if (index > -1) {
                         dirs[index] = dir
@@ -300,10 +301,11 @@
             if (value === this.innerHTML) return
             this.innerHTML = this.node.innerHTML = value
         },
-        attr: function(name, value) {
+        property: function(name, value) {
+            var propertys = this.propertys
             // get
             if (arguments.length == 1) {
-                return name in this ? this[name] : this.node[name]
+                return name in propertys ? propertys[name] : this.node[name]
             }
             // set
             if (name == 'class') {
@@ -314,8 +316,8 @@
                 this.setStyle(value)
                 return
             }
-            if (value === this.attrs[name]) return
-            this.attrs[name] = this.node[name] = value
+            if (propertys[name] === value && name in propertys) return value
+            return propertys[name] = this.node[name] = value
         },
         setStyle: function(map) {
             var style = this.style || {}
@@ -541,61 +543,56 @@
             if (node.type == 'checkbox') {
                 // array
                 if (value instanceof Array) {
-                    var bool = $.has(value, this.value)
-                    if (this.checked != bool) {
-                        this.checked = node.checked = bool
-                    }
+                    var has = $.has(value, this.property('value'))
+                    this.property('checked', has)
                 }
                 // boolean
                 else {
-                    if (this.checked !== value) {
-                        this.checked = node.checked = value
-                    }
+                    this.property('checked', value)
                 }
             }
             // radio
             else if (node.type == 'radio') {
-                var bool = this.value === value // ==?
-                if (this.checked !== bool) {
-                    this.checked = node.checked = bool
-                }
+                var eq = this.property('value') === value // ==?
+                this.property('checked', eq)
             }
             // select
             else if (node.nodeName.match(/^select$/i)) {
-                if ($node.value !== value) { // one
+                setTimeout(function() { // wait $(option).property('value', 'value')
 
-                    setTimeout(function() { // wait $(option).attr('value', 'value')
+                    var hasSelected = false
+                    $.each(node.options, function(option) {
+                        var $option = $(option)
 
-                        if (!(value instanceof Array)) node.selectedIndex = -1 // ie (&all)
-
-                        $.each(node.options, function(option) {
-                            var $option = $(option)
-
-                            // array [multiple]
-                            if (value instanceof Array) {
-                                var bool = $.has(value, $option.value)
-                                if ($option.selected !== bool) {
-                                    $option.selected = option.selected = bool
-                                }
+                        // array [multiple]
+                        if (value instanceof Array) {
+                            var bool = $.has(value, $option.property('value'))
+                            $option.property('selected', bool)
+                            if (bool) {
+                                hasSelected = true
                             }
-                            // one
-                            else {
-                                if ($option.value === value) { // ==?
-                                    option.selected = true
-                                } else {
-                                    // option.selected = false // !ie
-                                }
-                                $node.value = value
+                        }
+                        // one
+                        else {
+                            $node.property('value', value)
+
+                            if ($option.property('value') === value) { // ==?
+                                $option.property('selected', true)
+                                hasSelected = true
+                            } else {
+                                $option.property('selected', false) // !ie
                             }
-                        })
-                    }, 1)
-                }
+                        }
+                    })
+                    if (!hasSelected) { // ie
+                        node.selectedIndex = -1
+                    }
+
+                }, 1)
             }
             // input textarea ..
             else {
-                if (this.value !== value) {
-                    this.value = node.value = value
-                }
+                this.property('value', value)
             }
 
             // v -> m
@@ -603,6 +600,7 @@
             if (node.type == 'checkbox') type = 'click'
             if (node.type == 'radio') type = 'click'
             if (node.nodeName.match(/^select$/i)) type = 'change'
+
             this.on(type, '.model', function(e) {
                 var node = this.node
 
@@ -612,17 +610,18 @@
                     if (value instanceof Array) {
                         var array = value
                         if (node.checked) {
-                            array.push(this.value)
+                            this.propertys.checked = true
+                            array.push(this.property('value'))
                         } else {
-                            $.remove(array, this.value)
+                            this.propertys.checked = false
+                            $.remove(array, this.property('value'))
                         }
                     } else {
-                        obj[key] = node.checked
+                        obj[key] = this.propertys.checked = node.checked
                     }
                 } else if (node.type == 'radio') {
-                    obj[key] = this.value
-                    this.checked = true
                     node.checked = true // <=ie7: 没有name属性无法选中 ![name] -> click false
+                    obj[key] = this.property('value')
                 }
                 // select
                 else if (node.nodeName.match(/^select$/i)) {
@@ -631,13 +630,21 @@
                         var $option = $(option)
                         if (value instanceof Array) {
                             if (option.selected) {
-                                !$.has(value, $option.value) && value.push($option.value)
+                                $option.propertys.selected = true
+                                if (!$.has(value, $option.property('value'))) {
+                                    value.push($option.property('value'))
+                                }
                             } else {
-                                $.remove(value, $option.value)
+                                $option.propertys.selected = false
+                                $.remove(value, $option.property('value'))
                             }
                         } else {
                             if (option.selected) {
-                                $option.value = obj[key] = $option.value
+                                $node.property('value', $option.property('value'))
+                                $option.propertys.selected = true
+                                obj[key] = $option.property('value')
+                            } else {
+                                $option.propertys.selected = false
                             }
                         }
                     })
@@ -651,7 +658,7 @@
                     if (mdfs.match('.number')) {
                         nodeValue = $.number(nodeValue)
                     }
-                    this.value = obj[key] = nodeValue
+                    obj[key] = this.propertys.value = nodeValue
                 }
 
                 // update view
@@ -677,7 +684,7 @@
                 component.$mount($is.node)
             }
             var component = $is.$component.component
-            $.extend(component, $is.attrs)
+            $.extend(component, $is.propertys)
         }
     }
 
@@ -716,9 +723,9 @@
             // propsData
             var $node = $(this.$el)
             if ($node.$is) {
-                $.extend(this, $node.$is.attrs)
+                $.extend(this, $node.$is.propertys)
             }
-            $.extend(this, $node.attrs)
+            $.extend(this, $node.propertys)
             fn.call(this)
         }
         this.$foceUpdate.fn = fn
@@ -861,8 +868,8 @@
                                         '@name': dir.exp
                                     })
                                     break
-                                case 'attr':
-                                    code += $.replaceVars('$(@id).attr("@arg", @value)', {
+                                case 'property':
+                                    code += $.replaceVars('$(@id).property("@arg", @value)', {
                                         '@id': $node.uid,
                                         '@arg': dir.arg,
                                         '@value': dir.exp
