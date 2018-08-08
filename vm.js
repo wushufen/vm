@@ -938,7 +938,6 @@
             var $fn = function() {
 
                 // inject setTimeout, setInterval, img.onload, ajax.onload
-                var setTimeout = window.setTimeout
                 // ie8及以下:
                 // typeof setTimeout == 'object'; !setTimeout.apply
                 // window.setTimeout = 1; setTimeout != window.setTimeout
@@ -947,6 +946,8 @@
                 // window.setInterval = 1; setInterval == window.setInterval
                 // 
                 // 没有 a1-an 参数
+
+                var setTimeout = window.setTimeout
                 window.setTimeout = function (fn, time, a1, a2, a3) {
                     return setTimeout(V.injectFunction(vm, function(){
                         fn.apply(this, arguments)
@@ -973,11 +974,7 @@
                     }, 1)
                     return img
                 }
-                if (!window.XMLHttpRequest) {
-                    window.XMLHttpRequest = function () {
-                        return new ActiveXObject("Microsoft.XMLHTTP")
-                    }
-                }
+                var XMLHttpRequest = window.XMLHttpRequest || window.ActiveXObject
                 var send = XMLHttpRequest.prototype.send
                 XMLHttpRequest.prototype.send = function () {
                     var xhr = this
@@ -988,7 +985,7 @@
                             handler && handler.apply(this, arguments)
                         })
                     })
-                    return send.apply(this, arguments)
+                    return send && send.apply(this, arguments)
                 }
 
                 // run
@@ -1004,6 +1001,7 @@
                 vm.$render()
                 return rs
             }
+
             $fn.fn = fn
             return $fn
         },
