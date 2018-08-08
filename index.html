@@ -242,19 +242,22 @@
 			
 			vue.model = 'mounted'
 
-			// var img = new Image
-			// img.onload = function () {
-			// 	vue.model = 'img.onload'
-			// }
-			// img.src = 'https://cn.vuejs.org/images/logo.png'
+			var img = new Image
+			img.onload = function () {
+				vue.model = 'img.onload'
+			}
+			img.onerror = function () {
+				vue.model = 'img.onerror'
+			}
+			img.src = 'https://cn.vuejs.org/images/logo.png'
 
-			window.setTimeout(function (arg) {
-				console.log(arg)
-				vue.model = 'sssss1'
-				setInterval(function () {
-					vue.model = '2'
-				}, 300)
-			}, 1000, 'arg')
+			// window.setTimeout(function (arg) {
+			// 	console.log(arg)
+			// 	vue.model = 'sssss1'
+			// 	window.setTimeout(function () {
+			// 		vue.model = '2'
+			// 	}, 300)
+			// }, 1000, 'arg')
 
 			// ajax({
 			// 	url: './readme.md',
