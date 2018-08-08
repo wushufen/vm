@@ -121,19 +121,19 @@
 		</table>
 		<!--  -->
 		<div id="component">
-			<span>{{model}}</span>
-			<div is="tag" class="isTag" @click="alert()"></div>
-			<div is="tag" :value="1+2"></div>
-			<button :abc="123" :efg="'efg'">button</button>
-			<hr>
-			<!-- <div is="tag" for="item in list" if="model!=n" :xtitle="item.textxx" :abc="item.abc" :jcc="123"></div> -->
+			<input model="model">
+			<div for="item in list" is="tag" class="isTag" :value="model"></div>
 		</div>
 	</div>
 	<!-- tpl -->
 	<div id="tag" style="display:none">
 		<span class="tag">
-			<b>{{value}}</b>
-			<button @click="n++"> {{++ n}} </button>
+			<table>
+				<tr>
+					<td>{{value}}</td>
+					<td @click="n++"><b>{{n}}</b></td>
+				</tr>
+			</table>
 		</span>
 	</div>
 	<!--  -->
@@ -153,6 +153,7 @@
 		</ol>
 	</div>
 	<script src="vm.js"></script>
+	<script src="ajax.js"></script>
 	<script>
 		Vue.component('ul', {
 			template: ul.innerHTML,
@@ -170,6 +171,7 @@
 	<script>
 	Vue.component('tag', {
 		template: tag.innerHTML,
+		props: ['value'],
 		data: function() {
 			return {
 				n: 0,
@@ -221,18 +223,46 @@
 		},
 		methods: {
 			add: function (text) {
+				var vue = this
+
 				this.list.push({
 					text: text
 				})
+				setInterval(function () {
+					vue.model += 2
+				}, 1000)
 			},
 			del: function (i) {
 				this.list.splice(i, 1)
 			}
 		}
-		//,
-		// mounted: function(){
-		// 	this.add('mounted')
-		// }
+		,
+		mounted: function(){
+			var vue = this
+			
+			vue.model = 'mounted'
+
+			// var img = new Image
+			// img.onload = function () {
+			// 	vue.model = 'img.onload'
+			// }
+			// img.src = 'https://cn.vuejs.org/images/logo.png'
+
+			window.setTimeout(function (arg) {
+				console.log(arg)
+				vue.model = 'sssss1'
+				setInterval(function () {
+					vue.model = '2'
+				}, 300)
+			}, 1000, 'arg')
+
+			// ajax({
+			// 	url: './readme.md',
+			// 	success: function (res) {
+			// 		vue.model = 'res'
+			// 	}
+			// })
+		}
 	})
 	</script>
 </body>

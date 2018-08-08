@@ -35,7 +35,7 @@
         this.uid = uid
         this.node = node
         this.attrs = $.getAttrs(node)
-        this.propertys = {}
+        this.propertys = $.extend({}, this.attrs)
 
         $.setUid(node, uid) // node -> uid
         $.map[uid] = this // uid -> $node
@@ -261,7 +261,7 @@
                         exp: nodeValue || '""'
                     }
 
-                    var $dirs = 'for,if,elseif,else,is,property,model'.split(',') // 特殊指令优先级排序
+                    var $dirs = 'for,if,elseif,else,is'.split(',') // 特殊指令优先级排序
                     var index = $.indexOf($dirs, name)
                     if (index > -1) {
                         dirs[index] = dir
@@ -539,27 +539,26 @@
             var value = obj[key]
 
             // m -> v
-            // checkbox
-            if (node.type == 'checkbox') {
-                // array
-                if (value instanceof Array) {
-                    var has = $.has(value, this.property('value'))
-                    this.property('checked', has)
+            setTimeout(function () { //wait $(node||option).property('value', 'value')
+                // checkbox
+                if (node.type == 'checkbox') {
+                    // array
+                    if (value instanceof Array) {
+                        var has = $.has(value, $node.property('value'))
+                        $node.property('checked', has)
+                    }
+                    // boolean
+                    else {
+                        $node.property('checked', value)
+                    }
                 }
-                // boolean
-                else {
-                    this.property('checked', value)
+                // radio
+                else if (node.type == 'radio') {
+                    var eq = $node.property('value') === value // ==?
+                    $node.property('checked', eq)
                 }
-            }
-            // radio
-            else if (node.type == 'radio') {
-                var eq = this.property('value') === value // ==?
-                this.property('checked', eq)
-            }
-            // select
-            else if (node.nodeName.match(/^select$/i)) {
-                setTimeout(function() { // wait $(option).property('value', 'value')
-
+                // select
+                else if (node.nodeName.match(/^select$/i)) {
                     var hasSelected = false
                     $.each(node.options, function(option) {
                         var $option = $(option)
@@ -587,13 +586,12 @@
                     if (!hasSelected) { // ie
                         node.selectedIndex = -1
                     }
-
-                }, 1)
-            }
-            // input textarea ..
-            else {
-                this.property('value', value)
-            }
+                }
+                // input textarea ..
+                else {
+                    $node.property('value', value)
+                }
+            }, 1)
 
             // v -> m
             var type = 'input'
@@ -685,6 +683,7 @@
             }
             var component = $is.$component.component
             $.extend(component, $is.propertys)
+            component.$render()
         }
     }
 
@@ -937,7 +936,71 @@
         },
         injectFunction: function(vm, fn) {
             var $fn = function() {
+
+                // inject setTimeout, setInterval, img.onload, ajax.onload
+                var setTimeout = window.setTimeout
+                // ie8及以下:
+                // typeof setTimeout == 'object'; !setTimeout.apply
+                // window.setTimeout = 1; setTimeout != window.setTimeout
+                // 
+                // typeof setInterval == 'object'; !setInterval.apply
+                // window.setInterval = 1; setInterval == window.setInterval
+                // 
+                // 没有 a1-an 参数
+                window.setTimeout = function (fn, time, a1, a2, a3) {
+                    return setTimeout(V.injectFunction(vm, function(){
+                        fn.apply(this, arguments)
+                    }), time, a1, a2, a3)
+                }
+                var setInterval = window.setInterval
+                window.setInterval = function (fn, time, a1, a2, a3) {
+                    return setInterval(V.injectFunction(vm, function(){
+                        fn.apply(this, arguments)
+                    }), time, a1, a2, a3)
+                }
+                var Image = window.Image
+                window.Image = function (width, height) {
+                    var img = new Image(width, height)
+                    setTimeout(function(){
+                        var onload = img.onload
+                        img.onload = V.injectFunction(vm, function () {
+                            onload && onload.apply(this, arguments)
+                        })
+                        var onerror = img.onerror
+                        img.onerror = V.injectFunction(vm, function () {
+                            onerror && onerror.apply(this, arguments)
+                        })
+                    }, 1)
+                    return img
+                }
+                if (!window.XMLHttpRequest) {
+                    window.XMLHttpRequest = function () {
+                        return new ActiveXObject("Microsoft.XMLHTTP")
+                    }
+                }
+                var send = XMLHttpRequest.prototype.send
+                XMLHttpRequest.prototype.send = function () {
+                    var xhr = this
+                    var names = 'onreadystatechange,onload,onerror,onabort,onloadstart,onloadend,onprogress,ontimeout'.split(',')
+                    $.each(names, function (name) {
+                        var handler = xhr[name]
+                        xhr[name] = V.injectFunction(vm, function () {
+                            handler && handler.apply(this, arguments)
+                        })
+                    })
+                    return send.apply(this, arguments)
+                }
+
+                // run
                 var rs = fn.apply(vm, arguments)
+
+                // restore
+                window.setTimeout = setTimeout
+                window.setInterval = setInterval
+                window.Image = Image
+                XMLHttpRequest.prototype.send = send
+
+                // $render
                 vm.$render()
                 return rs
             }
