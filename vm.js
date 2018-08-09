@@ -93,7 +93,7 @@
         getAttrs: function(node) {
             var attrs = {}
             $.each($.toArray(node.attributes), function(attribute) {
-                if (attribute.specified || attribute.nodeName == 'value') { // ie || <= ie7
+                if (attribute.specified || attribute.nodeName == 'value') { // ie || ie7-
                     attrs[attribute.nodeName] = attribute.nodeValue
                 }
             })
@@ -614,7 +614,7 @@
                         obj[key] = this.propertys.checked = node.checked
                     }
                 } else if (node.type == 'radio') {
-                    node.checked = true // <=ie7: 没有name属性无法选中 ![name] -> click false
+                    node.checked = true // ie7-: 没有name属性无法选中 ![name] -> click false
                     obj[key] = this.property('value')
                 }
                 // select
@@ -912,7 +912,7 @@
         parseHTML: function(html) {
             V.parseEl.innerHTML = html
             var el = V.parseEl.children[0] || V.parseEl.childNodes[0]
-            V.parseEl.removeChild(el) // ie8<= 如不移除就清空， el 的子节点也会被清空
+            V.parseEl.removeChild(el) // ie8-: 如不移除就清空， el 的子节点也会被清空
             V.parseEl.innerHTML = ''
             return el
         },
@@ -926,7 +926,7 @@
             var $fn = function() {
 
                 // inject setTimeout, setInterval, img.onload, ajax.onload
-                // ie8及以下:
+                // ie8-:
                 // typeof setTimeout == 'object'; !setTimeout.apply
                 // window.setTimeout = 1; setTimeout != window.setTimeout // -_-!!
                 // 
