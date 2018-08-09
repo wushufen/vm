@@ -928,7 +928,7 @@
                 // inject setTimeout, setInterval, img.onload, ajax.onload
                 // ie8及以下:
                 // typeof setTimeout == 'object'; !setTimeout.apply
-                // window.setTimeout = 1; setTimeout != window.setTimeout
+                // window.setTimeout = 1; setTimeout != window.setTimeout // -_-!!
                 // 
                 // typeof setInterval == 'object'; !setInterval.apply
                 // window.setInterval = 1; setInterval == window.setInterval
