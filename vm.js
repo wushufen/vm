@@ -1040,7 +1040,7 @@
     if (typeof Proxy != 'undefined') {
         setTimeout(function() {
             for (name in window) {
-                if (name.match('webkit')) continue
+                if (name.match('webkit')) continue // !warn
                 var vm = window[name]
                 if (vm && typeof vm.$render == 'function') {
                     window[name] = new Proxy(vm, {
