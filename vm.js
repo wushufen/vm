@@ -126,6 +126,21 @@
             }
             return arr
         },
+        each: function(list, fn, noHasOwn) {
+            if (list && 'length' in list) {
+                for (var i = 0; i < list.length; i++) {
+                    var item = list[i]
+                    fn(item, i, i, list)
+                }
+            } else {
+                var i = 0
+                for (var key in list) {
+                    if (!noHasOwn && !$.hasOwn(list, key)) continue
+                    var item = list[key]
+                    fn(item, key, i++, list)
+                }
+            }
+        },
         indexOf: function(array, value) {
             if (array.indexOf) {
                 return array.indexOf(value)
@@ -148,21 +163,6 @@
             }
             // return array
         },
-        each: function(list, fn) {
-            if (list && 'length' in list) {
-                for (var i = 0; i < list.length; i++) {
-                    var item = list[i]
-                    fn(item, i, i, list)
-                }
-            } else {
-                var i = 0
-                for (var key in list) {
-                    if (!$.hasOwn(list, key)) continue
-                    var item = list[key]
-                    fn(item, key, i++, list)
-                }
-            }
-        },
         trim: function(value) {
             return String(value).replace(/^\s+|\s+$/g, '')
         },
@@ -170,7 +170,7 @@
             if (!isNaN(value)) return Number(value)
             return value
         },
-        replaceVars: function(s, vs) {
+        strVars: function(s, vs) {
             for (var k in vs) {
                 s = s.replace(RegExp(k, 'g'), vs[k])
             }
@@ -192,7 +192,6 @@
         },
         on: function() {
             return window.addEventListener ? function(node, type, fn, useCapture) {
-
                 node.addEventListener(type, fn, useCapture)
 
             } : function(node, type, fn) {
@@ -539,7 +538,7 @@
             var value = obj[key]
 
             // m -> v
-            setTimeout(function () { //wait $(node||option).property('value', 'value')
+            setTimeout(function() { //wait $(node||option).property('value', 'value')
                 // checkbox
                 if (node.type == 'checkbox') {
                     // array
@@ -567,9 +566,6 @@
                         if (value instanceof Array) {
                             var bool = $.has(value, $option.property('value'))
                             $option.property('selected', bool)
-                            if (bool) {
-                                hasSelected = true
-                            }
                         }
                         // one
                         else {
@@ -583,7 +579,7 @@
                             }
                         }
                     })
-                    if (!hasSelected) { // ie
+                    if (!(value instanceof Array) && !hasSelected) { // ie
                         node.selectedIndex = -1
                     }
                 }
@@ -717,17 +713,7 @@
 
         // compile render
         this.$ = $
-        var fn = V.compile(this.$el)
-        this.$foceUpdate = function () {
-            // propsData
-            var $node = $(this.$el)
-            if ($node.$is) {
-                $.extend(this, $node.$is.propertys)
-            }
-            $.extend(this, $node.propertys)
-            fn.call(this)
-        }
-        this.$foceUpdate.fn = fn
+        this.$foceUpdate = V.compile(this.$el)
         this.$render = function() {
             var self = this
 
@@ -748,7 +734,7 @@
         }
 
         // @dev
-        // console.log(this.$render)
+        // console.log(this.$foceUpdate)
 
         this.$mounted = options.mounted && V.injectFunction(this, options.mounted)
 
@@ -779,6 +765,7 @@
 
             function scan(node) {
                 // console.log(node)
+                // console.log(V.outerHTML(node))
 
                 switch (node.nodeType) {
                     case 1: // element
@@ -807,7 +794,7 @@
                                         key_ = item_key_index[1]
                                         index_ = item_key_index[2]
                                     }
-                                    code += $.replaceVars('$(@id)["for"]( @list, function( @item, @key, @index ){ ', {
+                                    code += $.strVars('$(@id)["for"]( @list, function( @item, @key, @index ){ ', {
                                         '@id': $node.uid,
                                         '@list': list_,
                                         '@item': item_,
@@ -817,24 +804,24 @@
                                     break
                                 case 'if':
                                     $node.isIf = true // if for insert
-                                    code += $.replaceVars('$(@id)["if"]( @value, function(){ ', {
+                                    code += $.strVars('$(@id)["if"]( @value, function(){ ', {
                                         '@id': $node.uid,
                                         '@value': dir.exp
                                     })
                                     break
                                 case 'elseif':
-                                    code += $.replaceVars('["elseif"]( $(@id), @value, function(){ ', {
+                                    code += $.strVars('["elseif"]( $(@id), @value, function(){ ', {
                                         '@id': $node.uid,
                                         '@value': dir.exp
                                     })
                                     break
                                 case 'else':
-                                    code += $.replaceVars('["else"]( $(@id), function(){ ', {
+                                    code += $.strVars('["else"]( $(@id), function(){ ', {
                                         '@id': $node.uid
                                     })
                                     break
                                 case 'on':
-                                    code += $.replaceVars('$(@id).on("@type", "@mdfs", function($event){ @code ;$THISVM.$render()})', {
+                                    code += $.strVars('$(@id).on("@type", "@mdfs", function($event){ @code ;$THISVM.$render()})', {
                                         '@id': $node.uid,
                                         '@type': dir.arg,
                                         '@mdfs': dir.mdfs,
@@ -853,7 +840,7 @@
                                         key_ = okm[2] ? '"' + okm[2] + '"' : okm[3]
                                     }
 
-                                    code += $.replaceVars('$(@id).model( @obj, @key, "@mdfs", $THISVM )', {
+                                    code += $.strVars('$(@id).model( @obj, @key, "@mdfs", $THISVM )', {
                                         '@id': $node.uid,
                                         '@obj': obj_,
                                         '@key': key_,
@@ -861,21 +848,21 @@
                                     })
 
                                     break
-                                case 'is':
-                                    code += $.replaceVars('$(@id).is("@name")', {
-                                        '@id': $node.uid,
-                                        '@name': dir.exp
-                                    })
-                                    break
                                 case 'property':
-                                    code += $.replaceVars('$(@id).property("@arg", @value)', {
+                                    code += $.strVars('$(@id).property("@arg", @value)', {
                                         '@id': $node.uid,
                                         '@arg': dir.arg,
                                         '@value': dir.exp
                                     })
                                     break
+                                case 'is':
+                                    code += $.strVars('$(@id).is("@name")', {
+                                        '@id': $node.uid,
+                                        '@name': dir.exp
+                                    })
+                                    break
                                 default:
-                                    code += $.replaceVars('$(@id)["@name"](@value, "@arg", "@mdfs")', {
+                                    code += $.strVars('$(@id)["@name"](@value, "@arg", "@mdfs")', {
                                         '@id': $node.uid,
                                         '@name': dir.name,
                                         '@arg': dir.arg,
@@ -907,7 +894,7 @@
                             var $node = $(node)
                             $node.initNodeValue = node.nodeValue.replace(/\n/g, ' ')
 
-                            code += $.replaceVars('$(@id).text( @value )', {
+                            code += $.strVars('$(@id).text( @value )', {
                                 '@id': $node.uid,
                                 '@value': $.parseText(nodeValue)
                             })
@@ -925,7 +912,8 @@
         parseHTML: function(html) {
             V.parseEl.innerHTML = html
             var el = V.parseEl.children[0] || V.parseEl.childNodes[0]
-            // V.parseEl.innerHTML = ''
+            V.parseEl.removeChild(el) // ie8<= 如不移除就清空， el 的子节点也会被清空
+            V.parseEl.innerHTML = ''
             return el
         },
         outerHTML: function(node) {
@@ -938,7 +926,6 @@
             var $fn = function() {
 
                 // inject setTimeout, setInterval, img.onload, ajax.onload
-                var setTimeout = window.setTimeout
                 // ie8及以下:
                 // typeof setTimeout == 'object'; !setTimeout.apply
                 // window.setTimeout = 1; setTimeout != window.setTimeout
@@ -947,48 +934,44 @@
                 // window.setInterval = 1; setInterval == window.setInterval
                 // 
                 // 没有 a1-an 参数
-                window.setTimeout = function (fn, time, a1, a2, a3) {
-                    return setTimeout(V.injectFunction(vm, function(){
+                var setTimeout = window.setTimeout
+                window.setTimeout = function(fn, time, a1, a2, a3) {
+                    return setTimeout(V.injectFunction(vm, function() {
                         fn.apply(this, arguments)
                     }), time, a1, a2, a3)
                 }
                 var setInterval = window.setInterval
-                window.setInterval = function (fn, time, a1, a2, a3) {
-                    return setInterval(V.injectFunction(vm, function(){
+                window.setInterval = function(fn, time, a1, a2, a3) {
+                    return setInterval(V.injectFunction(vm, function() {
                         fn.apply(this, arguments)
                     }), time, a1, a2, a3)
                 }
                 var Image = window.Image
-                window.Image = function (width, height) {
-                    var img = new Image(width, height)
-                    setTimeout(function(){
-                        var onload = img.onload
-                        img.onload = V.injectFunction(vm, function () {
-                            onload && onload.apply(this, arguments)
-                        })
-                        var onerror = img.onerror
-                        img.onerror = V.injectFunction(vm, function () {
-                            onerror && onerror.apply(this, arguments)
-                        })
+                window.Image = function(width, height) {
+                    var self = new Image(width, height)
+                    setTimeout(function() {
+                        $.each(self, function(handler, name){
+                            if (name.match(/^on/) && typeof handler == 'function') {
+                                self[name] = V.injectFunction(vm, function() {
+                                    handler.apply(self, arguments)
+                                })
+                            }
+                        }, true)
                     }, 1)
-                    return img
+                    return self
                 }
-                if (!window.XMLHttpRequest) {
-                    window.XMLHttpRequest = function () {
-                        return new ActiveXObject("Microsoft.XMLHTTP")
-                    }
-                }
+                var XMLHttpRequest = window.XMLHttpRequest || window.ActiveXObject
                 var send = XMLHttpRequest.prototype.send
-                XMLHttpRequest.prototype.send = function () {
-                    var xhr = this
-                    var names = 'onreadystatechange,onload,onerror,onabort,onloadstart,onloadend,onprogress,ontimeout'.split(',')
-                    $.each(names, function (name) {
-                        var handler = xhr[name]
-                        xhr[name] = V.injectFunction(vm, function () {
-                            handler && handler.apply(this, arguments)
-                        })
-                    })
-                    return send.apply(this, arguments)
+                XMLHttpRequest.prototype.send = function() {
+                    var self = this
+                    $.each(self, function (handler, name) {
+                        if (name.match(/^on/) && typeof handler == 'function') {
+                            self[name] = V.injectFunction(vm, function() {
+                                handler.apply(this, arguments)
+                            })
+                        }
+                    }, true)
+                    return send && send.apply(this, arguments)
                 }
 
                 // run
@@ -1004,6 +987,7 @@
                 vm.$render()
                 return rs
             }
+
             $fn.fn = fn
             return $fn
         },
