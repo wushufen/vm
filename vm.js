@@ -5,68 +5,222 @@
         mark: true
     }
 
+    function incUid() {
+        return incUid.i = (incUid.i || 0) + 1
+    }
+
+    var canSetUidOnTextNode = (function() { // ie false
+        try { return document.createTextNode('').uid = true } catch (e) {}
+    })()
+
+    function extend(obj, map) {
+        for (var key in map) {
+            if (!map.hasOwnProperty(key)) continue
+            obj[key] = map[key]
+        }
+        return obj
+    }
+
+    function orExtend(obj, map) {
+        for (var key in map) {
+            if (!map.hasOwnProperty(key)) continue
+            if (key in obj) continue
+            obj[key] = map[key]
+        }
+        return obj
+    }
+
+    function hasOwn(obj, property) { // ie !node
+        return Object.hasOwnProperty.call(obj, property)
+    }
+
+    function toArray(list) {
+        if (!list) return []
+        var length = list.length
+        var arr = new Array(length)
+        while (length--) {
+            arr[length] = list[length]
+        }
+        return arr
+    }
+
+    function each(list, fn, noHasOwn) {
+        if (list && 'length' in list) {
+            for (var i = 0; i < list.length; i++) {
+                var item = list[i]
+                fn(item, i, i, list)
+            }
+        } else {
+            var i = 0
+            for (var key in list) {
+                if (!noHasOwn && !hasOwn(list, key)) continue
+                var item = list[key]
+                fn(item, key, i++, list)
+            }
+        }
+    }
+
+    function indexOf(array, value) {
+        if (array.indexOf) {
+            return array.indexOf(value)
+        } else {
+            for (var i = 0; i < array.length; i++) {
+                if (array[i] == value) {
+                    return i
+                }
+            }
+        }
+        return -1
+    }
+
+    function includes(array, value) {
+        return indexOf(array, value) != -1
+    }
+
+    function arrayRemove(array, value) {
+        for (var i = 0; i < array.length; i++) {
+            var item = array[i]
+            if (item === value) array.splice(i, 1), i--
+        }
+    }
+
+    function trim(value) {
+        return String(value).replace(/^\s+|\s+$/g, '')
+    }
+
+    function toNumber(value) {
+        if (!isNaN(value)) return Number(value)
+        return value
+    }
+
+    function strVars(s, vs) {
+        for (var k in vs) {
+            s = s.replace(RegExp(k, 'g'), vs[k])
+        }
+        return s + '\n'
+    }
+
+    function parseText(text) {
+        return '"' + text
+            // }}(["\]){{ -> "\"text\\"
+            .replace(/(^|}}).*?({{|$)/g, function($) {
+                return $.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
+            })
+            // \n -> "\n code"
+            .replace(/\r?\n/g, '\\n')
+            // {{exp}} -> "+(exp)+"
+            .replace(/{{(.*?)}}/g, '"+($1)+"')
+            // 
+            +
+            '"'
+    }
+
+    var on = function() {
+        return window.addEventListener ? function(node, type, fn, useCapture) {
+            node.addEventListener(type, fn, useCapture)
+
+        } : function(node, type, fn) {
+            type = {
+                input: 'keyup',
+                focus: 'focusin',
+                blur: 'focusout'
+            }[type] || type
+
+            node.attachEvent('on' + type, function() { // ie
+                var event = window.event
+                event.target = event.srcElement
+                event.preventDefault = function() { event.returnValue = false }
+                event.stopPropagation = function() { event.cancelBubble = true }
+                fn(event)
+            })
+        }
+    }()
+
+    var off = function() {
+        return window.removeEventListener ? function(node, fn) {
+            node.removeEventListener(fn)
+        } : function(node, fn) {
+            // todo
+        }
+    }()
+
+    var live = function(node, type, fn, useCapture) {
+        // true: 事件捕捉。 focus, blur 等事件不支持冒泡
+        useCapture = 'focus,blur'.match(type) ? true : useCapture
+        on(document, type, function(event) {
+            if (contains(node, event.target)) {
+                fn(event)
+            }
+        }, useCapture)
+    }
+
+    function contains(node, child) {
+        if (node.contains) {
+            return node.contains(child)
+        }
+        return node == child || function loop(child) {
+            var parentNode = child.parentNode
+            return parentNode == node || (parentNode && loop(parentNode))
+        }(child)
+    }
+
+    /*
+    forKeyPath = VNode.forKeyPath
+    for(key in list){
+        VNode.forKeyPath += '.' + key
+    }
+    VNode.forKeyPath = forKeyPath
+
+    VNode(uid){
+        return VNode.map[uid + VNode.forKeyPath]
+    }
+    */
+    // 每个vm须重新开始
+    VNode.forKeyPath = '' // uid.for1ItemKey.for2ItemKey...
+    VNode.map = {} // uid: node
+
     // 
     // 虚拟节点
     // 
-    var $ = function(node, cloneUid) {
-        // $(node) -> new $(node)
-        if (!(this instanceof $)) return new $(node, cloneUid)
+    function VNode(node, cloneUid) {
+        // VNode(node) -> new VNode(node)
+        if (!(this instanceof VNode)) return new VNode(node, cloneUid)
 
-        // $(uid) get $node
+        // VNode(uid) -> vnode
         if (typeof node != 'object') {
             var uid = node
-            // $(number) -> $node: uid+'.key.0'
-            var $node = $.map[uid + $.forKeyPath] // **!!!**
+            // VNode(number) -> vnode: uid+'.key.0'
+            var vnode = VNode.map[uid + VNode.forKeyPath] // **!!!**
             // is="component"
-            return $node.$component || $node
+            return vnode.componentVnode || vnode
         }
 
-        // $(node) -> return saved
-        if (cloneUid === undefined) { // !cloneUid: ie会把 node.uid 复制到克隆节点
-            var uid = $.getUid(node)
+        // VNode(node) -> return saved
+        if (!cloneUid) { // !cloneUid: ie会把 node.uid 复制到克隆节点
+            var uid = VNode.getUid(node)
             if (uid) {
-                return $.map[uid]
+                return VNode.map[uid]
             }
         }
 
         // save
-        // $(unSavedNode) || $(node, cloneUid)
-        var uid = cloneUid || $.incId()
+        // VNode(unSavedNode) || VNode(node, cloneUid)
+        var uid = cloneUid || incUid()
         this.uid = uid
         this.node = node
-        this.attrs = $.getAttrs(node)
-        this.propertys = $.extend({}, this.attrs)
+        this.attrs = VNode.getAttrs(node)
+        this.propertys = extend({}, this.attrs)
 
-        $.setUid(node, uid) // node -> uid
-        $.map[uid] = this // uid -> $node
+        VNode.setUid(node, uid) // node -> uid
+        VNode.map[uid] = this // uid -> vnode
     }
-    $.utils = {
-        /*
-        forKeyPath = $.forKeyPath
-        for(key in list){
-            $.forKeyPath += '.' + key
-        }
-        $.forKeyPath = forKeyPath
-
-        $(uid){
-            return $.map[uid + $.forKeyPath]
-        }
-        */
-        // 每个vm须重新开始
-        forKeyPath: '', // uid.for1ItemKey.for2ItemKey...
-        map: {}, // uid: node
-        incId: function() {
-            return this._inc = (this._inc || 0) + 1
-        },
-        canSetUidOnTextNode: (function() { // ie false
-            try { return document.createTextNode('').uid = true } catch (e) {}
-        })(),
+    extend(VNode, {
         setUid: function(node, uid) {
             if (node.nodeType == 1) {
                 node.uid = uid
                 SHOW.uid && node.setAttribute('uid', uid) // @dev
             } else if (node.nodeType == 3) {
-                if ($.canSetUidOnTextNode) {
+                if (canSetUidOnTextNode) {
                     node.uid = uid
                 } else { // ie
                     // save on parentNode
@@ -79,7 +233,7 @@
             if (node.nodeType == 1) {
                 return node.uid
             } else if (node.nodeType == 3) {
-                if ($.canSetUidOnTextNode) {
+                if (canSetUidOnTextNode) {
                     return node.uid
                 }
                 var map = node.parentNode.uidNodeMap
@@ -92,151 +246,18 @@
         },
         getAttrs: function(node) {
             var attrs = {}
-            $.each($.toArray(node.attributes), function(attribute) {
+            each(toArray(node.attributes), function(attribute) {
                 if (attribute.specified || attribute.nodeName == 'value') { // ie || ie7-
                     attrs[attribute.nodeName] = attribute.nodeValue
                 }
             })
             return attrs
         },
-        hasOwn: function(obj, property) { // ie node
-            return Object.hasOwnProperty.call(obj, property)
-        },
-        extend: function(obj, map) {
-            for (var key in map) {
-                if (!map.hasOwnProperty(key)) continue
-                obj[key] = map[key]
-            }
-            return obj
-        },
-        orExtend: function(obj, map) {
-            for (var key in map) {
-                if (!map.hasOwnProperty(key)) continue
-                if (key in obj) continue
-                obj[key] = map[key]
-            }
-            return obj
-        },
-        toArray: function(list) {
-            if (!list) return []
-            var length = list.length
-            var arr = new Array(length)
-            while (length--) {
-                arr[length] = list[length]
-            }
-            return arr
-        },
-        each: function(list, fn, noHasOwn) {
-            if (list && 'length' in list) {
-                for (var i = 0; i < list.length; i++) {
-                    var item = list[i]
-                    fn(item, i, i, list)
-                }
-            } else {
-                var i = 0
-                for (var key in list) {
-                    if (!noHasOwn && !$.hasOwn(list, key)) continue
-                    var item = list[key]
-                    fn(item, key, i++, list)
-                }
-            }
-        },
-        indexOf: function(array, value) {
-            if (array.indexOf) {
-                return array.indexOf(value)
-            } else {
-                for (var i = 0; i < array.length; i++) {
-                    if (array[i] == value) {
-                        return i
-                    }
-                }
-            }
-            return -1
-        },
-        has: function(array, value) {
-            return $.indexOf(array, value) != -1
-        },
-        remove: function(array, value) {
-            for (var i = 0; i < array.length; i++) {
-                var item = array[i]
-                if (item === value) array.splice(i, 1), i--
-            }
-            // return array
-        },
-        trim: function(value) {
-            return String(value).replace(/^\s+|\s+$/g, '')
-        },
-        number: function(value) {
-            if (!isNaN(value)) return Number(value)
-            return value
-        },
-        strVars: function(s, vs) {
-            for (var k in vs) {
-                s = s.replace(RegExp(k, 'g'), vs[k])
-            }
-            return s + '\n'
-        },
-        parseText: function(text) {
-            return '"' + text
-                // }}(["\]){{ -> "\"text\\"
-                .replace(/(^|}}).*?({{|$)/g, function($) {
-                    return $.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
-                })
-                // \n -> "\n code"
-                .replace(/\r?\n/g, '\\n')
-                // {{exp}} -> "+(exp)+"
-                .replace(/{{(.*?)}}/g, '"+($1)+"')
-                // 
-                +
-                '"'
-        },
-        on: function() {
-            return window.addEventListener ? function(node, type, fn, useCapture) {
-                node.addEventListener(type, fn, useCapture)
-
-            } : function(node, type, fn) {
-                type = {
-                    input: 'keyup',
-                    focus: 'focusin',
-                    blur: 'focusout'
-                }[type] || type
-
-                node.attachEvent('on' + type, function() { // ie
-                    var event = window.event
-                    event.target = event.srcElement
-                    event.preventDefault = function() { event.returnValue = false }
-                    event.stopPropagation = function() { event.cancelBubble = true }
-                    fn(event)
-                })
-            }
-        }(),
-        off: function() {
-            return window.removeEventListener ? function(node, fn) {
-                node.removeEventListener(fn)
-            } : function(node, fn) {
-                // todo
-            }
-        }(),
-        live: function(node, type, fn, useCapture) {
-            // true: 事件捕捉。 focus, blur 等事件不支持冒泡
-            useCapture = 'focus,blur'.match(type) ? true : useCapture
-            $.on(document, type, function(event) {
-                if ($.contains(node, event.target)) {
-                    fn(event)
-                }
-            }, useCapture)
-        },
-        contains: function(node, child) {
-            return node == child || function loop(child) {
-                var parentNode = child.parentNode
-                return parentNode == node || (parentNode && loop(parentNode))
-            }(child)
-        },
         getDirs: function(node) {
             var dirs = Array(10) // 留位给 for 等特殊指令，位置代表优先级
             dirs.size = 0 // 通过 size 判断数量
 
-            $.each($.toArray(node.attributes), function(attribute) {
+            each(toArray(node.attributes), function(attribute) {
                 if (!attribute.specified) return // ie
 
                 var nodeName = attribute.nodeName
@@ -248,7 +269,7 @@
                 if (name == 'bind') name = 'property'
                 if (name == '@') name = 'on'
 
-                if (name in $.prototype) { // 指令就是虚拟节点的方法
+                if (name in VNode.prototype) { // 指令就是虚拟节点的方法
                     SHOW.dir || node.removeAttribute(nodeName) // !@dev
                     dirs.size += 1
 
@@ -261,7 +282,7 @@
                     }
 
                     var $dirs = 'for,if,elseif,else,is'.split(',') // 特殊指令优先级排序
-                    var index = $.indexOf($dirs, name)
+                    var index = indexOf($dirs, name)
                     if (index > -1) {
                         dirs[index] = dir
                         // dirs.for = true
@@ -275,10 +296,10 @@
             })
             return dirs
         }
-    }
-    $.utils.extend($, $.utils)
+    })
+
     // 虚拟节点方法：可以执行的指令
-    $.prototype = {
+    VNode.prototype = {
         autofocus: function() {
             if (this.focused) return
             var self = this
@@ -287,23 +308,11 @@
             }, 1)
             this.focused = true
         },
-        text: function(value) {
-            if (value === this.innerText) return
-            var node = this.node
-            if (node.nodeType == 3) {
-                this.innerText = node.nodeValue = value
-            } else if (node.nodeType == 1) {
-                this.innerText = node.innerText = value
-            }
-        },
-        html: function(value) {
-            if (value === this.innerHTML) return
-            this.innerHTML = this.node.innerHTML = value
-        },
         property: function(name, value) {
             var propertys = this.propertys
             // get
             if (arguments.length == 1) {
+                // :value="object"
                 return name in propertys ? propertys[name] : this.node[name]
             }
             // set
@@ -317,6 +326,12 @@
             }
             if (propertys[name] === value && name in propertys) return value
             return propertys[name] = this.node[name] = value
+        },
+        text: function(value) {
+            this.property('innerText', value)
+        },
+        html: function(value) {
+            this.property('innerHTML', value)
         },
         setStyle: function(map) {
             var style = this.style || {}
@@ -372,25 +387,25 @@
                 'else': this['else']
             }
         },
-        'elseif': function($node, value, fn) {
+        'elseif': function(vnode, value, fn) {
             if (this.value) {
-                $node.remove()
+                vnode.remove()
             } else if (value) {
-                $node.insert()
+                vnode.insert()
                 fn()
             } else {
-                $node.remove()
+                vnode.remove()
             }
             return {
                 value: this.value || value,
                 'else': this['else']
             }
         },
-        'else': function($node, fn) {
+        'else': function(vnode, fn) {
             if (this.value) {
-                $node.remove()
+                vnode.remove()
             } else {
-                $node.insert()
+                vnode.insert()
                 fn()
             }
         },
@@ -398,7 +413,7 @@
             if (this.markNode) return
             var node = this.node
             var mark = document.createTextNode('')
-            if (SHOW.mark || !$.canSetUidOnTextNode) {
+            if (SHOW.mark || !canSetUidOnTextNode) {
                 var mark = document.createComment(this.uid) // @dev
                 // var mark = document.createComment(node.outerHTML) // @dev
             }
@@ -408,8 +423,8 @@
 
         },
         remove: function() {
-            if (this.$component) {
-                this.$component.remove()
+            if (this.componentVnode) {
+                this.componentVnode.remove()
             }
             var node = this.node
             var parentNode = node.parentNode
@@ -419,24 +434,24 @@
             }
         },
         insert: function(toNode) {
-            if (this.$component) {
-                this.$component.insert()
+            if (this.componentVnode) {
+                this.componentVnode.insert()
                 return
             }
             var node = this.node
             var parentNode = node.parentNode
             if (!parentNode || parentNode.nodeType != 1) {
-                var markNode = toNode || this.markNode || this.$forNode.markNode
+                var markNode = toNode || this.markNode || this.forVnode.markNode
                 markNode.parentNode.insertBefore(node, markNode)
             }
         },
         clone: function(key) {
             var clones = this.clones = this.clones || {}
-            var $node = clones[key]
-            if ($node) return $node // cache
+            var vnode = clones[key]
+            if (vnode) return vnode // cache
 
             // clone
-            var $forNode = this
+            var forVnode = this
             var forNode = this.node
             var cloneNode = forNode.cloneNode(true)
 
@@ -444,9 +459,9 @@
             // forNodeUid.key
             'IIF',
             function loop(forNode, cloneNode) {
-                var uid = $.getUid(forNode)
+                var uid = VNode.getUid(forNode)
                 // save cloneNode
-                uid && $(cloneNode, uid + '.' + key) // **!!!**
+                uid && VNode(cloneNode, uid + '.' + key) // **!!!**
 
                 var forChildNodes = forNode.childNodes
                 var childNodes = cloneNode.childNodes
@@ -455,30 +470,30 @@
                 }
             }(forNode, cloneNode)
 
-            $node = $(cloneNode)
-            $node.$forNode = $forNode // $node.$forNone.mackNode -> insert node
+            vnode = VNode(cloneNode)
+            vnode.forVnode = forVnode // vnode.$forNone.mackNode -> insert node
 
             // cache
-            clones[key] = $node
+            clones[key] = vnode
 
-            return $node
+            return vnode
         },
         'for': function(list, fn) {
-            var $forNode = this.$is || this
+            var forVnode = this.isVnode || this
 
             // this.mark()
-            $forNode.remove()
+            forVnode.remove()
 
-            var forKeyPath = $.forKeyPath // **!!!**
+            var forKeyPath = VNode.forKeyPath // **!!!**
             try {
-                $.each(list, function(item, key, index) {
+                each(list, function(item, key, index) {
                     // clone
-                    $.forKeyPath = forKeyPath + '.' + key // **!!!**
-                    var $node = $forNode.clone(key)
+                    VNode.forKeyPath = forKeyPath + '.' + key // **!!!**
+                    var vnode = forVnode.clone(key)
 
                     // 当 for, if 同时存在，for insert, if false remove, 会造成dom更新
-                    if (!$node.isIf) {
-                        $node.insert()
+                    if (!vnode.isIf) {
+                        vnode.insert()
                     }
 
                     fn(item, key, index)
@@ -489,14 +504,14 @@
                     throw e
                 }, 1)
             }
-            $.forKeyPath = forKeyPath // **!!!**
+            VNode.forKeyPath = forKeyPath // **!!!**
 
             // remove
-            var clones = $forNode.clones
+            var clones = forVnode.clones
             for (var key in clones) {
-                var $node = clones[key]
+                var vnode = clones[key]
                 if (!list || !(key in list)) {
-                    $node.remove()
+                    vnode.remove()
                 }
             }
         },
@@ -510,9 +525,9 @@
             if (handler) return
 
             // 首次注册
-            var $node = this
+            var vnode = this
             var node = this.node
-            $.on(node, type, function(event) {
+            on(node, type, function(event) {
                 // mfds
                 if (mdfs.match(/\.prevent\b/)) event.preventDefault()
                 if (mdfs.match(/\.stop\b/)) event.stopPropagation()
@@ -529,53 +544,53 @@
                 if (m && event.keyCode != m[1]) return
 
                 // call handler
-                $node.eventMap[key].call($node, event) // $node.on bind $node
+                vnode.eventMap[key].call(vnode, event) // vnode.on bind vnode
             })
         },
         model: function(obj, key, mdfs, vm) {
-            var $node = this
+            var vnode = this
             var node = this.node
             var value = obj[key]
 
             // m -> v
-            setTimeout(function() { //wait $(node||option).property('value', 'value')
+            setTimeout(function() { //wait VNode(node||option).property('value', 'value')
                 // checkbox
                 if (node.type == 'checkbox') {
                     // array
                     if (value instanceof Array) {
-                        var has = $.has(value, $node.property('value'))
-                        $node.property('checked', has)
+                        var has = includes(value, vnode.property('value'))
+                        vnode.property('checked', has)
                     }
                     // boolean
                     else {
-                        $node.property('checked', value)
+                        vnode.property('checked', value)
                     }
                 }
                 // radio
                 else if (node.type == 'radio') {
-                    var eq = $node.property('value') === value // ==?
-                    $node.property('checked', eq)
+                    var eq = vnode.property('value') === value // ==?
+                    vnode.property('checked', eq)
                 }
                 // select
                 else if (node.nodeName.match(/^select$/i)) {
                     var hasSelected = false
-                    $.each(node.options, function(option) {
-                        var $option = $(option)
+                    each(node.options, function(option) {
+                        var voption = VNode(option)
 
                         // array [multiple]
                         if (value instanceof Array) {
-                            var bool = $.has(value, $option.property('value'))
-                            $option.property('selected', bool)
+                            var bool = includes(value, voption.property('value'))
+                            voption.property('selected', bool)
                         }
                         // one
                         else {
-                            $node.property('value', value)
+                            vnode.property('value', value)
 
-                            if ($option.property('value') === value) { // ==?
-                                $option.property('selected', true)
+                            if (voption.property('value') === value) { // ==?
+                                voption.property('selected', true)
                                 hasSelected = true
                             } else {
-                                $option.property('selected', false) // !ie
+                                voption.property('selected', false) // !ie
                             }
                         }
                     })
@@ -585,7 +600,7 @@
                 }
                 // input textarea ..
                 else {
-                    $node.property('value', value)
+                    vnode.property('value', value)
                 }
             }, 1)
 
@@ -608,7 +623,7 @@
                             array.push(this.property('value'))
                         } else {
                             this.propertys.checked = false
-                            $.remove(array, this.property('value'))
+                            arrayRemove(array, this.property('value'))
                         }
                     } else {
                         obj[key] = this.propertys.checked = node.checked
@@ -620,25 +635,25 @@
                 // select
                 else if (node.nodeName.match(/^select$/i)) {
                     var options = node.options
-                    $.each(options, function(option) {
-                        var $option = $(option)
+                    each(options, function(option) {
+                        var voption = VNode(option)
                         if (value instanceof Array) {
                             if (option.selected) {
-                                $option.propertys.selected = true
-                                if (!$.has(value, $option.property('value'))) {
-                                    value.push($option.property('value'))
+                                voption.propertys.selected = true
+                                if (!includes(value, voption.property('value'))) {
+                                    value.push(voption.property('value'))
                                 }
                             } else {
-                                $option.propertys.selected = false
-                                $.remove(value, $option.property('value'))
+                                voption.propertys.selected = false
+                                arrayRemove(value, voption.property('value'))
                             }
                         } else {
                             if (option.selected) {
-                                $node.property('value', $option.property('value'))
-                                $option.propertys.selected = true
-                                obj[key] = $option.property('value')
+                                vnode.property('value', voption.property('value'))
+                                voption.propertys.selected = true
+                                obj[key] = voption.property('value')
                             } else {
-                                $option.propertys.selected = false
+                                voption.propertys.selected = false
                             }
                         }
                     })
@@ -647,10 +662,10 @@
                 else {
                     var nodeValue = node.value
                     if (mdfs.match('.trim')) {
-                        nodeValue = $.trim(nodeValue)
+                        nodeValue = trim(nodeValue)
                     }
                     if (mdfs.match('.number')) {
-                        nodeValue = $.number(nodeValue)
+                        nodeValue = toNumber(nodeValue)
                     }
                     obj[key] = this.propertys.value = nodeValue
                 }
@@ -660,25 +675,25 @@
             })
         },
         is: function(name) {
-            var $is = this.$is || this
-            if (!$is.$component) {
+            var isVnode = this.isVnode || this
+            if (!isVnode.componentVnode) {
                 // new component
-                var options = V.componentOptions[name]
+                var options = VM.componentOptions[name]
                 if (!options) {
                     setTimeout(function() { throw name + ' is not a component' }, 1)
                     return
                 }
-                var component = V(options)
-                var $component = $(component.$el)
-                $component.component = component
-                $is.$component = $component
-                $component.$is = $is
+                var component = VM(options)
+                var componentVnode = VNode(component.$el)
+                componentVnode.component = component
+                isVnode.componentVnode = componentVnode
+                componentVnode.isVnode = isVnode
 
                 // $mount && $render
-                component.$mount($is.node)
+                component.$mount(isVnode.node)
             }
-            var component = $is.$component.component
-            $.extend(component, $is.propertys)
+            var component = isVnode.componentVnode.component
+            extend(component, isVnode.propertys)
             component.$render()
         }
     }
@@ -687,33 +702,33 @@
     // 
     // 视图模型： 编译，生成dom，更新dom
     // 
-    var V = function(options) {
-        // V() -> new V()
-        if (!(this instanceof V)) return new V(options)
+    function VM(options) {
+        // VM() -> new VM()
+        if (!(this instanceof VM)) return new VM(options)
         options = options || {}
 
         // data
         var data = typeof options.data == 'function' ? options.data() : options.data
         this.$data = data
-        $.extend(this, data)
+        extend(this, data)
         // methods
-        V.setMethods(this, options.methods)
+        VM.setMethods(this, options.methods)
         // computed
-        V.setComputed(this, options.computed)
+        VM.setComputed(this, options.computed)
 
         // el
         var el = typeof options.el == 'string' ? document.getElementById(options.el.replace('#', '')) : options.el
 
         // template
-        var template = options.template || (el && V.outerHTML(el)) || '<div> no template </div>'
+        var template = options.template || (el && VM.outerHTML(el)) || '<div> no template </div>'
         // this.$template = template // @dev
 
         // $el
-        this.$el = V.parseHTML(template)
+        this.$el = VM.parseHTML(template)
 
         // compile render
-        this.$ = $
-        this.$foceUpdate = V.compile(this.$el)
+        this.VNode = VNode
+        this.$foceUpdate = VM.compile(this.$el)
         this.$render = function() {
             var self = this
 
@@ -736,27 +751,27 @@
         // @dev
         // console.log(this.$foceUpdate)
 
-        this.$mounted = options.mounted && V.injectFunction(this, options.mounted)
+        this.$mounted = options.mounted && VM.injectFunction(this, options.mounted)
 
         // mount
         el && this.$mount(el)
 
         // save
-        V.components.push(this)
+        VM.components.push(this)
     }
-    V.utils = {
+    extend(VM, {
         compile: function(node) {
             /*
-            $(uid).if(bool, function(){
-                $(uid).text()
+            VNode(uid).if(bool, function(){
+                VNode(uid).text()
             })
-            $(uid).for(list, function (item) {
-                $(uid).for(item.children, function (sub) {
-                    $(uid).text(sub)
+            VNode(uid).for(list, function (item) {
+                VNode(uid).for(item.children, function (sub) {
+                    VNode(uid).text(sub)
                 })
-                $(uid).on('click', function ($event) {remove(item)})
+                VNode(uid).on('click', function ($event) {remove(item)})
             })
-            $(uid).is('com')
+            VNode(uid).is('com')
             */
             var code = ''
             // var code = 'console.trace("r");' // @dev
@@ -765,16 +780,16 @@
 
             function scan(node) {
                 // console.log(node)
-                // console.log(V.outerHTML(node))
+                // console.log(VM.outerHTML(node))
 
                 switch (node.nodeType) {
                     case 1: // element
 
                         // dirs
-                        var dirs = $.getDirs(node)
-                        var $node = $(node)
+                        var dirs = VNode.getDirs(node)
+                        var vnode = VNode(node)
 
-                        $.each(dirs, function(dir) {
+                        each(dirs, function(dir) {
                             if (!dir) return
 
                             var name = dir.name
@@ -794,8 +809,8 @@
                                         key_ = item_key_index[1]
                                         index_ = item_key_index[2]
                                     }
-                                    code += $.strVars('$(@id)["for"]( @list, function( @item, @key, @index ){ ', {
-                                        '@id': $node.uid,
+                                    code += strVars('VNode(@id)["for"]( @list, function( @item, @key, @index ){ ', {
+                                        '@id': vnode.uid,
                                         '@list': list_,
                                         '@item': item_,
                                         '@key': key_,
@@ -803,26 +818,26 @@
                                     })
                                     break
                                 case 'if':
-                                    $node.isIf = true // if for insert
-                                    code += $.strVars('$(@id)["if"]( @value, function(){ ', {
-                                        '@id': $node.uid,
+                                    vnode.isIf = true // if for insert
+                                    code += strVars('VNode(@id)["if"]( @value, function(){ ', {
+                                        '@id': vnode.uid,
                                         '@value': dir.exp
                                     })
                                     break
                                 case 'elseif':
-                                    code += $.strVars('["elseif"]( $(@id), @value, function(){ ', {
-                                        '@id': $node.uid,
+                                    code += strVars('["elseif"]( VNode(@id), @value, function(){ ', {
+                                        '@id': vnode.uid,
                                         '@value': dir.exp
                                     })
                                     break
                                 case 'else':
-                                    code += $.strVars('["else"]( $(@id), function(){ ', {
-                                        '@id': $node.uid
+                                    code += strVars('["else"]( VNode(@id), function(){ ', {
+                                        '@id': vnode.uid
                                     })
                                     break
                                 case 'on':
-                                    code += $.strVars('$(@id).on("@type", "@mdfs", function($event){ @code ;$THISVM.$render()})', {
-                                        '@id': $node.uid,
+                                    code += strVars('VNode(@id).on("@type", "@mdfs", function($event){ @code ;$THISVM.$render()})', {
+                                        '@id': vnode.uid,
                                         '@type': dir.arg,
                                         '@mdfs': dir.mdfs,
                                         '@code': dir.exp.match(/[=;]/) ? dir.exp : // 语句
@@ -840,8 +855,8 @@
                                         key_ = okm[2] ? '"' + okm[2] + '"' : okm[3]
                                     }
 
-                                    code += $.strVars('$(@id).model( @obj, @key, "@mdfs", $THISVM )', {
-                                        '@id': $node.uid,
+                                    code += strVars('VNode(@id).model( @obj, @key, "@mdfs", $THISVM )', {
+                                        '@id': vnode.uid,
                                         '@obj': obj_,
                                         '@key': key_,
                                         '@mdfs': dir.mdfs
@@ -849,21 +864,21 @@
 
                                     break
                                 case 'property':
-                                    code += $.strVars('$(@id).property("@arg", @value)', {
-                                        '@id': $node.uid,
+                                    code += strVars('VNode(@id).property("@arg", @value)', {
+                                        '@id': vnode.uid,
                                         '@arg': dir.arg,
                                         '@value': dir.exp
                                     })
                                     break
                                 case 'is':
-                                    code += $.strVars('$(@id).is("@name")', {
-                                        '@id': $node.uid,
+                                    code += strVars('VNode(@id).is("@name")', {
+                                        '@id': vnode.uid,
                                         '@name': dir.exp
                                     })
                                     break
                                 default:
-                                    code += $.strVars('$(@id)["@name"](@value, "@arg", "@mdfs")', {
-                                        '@id': $node.uid,
+                                    code += strVars('VNode(@id)["@name"](@value, "@arg", "@mdfs")', {
+                                        '@id': vnode.uid,
                                         '@name': dir.name,
                                         '@arg': dir.arg,
                                         '@mdfs': dir.mdfs,
@@ -873,7 +888,7 @@
                         })
 
                         // compile childNodes
-                        var childNodes = $.toArray(node.childNodes)
+                        var childNodes = toArray(node.childNodes)
                         for (var i = 0; i < childNodes.length; i++) {
                             scan(childNodes[i])
                         }
@@ -891,12 +906,12 @@
 
                         // {{}}
                         if (nodeValue.match('{{')) {
-                            var $node = $(node)
-                            $node.initNodeValue = node.nodeValue.replace(/\n/g, ' ')
+                            var vnode = VNode(node)
+                            vnode.initNodeValue = node.nodeValue.replace(/\n/g, ' ')
 
-                            code += $.strVars('$(@id).text( @value )', {
-                                '@id': $node.uid,
-                                '@value': $.parseText(nodeValue)
+                            code += strVars('VNode(@id).property( "nodeValue", @value )', {
+                                '@id': vnode.uid,
+                                '@value': parseText(nodeValue)
                             })
                         }
 
@@ -910,17 +925,17 @@
         },
         parseEl: document.createElement('div'),
         parseHTML: function(html) {
-            V.parseEl.innerHTML = html
-            var el = V.parseEl.children[0] || V.parseEl.childNodes[0]
-            V.parseEl.removeChild(el) // ie8-: 如不移除就清空， el 的子节点也会被清空
-            V.parseEl.innerHTML = ''
+            VM.parseEl.innerHTML = html
+            var el = VM.parseEl.children[0] || VM.parseEl.childNodes[0]
+            VM.parseEl.removeChild(el) // ie8-: 如不移除就清空， el 的子节点也会被清空
+            VM.parseEl.innerHTML = ''
             return el
         },
         outerHTML: function(node) {
             if (node.outerHTML) return node.outerHTML
-            V.parseEl.innerHTML = ''
-            V.parseEl.appendChild(node.cloneNode(true))
-            return V.parseEl.innerHTML
+            VM.parseEl.innerHTML = ''
+            VM.parseEl.appendChild(node.cloneNode(true))
+            return VM.parseEl.innerHTML
         },
         injectFunction: function(vm, fn) {
             var $fn = function() {
@@ -936,13 +951,13 @@
                 // 没有 a1-an 参数
                 var setTimeout = window.setTimeout
                 window.setTimeout = function(fn, time, a1, a2, a3) {
-                    return setTimeout(V.injectFunction(vm, function() {
+                    return setTimeout(VM.injectFunction(vm, function() {
                         fn.apply(this, arguments)
                     }), time, a1, a2, a3)
                 }
                 var setInterval = window.setInterval
                 window.setInterval = function(fn, time, a1, a2, a3) {
-                    return setInterval(V.injectFunction(vm, function() {
+                    return setInterval(VM.injectFunction(vm, function() {
                         fn.apply(this, arguments)
                     }), time, a1, a2, a3)
                 }
@@ -950,9 +965,9 @@
                 window.Image = function(width, height) {
                     var self = new Image(width, height)
                     setTimeout(function() {
-                        $.each(self, function(handler, name){
+                        each(self, function(handler, name){
                             if (name.match(/^on/) && typeof handler == 'function') {
-                                self[name] = V.injectFunction(vm, function() {
+                                self[name] = VM.injectFunction(vm, function() {
                                     handler.apply(self, arguments)
                                 })
                             }
@@ -964,9 +979,9 @@
                 var send = XMLHttpRequest.prototype.send
                 XMLHttpRequest.prototype.send = function() {
                     var self = this
-                    $.each(self, function (handler, name) {
+                    each(self, function (handler, name) {
                         if (name.match(/^on/) && typeof handler == 'function') {
-                            self[name] = V.injectFunction(vm, function() {
+                            self[name] = VM.injectFunction(vm, function() {
                                 handler.apply(this, arguments)
                             })
                         }
@@ -995,7 +1010,7 @@
             for (var key in methods) {
                 var method = methods[key]
                 if (typeof method == 'function') {
-                    vm[key] = V.injectFunction(vm, method)
+                    vm[key] = VM.injectFunction(vm, method)
                 }
             }
         },
@@ -1008,15 +1023,14 @@
                 vm[key] = fn
             }
         }
-    }
-    $.extend(V, V.utils)
-    V.prototype = {
+    })
+    VM.prototype = {
         $mount: function(el) {
             el.parentNode.replaceChild(this.$el, el)
             this.$el = this.$el
 
             // first render
-            this.$render() // 必须异步，每个vm $.forKeyPath 独立
+            this.$render() // 必须异步，每个vm VNode.forKeyPath 独立
 
             // mounted
             this.$mounted && this.$mounted()
@@ -1027,12 +1041,12 @@
 
     // 
     // 组件 保存生成 vm 的 options
-    // $().is()->V(options)->$mount()
+    // VNode().is()->VM(options)->$mount()
     // 
-    V.componentOptions = {}
-    V.components = []
-    V.component = function(name, options) {
-        V.componentOptions[name] = options
+    VM.componentOptions = {}
+    VM.components = []
+    VM.component = function(name, options) {
+        VM.componentOptions[name] = options
     }
 
 
@@ -1060,12 +1074,12 @@
 
 
     // export
-    V.$ = $
+    VM.VNode = VNode
     if (typeof module == 'object') {
-        module.exports = V
+        module.exports = VM
     } else {
-        window.V = V // todo name: ve, vme, vne, vie, wu, wue, ...
-        window.Vue = V
-        window.$ = $ // @dev
+        window.VM = VM // todo name: ve, vme, vne, vie, wu, wue, ...
+        window.Vue = VM
+        window.VNode = VNode // @dev
     }
 }(document)
