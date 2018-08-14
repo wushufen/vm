@@ -48,12 +48,17 @@
         return arr
     }
 
-    function each(list, fn, isArrayLike) {
-        if (list instanceof Array || isArrayLike) {
-            for (var i = 0; i < list.length; i++) {
-                var item = list[i]
-                fn(item, i, i, list)
-            }
+    function forEach(list, fn) {
+        if (!list) return
+        for (var i = 0; i < list.length; i++) {
+            var item = list[i]
+            fn(item, i, i, list)
+        }
+    }
+
+    function each(list, fn) {
+        if (list instanceof Array) {
+            forEach(list, fn)
         } else {
             var i = 0
             for (var key in list) {
@@ -62,10 +67,6 @@
                 fn(item, key, i++, list)
             }
         }
-    }
-
-    function forEach(list, fn) {
-        each(list, fn, true)
     }
 
     function indexOf(array, value) {
@@ -291,7 +292,7 @@
         },
         getAttrs: function(node) {
             var attrs = {}
-            each(toArray(node.attributes), function(attribute) {
+            forEach(node.attributes, function(attribute) {
                 if (attribute.specified || attribute.nodeName == 'value') { // ie || ie7-
                     attrs[attribute.nodeName] = attribute.nodeValue
                 }
@@ -302,7 +303,8 @@
             var dirs = Array(10) // 留位给 for 等特殊指令，位置代表优先级
             dirs.size = 0 // 通过 size 判断数量
 
-            each(toArray(node.attributes), function(attribute) {
+            // ie7: !!toArray ?? for??
+            forEach(toArray(node.attributes), function(attribute) {
                 if (!attribute.specified) return // ie
 
                 var nodeName = attribute.nodeName
@@ -535,7 +537,7 @@
             vfor.remove()
 
             var forKeyPath = VNode.forKeyPath // **!!!**
-            try {
+            // try {
                 each(list, function(item, key, index) {
                     // clone
                     VNode.forKeyPath = forKeyPath + '.' + key // **!!!**
@@ -548,12 +550,12 @@
 
                     fn(item, key, index)
                 })
-            } catch (e) {
-                // 避免报错时 forKeyPath 混乱
-                setTimeout(function() {
-                    throw e
-                }, 1)
-            }
+            // } catch (e) {
+            //     // 避免报错时 forKeyPath 混乱
+            //     setTimeout(function() {
+            //         throw e
+            //     }, 1)
+            // }
             VNode.forKeyPath = forKeyPath // **!!!**
 
             // remove

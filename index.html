@@ -122,7 +122,7 @@
 		<!--  -->
 		<div id="component">
 			<input model="model">
-			<div for="item in list" is="tag" class="isTag" :value="model"></div>
+			<!-- <div for="item in list" is="tag" class="isTag" :value="model"></div> -->
 		</div>
 	</div>
 	<!-- tpl -->
@@ -203,6 +203,16 @@
 		}
 	})
 	*/
+	var list = [
+		{ id:1, text:'todo1', status:'open', tags:['abc'] },
+		{ id:2, text:'todo2', status:'open', tags:['abc'] }
+	]
+	for (var i = 0; i < 20; i++) {
+		list.push({
+			text: i
+		})
+	}
+
 	vm = vue = new Vue({
 		el: '#html',
 		data: {
@@ -213,10 +223,7 @@
 			array: [],
 			object: { key: 'value' },
 			model: 'vm.js',
-			list: [
-				{ id:1, text:'todo1', status:'open', tags:['abc'] },
-				{ id:2, text:'todo2', status:'open', tags:['abc'] }
-			],
+			list: list,
 			compute: function () {
 				return 'computed:' + String(this.model).toUpperCase()
 			},
