@@ -27,8 +27,8 @@
 </head>
 
 <body>
-	<div id="test">
-		<a .href="'http://baidu.com'" .title="111" .text="1" .onclick.prevent="console.log(event)">baidu</a>
+	<div id="testx">
+		<input model.number="model">
 	</div>
 	<div id="app">
 		<div id="event">
@@ -44,11 +44,11 @@
 			<tr>
 				<td><span pre>{{n}}</span>:{{++n}} </td>
 				<td>{{compute}}</td>
-				<td text="'text:'+model"></td>
-				<td html="'html:'+'<b>'+model"></td>
-				<td :title="compute">:title</td>
-				<td :class={selected:model}>:class</td>
-				<td :style="{color:model}">:style</td>
+				<td .text="'text:'+model"></td>
+				<td .html="'html:'+'<b>'+model"></td>
+				<td .title="compute">:title</td>
+				<td .class={selected:model}>:class</td>
+				<td .style="{color:model}">:style</td>
 				<td show="model">show</td>
 				<td hide="model">hide</td>
 				<td>
@@ -204,7 +204,7 @@
 	})
 	*/
 	vm = vue = new Vue({
-		el: '#app',
+		el: '#html',
 		data: {
 			n: 0,
 			string: 'string',

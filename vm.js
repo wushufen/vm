@@ -1,7 +1,7 @@
 ! function(document) {
     var SHOW = {
-        uid: false,
-        mark: false,
+        uid: true,
+        mark: true,
         dir: false
     }
 
@@ -310,6 +310,8 @@
 
                 // dir                      v-    .on  . : @  on        .:   click    .mdf.s
                 var m = nodeName.match(/^(?:v-)?(\.on|\.|:|@|[^.:]+)(?:[.:]?([^.]+))?(.*)/) || []
+                // idr                      v-    .on  .:  @  on    :  click   .mdf.s
+                var m = nodeName.match(/^(?:v-)?(\.on|[.:]|@|[^.:]+):?([^.]+)?(.*)/) || []
                 var name = m[1]
                 if (name == '.') name = 'property'
                 if (name == ':') name = 'property'
