@@ -1074,6 +1074,11 @@
             $fn.fn = fn
             return $fn
         },
+        overwriteFunction: function (vm, fn) {
+            // ??
+            var code = fn.toString()
+            console.log(code)
+        },
         setData: function (vm, data) {
             for(var key in data){
                 if (!hasOwn(data, key)) continue
