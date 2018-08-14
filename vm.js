@@ -14,11 +14,8 @@
     })()
 
     function hasOwn(obj, property) { // ie: !node.hasOwnProperty
-        if (obj.nodeType == 1) { // all: !img.hasOwnProperty('onload') ...
-            var attribute = obj.attributes[property]
-            if (attribute) {
-                return attribute.specified
-            }
+        if (obj.nodeType == 1) {
+            return obj[property] // all: !img.hasOwnProperty('onload') 'src' ..
         } else {
             return Object.hasOwnProperty.call(obj, property)
         }
@@ -160,6 +157,19 @@
         if (selector.match(/^#/))  return document.getElementById(selector.slice(1))
     }
 
+    // readonly -> readOnly
+    var attrPropMap = {
+        'text': 'innerText',
+        'html': 'innerHTML'
+    }
+    for(var name in document.createElement('input')){
+        if (!name.match(/[A-Z]/)) continue
+        attrPropMap[name.toLowerCase()] = name
+    }
+    function attr2prop(name) {
+        return attrPropMap[name] || name
+    }
+
     var on = function() {
         return window.addEventListener ? function(node, type, fn, useCapture) {
             node.addEventListener(type, fn, useCapture)
@@ -298,10 +308,13 @@
                 var nodeName = attribute.nodeName
                 var nodeValue = attribute.nodeValue
 
-                // dir                           @|dir        :   arg      .mdf.13
-                var m = nodeName.match(/^(?:v-)?(@|[^.:]*)(?:[:]?([^.]+))?(.*)/) || []
-                var name = m[1] || 'property'
+                // dir                      v-    .on  . : @  on        .:   click    .mdf.s
+                var m = nodeName.match(/^(?:v-)?(\.on|\.|:|@|[^.:]+)(?:[.:]?([^.]+))?(.*)/) || []
+                var name = m[1]
+                if (name == '.') name = 'property'
+                if (name == ':') name = 'property'
                 if (name == 'bind') name = 'property'
+                if (name == '.on') name = 'on'
                 if (name == '@') name = 'on'
 
                 if (name in VNode.prototype) { // 指令就是虚拟节点的方法
@@ -923,9 +936,9 @@
 
                                     break
                                 case 'property':
-                                    code += strVars('VNode(@id).property("@arg", @value)', {
+                                    code += strVars('VNode(@id).property("@name", @value)', {
                                         '@id': vnode.uid,
-                                        '@arg': dir.arg,
+                                        '@name': attr2prop(dir.arg),
                                         '@value': dir.exp
                                     })
                                     break
@@ -936,9 +949,9 @@
                                     })
                                     break
                                 default:
-                                    code += strVars('VNode(@id)["@name"](@value, "@arg", "@mdfs")', {
+                                    code += strVars('VNode(@id)["@dir"](@value, "@arg", "@mdfs")', {
                                         '@id': vnode.uid,
-                                        '@name': dir.name,
+                                        '@dir': dir.name,
                                         '@arg': dir.arg,
                                         '@mdfs': dir.mdfs,
                                         '@value': dir.exp
@@ -1009,6 +1022,7 @@
                 var Image = window.Image
                 window.Image = function(width, height) {
                     var self = new Image(width, height)
+                    console.dir(self)
                     setTimeout(function() {
                         each(self, function(handler, name){
                             if (name.match(/^on/) && typeof handler == 'function') {

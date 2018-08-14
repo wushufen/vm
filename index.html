@@ -27,8 +27,8 @@
 </head>
 
 <body>
-	<div id="testx">
-		<div :abc="1" value="2" :efg="3">div</div>
+	<div id="test">
+		<a .href="'http://baidu.com'" .title="111" .text="1" .onclick.prevent="console.log(event)">baidu</a>
 	</div>
 	<div id="app">
 		<div id="event">
@@ -204,7 +204,7 @@
 	})
 	*/
 	vm = vue = new Vue({
-		el: '#html',
+		el: '#app',
 		data: {
 			n: 0,
 			string: 'string',
@@ -238,7 +238,7 @@
 		mounted: function(){
 			var vue = this
 			
-			vue.model = 'mounted'
+			// vue.model = 'mounted'
 
 			var img = new Image
 			img.onload = function () {
@@ -249,10 +249,9 @@
 			}
 			img.src = 'https://cn.vuejs.org/images/logo.png'
 
-			window.setTimeout(function (arg) {
-				console.log(arg)
+			window.setTimeout(function () {
 				vue.model = 'sssss1'
-			}, 1000, 'arg')
+			}, 1000)
 
 			// ajax({
 			// 	url: './readme.md',
