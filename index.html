@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html id="html">
 
 <head>
 	<meta charset="utf-8">
-	<title></title>
+	<title>{{model}}</title>
 	<style type="text/css">
 	body{
 		padding: 1em;
@@ -42,11 +42,11 @@
 		<!--  -->
 		<table id="base">
 			<tr>
-				<td>n:{{++n}} </td>
+				<td><span pre>{{n}}</span>:{{++n}} </td>
 				<td>{{compute}}</td>
 				<td text="'text:'+model"></td>
 				<td html="'html:'+'<b>'+model"></td>
-				<td :title="'this is title: ' + model">:title</td>
+				<td :title="compute">:title</td>
 				<td :class={selected:model}>:class</td>
 				<td :style="{color:model}">:style</td>
 				<td show="model">show</td>
@@ -126,31 +126,33 @@
 		</div>
 	</div>
 	<!-- tpl -->
-	<div id="tag" style="display:none">
-		<span class="tag">
-			<table>
-				<tr>
-					<td>{{value}}</td>
-					<td @click="n++"><b>{{n}}</b></td>
-				</tr>
-			</table>
-		</span>
-	</div>
-	<!--  -->
-	<div id="ul" style="display:none">
-		<ul>
-			<li v-for="item in list">
-				{{item}}
-				<div is="ol"></div>
-			</li>
-		</ul>
-	</div>
-	<div id="ol" style="display:none">
-		<ol>
-			<li v-for="item in list">
-				{{item}}
-			</li>
-		</ol>
+	<div pre>
+		<div id="tag" style="display:none">
+			<span class="tag">
+				<table>
+					<tr>
+						<td>{{value}}</td>
+						<td @click="n++"><b>{{n}}</b></td>
+					</tr>
+				</table>
+			</span>
+		</div>
+		<!--  -->
+		<div id="ul" style="display:none">
+			<ul>
+				<li v-for="item in list">
+					{{item}}
+					<div is="ol"></div>
+				</li>
+			</ul>
+		</div>
+		<div id="ol" style="display:none">
+			<ol>
+				<li v-for="item in list">
+					{{item}}
+				</li>
+			</ol>
+		</div>
 	</div>
 	<script src="vm.js"></script>
 	<script src="ajax.js"></script>
@@ -202,7 +204,7 @@
 	})
 	*/
 	vm = vue = new Vue({
-		el: '#app',
+		el: '#html',
 		data: {
 			n: 0,
 			string: 'string',
@@ -214,21 +216,17 @@
 			list: [
 				{ id:1, text:'todo1', status:'open', tags:['abc'] },
 				{ id:2, text:'todo2', status:'open', tags:['abc'] }
-			]
-		},
-		computed: {
+			],
 			compute: function () {
 				return 'computed:' + String(this.model).toUpperCase()
-			}
-		},
-		methods: {
+			},
 			add: function (text) {
 				var vue = this
 
 				this.list.push({
 					text: text
 				})
-				setInterval(function () {
+				setTimeout(function () {
 					vue.model += 2
 				}, 1000)
 			},

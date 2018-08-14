@@ -1,21 +1,32 @@
 ! function(document) {
     var SHOW = {
-        uid: true,
-        dir: false,
-        mark: true
+        uid: false,
+        mark: false,
+        dir: false
     }
 
     function incUid() {
         return incUid.i = (incUid.i || 0) + 1
     }
 
-    var canSetUidOnTextNode = (function() { // ie false
+    var canSetUidOnTextNode = (function() { // ie: false
         try { return document.createTextNode('').uid = true } catch (e) {}
     })()
 
+    function hasOwn(obj, property) { // ie: !node.hasOwnProperty
+        if (obj.nodeType == 1) { // all: !img.hasOwnProperty('onload') ...
+            var attribute = obj.attributes[property]
+            if (attribute) {
+                return attribute.specified
+            }
+        } else {
+            return Object.hasOwnProperty.call(obj, property)
+        }
+    }
+
     function extend(obj, map) {
         for (var key in map) {
-            if (!map.hasOwnProperty(key)) continue
+            if (!hasOwn(map, key)) continue
             obj[key] = map[key]
         }
         return obj
@@ -23,15 +34,11 @@
 
     function orExtend(obj, map) {
         for (var key in map) {
-            if (!map.hasOwnProperty(key)) continue
+            if (!hasOwn(map, key)) continue
             if (key in obj) continue
             obj[key] = map[key]
         }
         return obj
-    }
-
-    function hasOwn(obj, property) { // ie !node
-        return Object.hasOwnProperty.call(obj, property)
     }
 
     function toArray(list) {
@@ -44,8 +51,8 @@
         return arr
     }
 
-    function each(list, fn, noHasOwn) {
-        if (list && 'length' in list) {
+    function each(list, fn, isArrayLike) {
+        if (list instanceof Array || isArrayLike) {
             for (var i = 0; i < list.length; i++) {
                 var item = list[i]
                 fn(item, i, i, list)
@@ -53,11 +60,15 @@
         } else {
             var i = 0
             for (var key in list) {
-                if (!noHasOwn && !hasOwn(list, key)) continue
+                if (!hasOwn(list, key)) continue
                 var item = list[key]
                 fn(item, key, i++, list)
             }
         }
+    }
+
+    function forEach(list, fn) {
+        each(list, fn, true)
     }
 
     function indexOf(array, value) {
@@ -74,10 +85,10 @@
     }
 
     function includes(array, value) {
-        return indexOf(array, value) != -1
+        return indexOf(array, value) > -1
     }
 
-    function arrayRemove(array, value) {
+    function remove(array, value) {
         for (var i = 0; i < array.length; i++) {
             var item = array[i]
             if (item === value) array.splice(i, 1), i--
@@ -113,6 +124,40 @@
             // 
             +
             '"'
+    }
+
+    var parseEl = document.createElement('div')
+
+    function parseHTML(html) {
+        parseEl.innerHTML = html
+        var el = parseEl.children[0] || parseEl.childNodes[0]
+        parseEl.removeChild(el) // ie8-: 如不移除就清空， el 的子节点也会被清空
+        parseEl.innerHTML = ''
+        return el
+    }
+
+    function outerHTML(node) {
+        if (node.outerHTML) return node.outerHTML
+        parseEl.innerHTML = ''
+        parseEl.appendChild(node.cloneNode(true))
+        return parseEl.innerHTML
+    }
+
+    function contains(node, child) {
+        if (node.contains) {
+            return node.contains(child)
+        }
+        return node == child || function loop(child) {
+            var parentNode = child.parentNode
+            return parentNode == node || (parentNode && loop(parentNode))
+        }(child)
+    }
+
+    function getElement(selector) {
+        if (!selector) return
+        if (selector.nodeType == 1) return selector
+        if (document.querySelector) return document.querySelector(selector)
+        if (selector.match(/^#/))  return document.getElementById(selector.slice(1))
     }
 
     var on = function() {
@@ -154,16 +199,6 @@
         }, useCapture)
     }
 
-    function contains(node, child) {
-        if (node.contains) {
-            return node.contains(child)
-        }
-        return node == child || function loop(child) {
-            var parentNode = child.parentNode
-            return parentNode == node || (parentNode && loop(parentNode))
-        }(child)
-    }
-
     /*
     forKeyPath = VNode.forKeyPath
     for(key in list){
@@ -192,7 +227,7 @@
             // VNode(number) -> vnode: uid+'.key.0'
             var vnode = VNode.map[uid + VNode.forKeyPath] // **!!!**
             // is="component"
-            return vnode.componentVnode || vnode
+            return vnode.vcomponent || vnode
         }
 
         // VNode(node) -> return saved
@@ -281,7 +316,7 @@
                         exp: nodeValue || '""'
                     }
 
-                    var $dirs = 'for,if,elseif,else,is'.split(',') // 特殊指令优先级排序
+                    var $dirs = 'pre,for,if,elseif,else,is'.split(',') // 特殊指令优先级排序
                     var index = indexOf($dirs, name)
                     if (index > -1) {
                         dirs[index] = dir
@@ -297,9 +332,9 @@
             return dirs
         }
     })
-
     // 虚拟节点方法：可以执行的指令
     VNode.prototype = {
+        pre: function(){},
         autofocus: function() {
             if (this.focused) return
             var self = this
@@ -324,6 +359,7 @@
                 this.setStyle(value)
                 return
             }
+            // vnode change?
             if (propertys[name] === value && name in propertys) return value
             return propertys[name] = this.node[name] = value
         },
@@ -334,7 +370,7 @@
             this.property('innerHTML', value)
         },
         setStyle: function(map) {
-            var style = this.style || {}
+            var style = this.style = this.style || {}
             for (var key in map) {
                 var value = map[key]
                 if (style[key] === value) continue
@@ -342,7 +378,6 @@
                     style[key] = this.node.style[key] = value
                 } catch (e) {}
             }
-            this.style = style
         },
         hasClass: function(name) {
             return this.node.className.match(RegExp('(^| )' + name + '( |$)', 'i'))
@@ -354,7 +389,7 @@
             this.node.className = this.node.className.replace(RegExp('(^| )' + name + '(?= |$)', 'ig'), '')
         },
         'setClass': function(map) {
-            var classes = this.classes || {}
+            var classes = this.classes = this.classes || {}
             for (var name in map) {
                 var bool = map[name]
                 if (bool && !classes[name]) {
@@ -366,7 +401,6 @@
                     classes[name] = false
                 }
             }
-            this.classes = classes
         },
         show: function(value) {
             this.setStyle({ display: value ? '' : 'none' })
@@ -423,8 +457,9 @@
 
         },
         remove: function() {
-            if (this.componentVnode) {
-                this.componentVnode.remove()
+            if (this.vcomponent) {
+                this.vcomponent.remove()
+                return
             }
             var node = this.node
             var parentNode = node.parentNode
@@ -434,14 +469,14 @@
             }
         },
         insert: function(toNode) {
-            if (this.componentVnode) {
-                this.componentVnode.insert()
+            if (this.vcomponent) {
+                this.vcomponent.insert()
                 return
             }
             var node = this.node
             var parentNode = node.parentNode
             if (!parentNode || parentNode.nodeType != 1) {
-                var markNode = toNode || this.markNode || this.forVnode.markNode
+                var markNode = toNode || this.markNode || this.vfor.markNode
                 markNode.parentNode.insertBefore(node, markNode)
             }
         },
@@ -451,7 +486,7 @@
             if (vnode) return vnode // cache
 
             // clone
-            var forVnode = this
+            var vfor = this
             var forNode = this.node
             var cloneNode = forNode.cloneNode(true)
 
@@ -471,7 +506,7 @@
             }(forNode, cloneNode)
 
             vnode = VNode(cloneNode)
-            vnode.forVnode = forVnode // vnode.$forNone.mackNode -> insert node
+            vnode.vfor = vfor // vnode.$forNone.mackNode -> insert node
 
             // cache
             clones[key] = vnode
@@ -479,17 +514,17 @@
             return vnode
         },
         'for': function(list, fn) {
-            var forVnode = this.isVnode || this
+            var vfor = this.vis || this
 
             // this.mark()
-            forVnode.remove()
+            vfor.remove()
 
             var forKeyPath = VNode.forKeyPath // **!!!**
             try {
                 each(list, function(item, key, index) {
                     // clone
                     VNode.forKeyPath = forKeyPath + '.' + key // **!!!**
-                    var vnode = forVnode.clone(key)
+                    var vnode = vfor.clone(key)
 
                     // 当 for, if 同时存在，for insert, if false remove, 会造成dom更新
                     if (!vnode.isIf) {
@@ -507,7 +542,7 @@
             VNode.forKeyPath = forKeyPath // **!!!**
 
             // remove
-            var clones = forVnode.clones
+            var clones = vfor.clones
             for (var key in clones) {
                 var vnode = clones[key]
                 if (!list || !(key in list)) {
@@ -574,7 +609,7 @@
                 // select
                 else if (node.nodeName.match(/^select$/i)) {
                     var hasSelected = false
-                    each(node.options, function(option) {
+                    forEach(node.options, function(option) {
                         var voption = VNode(option)
 
                         // array [multiple]
@@ -623,7 +658,7 @@
                             array.push(this.property('value'))
                         } else {
                             this.propertys.checked = false
-                            arrayRemove(array, this.property('value'))
+                            remove(array, this.property('value'))
                         }
                     } else {
                         obj[key] = this.propertys.checked = node.checked
@@ -634,8 +669,7 @@
                 }
                 // select
                 else if (node.nodeName.match(/^select$/i)) {
-                    var options = node.options
-                    each(options, function(option) {
+                    forEach(node.options, function(option) {
                         var voption = VNode(option)
                         if (value instanceof Array) {
                             if (option.selected) {
@@ -645,7 +679,7 @@
                                 }
                             } else {
                                 voption.propertys.selected = false
-                                arrayRemove(value, voption.property('value'))
+                                remove(value, voption.property('value'))
                             }
                         } else {
                             if (option.selected) {
@@ -675,8 +709,8 @@
             })
         },
         is: function(name) {
-            var isVnode = this.isVnode || this
-            if (!isVnode.componentVnode) {
+            var vis = this.vis || this
+            if (!vis.vcomponent) {
                 // new component
                 var options = VM.componentOptions[name]
                 if (!options) {
@@ -684,16 +718,16 @@
                     return
                 }
                 var component = VM(options)
-                var componentVnode = VNode(component.$el)
-                componentVnode.component = component
-                isVnode.componentVnode = componentVnode
-                componentVnode.isVnode = isVnode
+                var vcomponent = VNode(component.$el)
+                vcomponent.component = component
+                vis.vcomponent = vcomponent
+                vcomponent.vis = vis
 
                 // $mount && $render
-                component.$mount(isVnode.node)
+                component.$mount(vis.node)
             }
-            var component = isVnode.componentVnode.component
-            extend(component, isVnode.propertys)
+            var component = vis.vcomponent.component
+            extend(component, vis.propertys)
             component.$render()
         }
     }
@@ -705,26 +739,34 @@
     function VM(options) {
         // VM() -> new VM()
         if (!(this instanceof VM)) return new VM(options)
+
+        // options
         options = options || {}
+        this.$options = options
 
         // data
-        var data = typeof options.data == 'function' ? options.data() : options.data
+        var data = options.data
+        if (typeof options.data == 'function') {
+            data = options.data()
+        }
+        VM.setData(this, data)
         this.$data = data
-        extend(this, data)
+
         // methods
-        VM.setMethods(this, options.methods)
+        VM.setData(this, options.methods)
+
         // computed
-        VM.setComputed(this, options.computed)
+        VM.setData(this, options.computed)
 
         // el
-        var el = typeof options.el == 'string' ? document.getElementById(options.el.replace('#', '')) : options.el
+        var el = getElement(options.el)
 
         // template
-        var template = options.template || (el && VM.outerHTML(el)) || '<div> no template </div>'
+        var template = options.template || (el ? outerHTML(el) : '<div> -_-!! </div>')
         // this.$template = template // @dev
 
         // $el
-        this.$el = VM.parseHTML(template)
+        this.$el = el ? el : parseHTML(template)
 
         // compile render
         this.VNode = VNode
@@ -759,6 +801,18 @@
         // save
         VM.components.push(this)
     }
+    VM.prototype = {
+        $mount: function(el) {
+            el.parentNode.replaceChild(this.$el, el)
+            this.$el = el
+
+            // first render
+            this.$render() // 必须异步，每个vm VNode.forKeyPath 独立
+
+            // mounted
+            this.$mounted && this.$mounted()
+        }
+    }
     extend(VM, {
         compile: function(node) {
             /*
@@ -780,7 +834,7 @@
 
             function scan(node) {
                 // console.log(node)
-                // console.log(VM.outerHTML(node))
+                // console.log(outerHTML(node))
 
                 switch (node.nodeType) {
                     case 1: // element
@@ -788,6 +842,11 @@
                         // dirs
                         var dirs = VNode.getDirs(node)
                         var vnode = VNode(node)
+
+                        // !
+                        if (dirs.pre) {
+                            return
+                        }
 
                         each(dirs, function(dir) {
                             if (!dir) return
@@ -923,20 +982,6 @@
             var render = Function('var $THISVM=this;with(this){\n' + code + '\n}')
             return render
         },
-        parseEl: document.createElement('div'),
-        parseHTML: function(html) {
-            VM.parseEl.innerHTML = html
-            var el = VM.parseEl.children[0] || VM.parseEl.childNodes[0]
-            VM.parseEl.removeChild(el) // ie8-: 如不移除就清空， el 的子节点也会被清空
-            VM.parseEl.innerHTML = ''
-            return el
-        },
-        outerHTML: function(node) {
-            if (node.outerHTML) return node.outerHTML
-            VM.parseEl.innerHTML = ''
-            VM.parseEl.appendChild(node.cloneNode(true))
-            return VM.parseEl.innerHTML
-        },
         injectFunction: function(vm, fn) {
             var $fn = function() {
 
@@ -971,7 +1016,7 @@
                                     handler.apply(self, arguments)
                                 })
                             }
-                        }, true)
+                        })
                     }, 1)
                     return self
                 }
@@ -985,7 +1030,7 @@
                                 handler.apply(this, arguments)
                             })
                         }
-                    }, true)
+                    })
                     return send && send.apply(this, arguments)
                 }
 
@@ -1003,40 +1048,26 @@
                 return rs
             }
 
+            // computed
+            $fn.toJSON = $fn.toString = $fn.valueOf = function () {
+                return fn.call(vm)
+            }
+
             $fn.fn = fn
             return $fn
         },
-        setMethods: function(vm, methods) {
-            for (var key in methods) {
-                var method = methods[key]
-                if (typeof method == 'function') {
-                    vm[key] = VM.injectFunction(vm, method)
+        setData: function (vm, data) {
+            for(var key in data){
+                if (!hasOwn(data, key)) continue
+                var item = data[key]
+                if (typeof item == 'function') {
+                    vm[key] = VM.injectFunction(vm, item)
+                } else {
+                    vm[key] = item
                 }
-            }
-        },
-        setComputed: function(vm, computed) {
-            for (var key in computed) {
-                var fn = computed[key]
-                fn.toJSON = fn.valueOf = function() {
-                    return this.call(vm)
-                }
-                vm[key] = fn
             }
         }
     })
-    VM.prototype = {
-        $mount: function(el) {
-            el.parentNode.replaceChild(this.$el, el)
-            this.$el = this.$el
-
-            // first render
-            this.$render() // 必须异步，每个vm VNode.forKeyPath 独立
-
-            // mounted
-            this.$mounted && this.$mounted()
-
-        }
-    }
 
 
     // 
