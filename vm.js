@@ -1008,7 +1008,7 @@
                 // typeof setInterval == 'object'; !setInterval.apply
                 // window.setInterval = 1; setInterval == window.setInterval
                 // 
-                // 没有 a1-an 参数
+                // !a1~aN
                 var setTimeout = window.setTimeout
                 window.setTimeout = function(fn, time, a1, a2, a3) {
                     return setTimeout(VM.injectFunction(vm, function() {
@@ -1125,7 +1125,8 @@
     if (typeof module == 'object') {
         module.exports = VM
     } else {
-        window.VM = VM // todo name: ve, vme, vne, vie, wu, wue, ...
+        window.V = VM
+        window.VM = VM
         window.Vue = VM
         window.VNode = VNode // @dev
     }
