@@ -781,15 +781,16 @@
         var el = getElement(options.el)
 
         // template
-        var template = options.template || (el ? outerHTML(el) : '<div> -_-!! </div>')
+        var template = options.template || (el ? outerHTML(el) : '<b> -_-! </b>')
         // this.$template = template // @dev
 
         // $el
         this.$el = el ? el : parseHTML(template)
 
         // compile render
-        this.VNode = VNode
         this.$foceUpdate = VM.compile(this.$el)
+
+        this.VNode = VNode
         this.$render = function() {
             var self = this
 
@@ -809,16 +810,9 @@
             }
         }
 
-        // @dev
-        // console.log(this.$foceUpdate)
-
-        this.$mounted = options.mounted && VM.injectFunction(this, options.mounted)
-
         // mount
+        this.$mounted = options.mounted && VM.injectFunction(this, options.mounted)
         el && this.$mount(el)
-
-        // save
-        VM.components.push(this)
     }
     VM.prototype = {
         $mount: function(el) {
@@ -985,12 +979,15 @@
                         // {{}}
                         if (nodeValue.match('{{')) {
                             var vnode = VNode(node)
-                            vnode.initNodeValue = node.nodeValue.replace(/\n/g, ' ')
+                            vnode.initNodeValue = node.nodeValue.replace(/\n/g, ' ')  // @dev
 
                             code += strVars('VNode(@id).property( "nodeValue", @value )', {
                                 '@id': vnode.uid,
                                 '@value': parseText(nodeValue)
                             })
+
+                            // --{{}}
+                            node.nodeValue = '　　' // ie !''
                         }
 
                         break;
@@ -1077,7 +1074,7 @@
             return $fn
         },
         overwriteFunction: function (vm, fn) {
-            // ??
+            // ?? scope
             var code = fn.toString()
             console.log(code)
         },
@@ -1100,8 +1097,8 @@
     // VNode().is()->VM(options)->$mount()
     // 
     VM.componentOptions = {}
-    VM.components = []
     VM.component = function(name, options) {
+        options.isComponent = true
         VM.componentOptions[name] = options
     }
 
