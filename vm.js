@@ -799,9 +799,9 @@
 
         // el
         var el = getElement(options.el)
-        // if (!options.el && !options.template) {
-        //     el = document.body
-        // }
+        if (!options.el && !options.template) { // default node
+            el = document.body  // ie: !html
+        }
         if (el && el.computed) {
             el = null
             options.template = '<b>-_-</b>'
@@ -809,6 +809,7 @@
         if (el) {
             el.computed = true
         }
+        // fix ie8-: <component>
         if (el) {
             // ie8-: component('tag') -> createElement('tag') -> <tag>ok</tag>
             el.innerHTML = el.innerHTML
