@@ -1,13 +1,15 @@
-! function(document) {
+! function(window, document) {
     var SHOW = {
         uid: true,
         mark: true,
         dir: false
     }
 
-    function incUid() {
-        return incUid.i = (incUid.i || 0) + 1
-    }
+    var incUid = function (i) {
+        return function () {
+           return ++i
+        } 
+    }(0)
 
     var canSetUidOnTextNode = (function() { // ie: false
         try { return document.createTextNode('').uid = true } catch (e) {}
@@ -177,14 +179,14 @@
         return window.addEventListener ? function(node, type, fn, useCapture) {
             node.addEventListener(type, fn, useCapture)
 
-        } : function(node, type, fn) {
+        } : function(node, type, fn) { // ie
             type = {
                 input: 'keyup',
                 focus: 'focusin',
                 blur: 'focusout'
             }[type] || type
 
-            node.attachEvent('on' + type, function() { // ie
+            node.attachEvent('on' + type, function() {
                 var event = window.event
                 event.target = event.srcElement
                 event.preventDefault = function() { event.returnValue = false }
@@ -354,6 +356,7 @@
     VNode.prototype = {
         pre: null,
         ref: function (vm, name) {
+            // todo: for ref
             vm.$refs = vm.$refs = {}
             vm.$refs[name] = this.node
         },
@@ -1171,4 +1174,4 @@
         window.Vue = VM
         window.VNode = VNode // @dev
     }
-}(document)
+}(window, document)

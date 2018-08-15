@@ -137,7 +137,11 @@
 		<div id="treeTpl" pre style="display:none">
 			<ul class="tree">
 				<li for="item in data">
-					<div @click="item.open=!item.open">{{item.value}}</div>
+					<div @click="item.open=!item.open">
+						<span if="item.open">-</span>
+						<span else>+</span>
+						{{item.value}}
+					</div>
 					<ul is="tree" if="item.open" :data="item.children"></ul>
 				</li>
 				<li @click="data.push({value:110,children:[]})">
@@ -145,7 +149,9 @@
 				</li>
 			</ul>
 			<style type="text/css">
-				.tree{}
+				.tree{
+					list-style: none
+				}
 				.tree li{
 					cursor: pointer;
 				}
