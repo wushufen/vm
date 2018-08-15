@@ -1145,6 +1145,7 @@
     // 
     VM.optionsMap = {}
     VM.component = function(name, options) {
+        document.createElement(name) // ie: <component>+</component>
         options.isComponent = true
         VM.optionsMap[name] = options
     }

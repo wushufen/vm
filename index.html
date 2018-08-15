@@ -24,9 +24,79 @@
 		color: #0f0
 	}
 	</style>
+	<script src="vm.js"></script>
 </head>
 
 <body>
+	<!-- tpl -->
+	<div pre style="display:none">
+		<div id="tag">
+			<span class="tag">
+				<table>
+					<tr>
+						<td>{{value}}</td>
+						<td @click="n++"><b>{{n}}</b></td>
+					</tr>
+				</table>
+			</span>
+		</div>
+		<div id="treeTpl" pre style="display:none">
+			<ul class="tree">
+				<li for="item in data">
+					<div @click="item.open=!item.open">
+						<span if="item.open">-</span>
+						<span else>+</span>
+						{{item.value}}
+					</div>
+					<ul is="tree" if="item.open" :data="item.children"></ul>
+				</li>
+				<li @click="data.push({value:110,children:[]})">
+					<div>+</div>
+				</li>
+			</ul>
+			<style type="text/css">
+				.tree{
+					list-style: none
+				}
+				.tree li{
+					cursor: pointer;
+				}
+				.tree li div:hover{
+					background: #eee
+				}
+			</style>
+		</div>
+	</div>
+	<script>
+		Vue.component('tag', {
+			template: tag.innerHTML,
+			props: ['value'],
+			data: function() {
+				return {
+					n: 0,
+					value: 'init'
+				}
+			},
+			methods: {
+			},
+			mounted: function () {
+				var self = this
+				// console.log(self)
+			}
+		})
+
+		Vue.component('tree', {
+			template: treeTpl.innerHTML,
+			data: function() {
+				return {
+					data: []
+				}
+			},
+			mounted: function () {
+				console.log(this.$parent)
+			}
+		})
+	</script>
 	<div id="testx">
 		<input model.number="model">
 	</div>
@@ -133,79 +203,14 @@
 		</div>
 		<div id="tree">
 			<tree :data="tree"></tree>
-		</div>
-		<div id="treeTpl" pre style="display:none">
-			<ul class="tree">
-				<li for="item in data">
-					<div @click="item.open=!item.open">
-						<span if="item.open">-</span>
-						<span else>+</span>
-						{{item.value}}
-					</div>
-					<ul is="tree" if="item.open" :data="item.children"></ul>
-				</li>
-				<li @click="data.push({value:110,children:[]})">
-					<div>+</div>
-				</li>
-			</ul>
-			<style type="text/css">
-				.tree{
-					list-style: none
-				}
-				.tree li{
-					cursor: pointer;
-				}
-				.tree li div:hover{
-					background: #eee
-				}
-			</style>
+			<datepicker>
+				text
+				<sub if="model">sub</sub>
+			</datepicker>
 		</div>
 	</div>
-	<!-- tpl -->
-	<div pre style="display:none">
-		<div id="tag">
-			<span class="tag">
-				<table>
-					<tr>
-						<td>{{value}}</td>
-						<td @click="n++"><b>{{n}}</b></td>
-					</tr>
-				</table>
-			</span>
-		</div>
-	</div>
-	<script src="vm.js"></script>
 	<script src="ajax.js"></script>
 	<script>
-	Vue.component('tag', {
-		template: tag.innerHTML,
-		props: ['value'],
-		data: function() {
-			return {
-				n: 0,
-				value: 'init'
-			}
-		},
-		methods: {
-		},
-		mounted: function () {
-			var self = this
-			// console.log(self)
-		}
-	})
-
-	Vue.component('tree', {
-		template: treeTpl.innerHTML,
-		data: function() {
-			return {
-				data: []
-			}
-		},
-		mounted: function () {
-			console.log(this.$parent)
-		}
-	})
-
 	/**/
 	var list = [
 		{ id:1, text:'todo1', status:'open', tags:['abc'] },
