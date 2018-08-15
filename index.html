@@ -100,12 +100,12 @@
 		<!--  -->
 		<div id="for">
 			<table>
-				<!-- <tr>
+				<tr>
 					<td colspan="3" style="text-align:center">
 						<input autofocus model="model" @keyup.ctrl.enter.prevent.stop="add(model);model=''">
 						<input model.number.lazy="model" @keyup="console.log($event)">
 					</td>
-				</tr> -->
+				</tr>
 				<tr for="(item, i) in list" if="item.status!='delete'">
 					<td>x{{i}}/{{list.length}}:{{item.status}}c</td>
 					<td>a{{456}}b</td>
