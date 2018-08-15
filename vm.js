@@ -164,8 +164,8 @@
 
     // readonly -> readOnly
     var attrPropMap = {
-        'text': 'innerText',
-        'html': 'innerHTML'
+        // 'text': 'innerText',
+        // 'html': 'innerHTML'
     }
     for(var name in document.createElement('input')){
         if (!name.match(/[A-Z]/)) continue
