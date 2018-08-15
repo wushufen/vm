@@ -128,10 +128,18 @@
 			<div is="tag" :value="model"></div>
 			<!-- <div for="item in list" is="tag" class="isTag" :value="model"></div> -->
 		</div>
+		<div id="comTree">
+			<tag></tag>
+			<tree :data="tree"></tree>
+			<mytag>
+				t
+				<mysub>s</mysub>
+			</mytag>
+		</div>
 	</div>
 	<!-- tpl -->
-	<div pre>
-		<div id="tag" style="display:none">
+	<div pre style="display:none">
+		<div id="tag">
 			<span class="tag">
 				<table>
 					<tr>
@@ -141,39 +149,19 @@
 				</table>
 			</span>
 		</div>
-		<!--  -->
-		<div id="ul" style="display:none">
+		<div id="tree">
 			<ul>
-				<li v-for="item in list">
-					{{item}}
-					<div is="ol"></div>
+				<li for="item in data">
+					<b @click="item.open=!item.open">{{item.value}}</b>
+					<ul is="tree" if="item.open" :data="item.children"></ul>
 				</li>
+				<!-- <li if="!data || !data.length">暂无数据</li> -->
+				<li @click="data.push({value:110,children:[]})">+</li>
 			</ul>
-		</div>
-		<div id="ol" style="display:none">
-			<ol>
-				<li v-for="item in list">
-					{{item}}
-				</li>
-			</ol>
 		</div>
 	</div>
 	<script src="vm.js"></script>
 	<script src="ajax.js"></script>
-	<script>
-		Vue.component('ul', {
-			template: ul.innerHTML,
-			data: {
-				list: [1,2,3]
-			}
-		})
-		Vue.component('ol', {
-			template: ol.innerHTML,
-			data: {
-				list: [7,8,9]
-			}
-		})
-	</script>
 	<script>
 	Vue.component('tag', {
 		template: tag.innerHTML,
@@ -192,21 +180,16 @@
 		}
 	})
 
-	/*
-	todo:
-	V({
-		el: '#app',
-		data: {
-			model: 'V.js',
-			compute: function(){
-				return this.model + '!'
-			},
-			sayHello: function(){
-				alert('Hello, ' + this.compute)
+	Vue.component('tree', {
+		template: tree.innerHTML,
+		data: function() {
+			return {
+				data: []
 			}
 		}
 	})
-	*/
+
+	/**/
 	var list = [
 		{ id:1, text:'todo1', status:'open', tags:['abc'] },
 		{ id:2, text:'todo2', status:'open', tags:['abc'] }
@@ -218,6 +201,7 @@
 	}
 
 	vm = vue = new Vue({
+		el: '#comTree',
 		data: {
 			n: 0,
 			string: 'string',
@@ -227,6 +211,24 @@
 			object: { key: 'value' },
 			model: 'vm.js',
 			list: list,
+			tree: [
+				{
+					value: 1,
+					children: [
+						{
+							value: '1.1',
+							children: [
+								{
+									value: '1.1.1'
+								}
+							]
+						},
+						{
+							value: '1.2'
+						}
+					]
+				}
+			],
 			compute: function () {
 				return 'computed:' + String(this.model).toUpperCase()
 			},

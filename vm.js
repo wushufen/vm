@@ -813,7 +813,7 @@
 
             var fps = 24
             var timeGap = 1000 / fps
-            // var timeGap = 1000
+            // var timeGap = 1
 
             var now = +new Date
             var lastTime = this.$render.lastTime || 0
@@ -868,6 +868,13 @@
 
                 switch (node.nodeType) {
                     case 1: // element
+
+                        // <component>
+                        var tag = node.nodeName.toLowerCase()
+                        // console.log(node.outerHTML)
+                        if (VM.optionsMap[tag]) {
+                            node.setAttribute('is', tag)
+                        }
 
                         // dirs
                         var dirs = VNode.getDirs(node)
