@@ -820,7 +820,7 @@
         // compile render
         this.$foceUpdate = VM.compile(this.$el)
 
-        this.VNode = function (uid) {
+        this.$VN = function (uid) {
             var vnode = VNode(uid)
             vnode.vm = this
             return vnode
@@ -922,7 +922,7 @@
                                         key_ = item_key_index[1]
                                         index_ = item_key_index[2]
                                     }
-                                    code += strVars('VNode(@id)["for"]( @list, function( @item, @key, @index ){ ', {
+                                    code += strVars('$VN(@id)["for"]( @list, function( @item, @key, @index ){ ', {
                                         '@id': vnode.uid,
                                         '@list': list_,
                                         '@item': item_,
@@ -932,24 +932,24 @@
                                     break
                                 case 'if':
                                     vnode.isIf = true // if for insert
-                                    code += strVars('VNode(@id)["if"]( @value, function(){ ', {
+                                    code += strVars('$VN(@id)["if"]( @value, function(){ ', {
                                         '@id': vnode.uid,
                                         '@value': dir.exp
                                     })
                                     break
                                 case 'elseif':
-                                    code += strVars('["elseif"]( VNode(@id), @value, function(){ ', {
+                                    code += strVars('["elseif"]( $VN(@id), @value, function(){ ', {
                                         '@id': vnode.uid,
                                         '@value': dir.exp
                                     })
                                     break
                                 case 'else':
-                                    code += strVars('["else"]( VNode(@id), function(){ ', {
+                                    code += strVars('["else"]( $VN(@id), function(){ ', {
                                         '@id': vnode.uid
                                     })
                                     break
                                 case 'on':
-                                    code += strVars('VNode(@id).on("@type", "@mdfs", function($event){ @code ;$THISVM.$render()})', {
+                                    code += strVars('$VN(@id).on("@type", "@mdfs", function($event){ @code ;$THISVM.$render()})', {
                                         '@id': vnode.uid,
                                         '@type': dir.arg,
                                         '@mdfs': dir.mdfs,
@@ -968,7 +968,7 @@
                                         key_ = okm[2] ? '"' + okm[2] + '"' : okm[3]
                                     }
 
-                                    code += strVars('VNode(@id).model( @obj, @key, "@mdfs", $THISVM )', {
+                                    code += strVars('$VN(@id).model( @obj, @key, "@mdfs", $THISVM )', {
                                         '@id': vnode.uid,
                                         '@obj': obj_,
                                         '@key': key_,
@@ -977,26 +977,26 @@
 
                                     break
                                 case 'property':
-                                    code += strVars('VNode(@id).property("@name", @value)', {
+                                    code += strVars('$VN(@id).property("@name", @value)', {
                                         '@id': vnode.uid,
                                         '@name': attr2prop(dir.arg),
                                         '@value': dir.exp
                                     })
                                     break
                                 case 'is':
-                                    code += strVars('VNode(@id).is($THISVM, "@name")', {
+                                    code += strVars('$VN(@id).is($THISVM, "@name")', {
                                         '@id': vnode.uid,
                                         '@name': dir.exp
                                     })
                                     break
                                 case 'ref':
-                                    code += strVars('VNode(@id).ref($THISVM, "@name")', {
+                                    code += strVars('$VN(@id).ref($THISVM, "@name")', {
                                         '@id': vnode.uid,
                                         '@name': dir.exp
                                     })
                                     break
                                 default:
-                                    code += strVars('VNode(@id)["@dir"](@value, "@arg", "@mdfs")', {
+                                    code += strVars('$VN(@id)["@dir"](@value, "@arg", "@mdfs")', {
                                         '@id': vnode.uid,
                                         '@dir': dir.name,
                                         '@arg': dir.arg,
@@ -1028,7 +1028,7 @@
                             var vnode = VNode(node)
                             vnode.initNodeValue = node.nodeValue.replace(/\n/g, ' ')  // @dev
 
-                            code += strVars('VNode(@id).property( "nodeValue", @value )', {
+                            code += strVars('$VN(@id).property( "nodeValue", @value )', {
                                 '@id': vnode.uid,
                                 '@value': parseText(nodeValue)
                             })
