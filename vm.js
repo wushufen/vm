@@ -153,6 +153,12 @@
     }
 
     function insertBefore(node, target) {
+        if (!node.nodeType && node.length) {
+            forEach(toArray(node), function (node) {
+                insertBefore(node, target)
+            })
+            return
+        }
         target.parentNode.insertBefore(node, target)
     }
 

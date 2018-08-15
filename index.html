@@ -24,6 +24,9 @@
 		color: #0f0
 	}
 	</style>
+	<script>
+		document.createElement('abc')
+	</script>
 </head>
 
 <body>
@@ -137,11 +140,28 @@
 		<div id="tree">
 			<div is="tree" :data="array"></div>
 		</div>
+		<div id="slot">
+			<panel>
+				{{'my panel'}}
+			</panel>
+			<div>
+				<abc>
+					panel
+				</abc>
+			</div>
+		</div>
 	</div>
 	<script src="vm.js"></script>
 	<script src="ajax.js"></script>
 	<!-- tpl -->
 	<div pre style="display:none">
+		<div id="panelTpl">
+			<div>
+				<abc>
+					panel
+				</abc>
+			</div>
+		</div>
 		<div id="counterTpl">
 			<span>
 				<button @click="n++">{{n}}</button>
@@ -198,6 +218,13 @@
 			,
 			mounted: function () {
 				// console.log(this)
+			}
+		})
+
+		Vue.component('panel', {
+			template: panelTpl.innerHTML,
+			data: function () {
+				return {}
 			}
 		})
 	</script>
