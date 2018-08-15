@@ -11,7 +11,7 @@
         } 
     }(0)
 
-    var canSetUidOnTextNode = (function() { // ie: false
+    var canSetUidOnTextNode = (function() { // ie8-: false
         try { return document.createTextNode('').uid = true } catch (e) {}
     })()
 
@@ -557,6 +557,8 @@
                 }
 
                 fn(item, key, index)
+
+                // console.log(vnode.property('key'))
             })
             // } catch (e) {
             //     // 避免报错时 forKeyPath 混乱
@@ -735,7 +737,7 @@
                 vm.$foceUpdate()
             })
         },
-        is: function(name) {
+        is: function(vm, name) {
             var vis = this.vis || this
             if (!vis.vcomponent) {
                 // new component
@@ -745,8 +747,11 @@
                     return
                 }
                 var component = VM(options)
+                component.$parent = vm
+
                 var vcomponent = VNode(component.$el)
                 vcomponent.component = component
+
                 vis.vcomponent = vcomponent
                 vcomponent.vis = vis
 
@@ -975,7 +980,7 @@
                                     })
                                     break
                                 case 'is':
-                                    code += strVars('VNode(@id).is("@name")', {
+                                    code += strVars('VNode(@id).is($THISVM, "@name")', {
                                         '@id': vnode.uid,
                                         '@name': dir.exp
                                     })
