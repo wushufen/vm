@@ -659,6 +659,7 @@
 
             // v -> m
             var type = 'input'
+            if (mdfs.match('.lazy')) type = 'change'
             if (node.type == 'checkbox') type = 'click'
             if (node.type == 'radio') type = 'click'
             if (node.nodeName.match(/^select$/i)) type = 'change'
