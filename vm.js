@@ -352,6 +352,10 @@
     // 虚拟节点方法：可以执行的指令
     VNode.prototype = {
         pre: null,
+        ref: function (vm, name) {
+            vm.$refs = vm.$refs = {}
+            vm.$refs[name] = this.node
+        },
         autofocus: function() {
             if (this.focused) return
             var self = this
@@ -968,6 +972,12 @@
                                     break
                                 case 'is':
                                     code += strVars('VNode(@id).is("@name")', {
+                                        '@id': vnode.uid,
+                                        '@name': dir.exp
+                                    })
+                                    break
+                                case 'ref':
+                                    code += strVars('VNode(@id).ref($THISVM, "@name")', {
                                         '@id': vnode.uid,
                                         '@name': dir.exp
                                     })

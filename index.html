@@ -59,6 +59,9 @@
 				<td>
 					<!-- <img .src="model"> -->
 				</td>
+				<td>
+					<button ref="btn">ref="btn"</button>
+				</td>
 			</tr>
 		</table>
 		<!--  -->
@@ -128,13 +131,28 @@
 			<div is="tag" :value="model"></div>
 			<!-- <div for="item in list" is="tag" class="isTag" :value="model"></div> -->
 		</div>
-		<div id="comTree">
-			<tag></tag>
+		<div id="tree">
 			<tree :data="tree"></tree>
-			<mytag>
-				t
-				<mysub>s</mysub>
-			</mytag>
+		</div>
+		<div id="treeTpl" pre style="display:none">
+			<ul class="tree">
+				<li for="item in data">
+					<div @click="item.open=!item.open">{{item.value}}</div>
+					<ul is="tree" if="item.open" :data="item.children"></ul>
+				</li>
+				<li @click="data.push({value:110,children:[]})">
+					<div>+</div>
+				</li>
+			</ul>
+			<style type="text/css">
+				.tree{}
+				.tree li{
+					cursor: pointer;
+				}
+				.tree li div:hover{
+					background: #eee
+				}
+			</style>
 		</div>
 	</div>
 	<!-- tpl -->
@@ -148,16 +166,6 @@
 					</tr>
 				</table>
 			</span>
-		</div>
-		<div id="tree">
-			<ul>
-				<li for="item in data">
-					<b @click="item.open=!item.open">{{item.value}}</b>
-					<ul is="tree" if="item.open" :data="item.children"></ul>
-				</li>
-				<!-- <li if="!data || !data.length">暂无数据</li> -->
-				<li @click="data.push({value:110,children:[]})">+</li>
-			</ul>
 		</div>
 	</div>
 	<script src="vm.js"></script>
@@ -181,7 +189,7 @@
 	})
 
 	Vue.component('tree', {
-		template: tree.innerHTML,
+		template: treeTpl.innerHTML,
 		data: function() {
 			return {
 				data: []
@@ -201,7 +209,7 @@
 	}
 
 	vm = vue = new Vue({
-		el: '#comTree',
+		// el: '#tree',
 		data: {
 			n: 0,
 			string: 'string',
