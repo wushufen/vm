@@ -1,4 +1,4 @@
-! function(window, document) {
+// ! function(window, document) {
     var SHOW = {
         uid: true,
         mark: true,
@@ -127,6 +127,21 @@
             // 
             +
             '"'
+    }
+
+    function parseFilter(text) {
+        var arr = text.replace('||', '\r\r').split('|')
+        var exp = arr[0].replace('\r\r', '||')
+        arr.shift()
+        var code = exp
+        forEach(arr, function (item) {
+            if (!item.match(/\(/)) {
+                code = '$FILTER.' + item + '( ' + code + ' )'
+            } else {
+                code = '$FILTER.' + item.replace(/\(/, '( ' + code + ',')
+            }
+        })
+        return code
     }
 
     var parseEl = document.createElement('div')
@@ -1191,4 +1206,4 @@
         window.Vue = VM
         window.VNode = VNode // @dev
     }
-}(window, document)
+// }(window, document)
