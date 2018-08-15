@@ -320,6 +320,7 @@
                 if (name == 'bind') name = 'property'
                 if (name == '.on') name = 'on'
                 if (name == '@') name = 'on'
+                if (name == 'else-if') name = 'elseif'
 
                 if (name in VNode.prototype) { // 指令就是虚拟节点的方法
                     SHOW.dir || node.removeAttribute(nodeName) // !@dev
