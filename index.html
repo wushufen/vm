@@ -27,8 +27,8 @@
 </head>
 
 <body>
-	<div id="testx">
-		<input model.number="model">
+	<div id="test">
+		abc{{model}}waef{{string}}last<b></b>
 	</div>
 	<div id="app">
 		<div id="event">
@@ -44,8 +44,8 @@
 			<tr>
 				<td><span pre>{{n}}</span>:{{++n}} </td>
 				<td>{{compute}}</td>
-				<td .text="'text:'+model"></td>
-				<td .html="'html:'+'<b>'+model"></td>
+				<td text="'text:'+model"></td>
+				<td html="'html:'+'<b>'+model"></td>
 				<td .title="compute">:title</td>
 				<td .class={selected:model}>:class</td>
 				<td .style="{color:model}">:style</td>
@@ -98,25 +98,28 @@
 			</tr>
 		</table>
 		<!--  -->
-		<table id="for">
-			<tr>
-				<td colspan="3" style="text-align:center">
-					<input autofocus model="model" @keyup.ctrl.enter.prevent.stop="add(model);model=''">
-					<input model.number.lazy="model" @keyup="console.log($event)">
-				</td>
-			</tr>
-			<tr for="(item, i) in list" if="item.status!='delete'">
-				<td>{{i}}/{{list.length}}:{{item.status}}</td>
-				<td :title="item.text">
-					<input model="item.text">
-				</td>
-				<td>
-					<button if="item.status!='done'" @click="item.status='done'">done</button>
-					<button if="item.status=='done'" @click="item.status='open'">open</button>
-					<button @click="del(i)">del</button>
-				</td>
-			</tr>
-		</table>
+		<div id="for">
+			<table>
+				<!-- <tr>
+					<td colspan="3" style="text-align:center">
+						<input autofocus model="model" @keyup.ctrl.enter.prevent.stop="add(model);model=''">
+						<input model.number.lazy="model" @keyup="console.log($event)">
+					</td>
+				</tr> -->
+				<tr for="(item, i) in list" if="item.status!='delete'">
+					<td>x{{i}}/{{list.length}}:{{item.status}}c</td>
+					<td>a{{456}}b</td>
+					<td :title="item.text">
+						<input model="item.text">
+					</td>
+					<td>
+						<button if="item.status!='done'" @click="item.status='done'">done</button>
+						<button if="item.status=='done'" @click="item.status='open'">open</button>
+						<button @click="del(i)">del</button>
+					</td>
+				</tr>
+			</table>
+		</div>
 		<!--  -->
 		<table id="forObject">
 			<tr for="(item, key, index) in object" :key="key">
@@ -132,7 +135,7 @@
 			<counter for="item in list"></counter>
 		</div>
 		<div id="tree">
-			<div is="tree" :data="[]"></div>
+			<div is="tree" :data="array"></div>
 		</div>
 	</div>
 	<script src="vm.js"></script>
@@ -211,7 +214,7 @@
 	// }
 
 	vm = vue = new Vue({
-		el: '#app',
+		// el: '#for',
 		data: {
 			n: 0,
 			string: 'string',
@@ -260,7 +263,7 @@
 			}
 		}
 		,
-		mounted: function(){
+		mountedx: function(){
 			var vue = this
 			
 			// vue.model = 'mounted'

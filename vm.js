@@ -11,10 +11,6 @@
         } 
     }(0)
 
-    var canSetUidOnTextNode = (function() { // ie8-: false
-        try { return document.createTextNode('').uid = true } catch (e) {}
-    })()
-
     function hasOwn(obj, property) { // ie: !node.hasOwnProperty
         if (obj.nodeType == 1) {
             return obj[property] // all: !img.hasOwnProperty('onload') 'src' ..
@@ -138,13 +134,33 @@
             if (!item.match(/\(/)) {
                 code = '$FILTER.' + item + '( ' + code + ' )'
             } else {
-                code = '$FILTER.' + item.replace(/\(/, '( ' + code + ',')
+                code = '$FILTER.' + item.replace(/\(/, '( ' + code + ', ')
             }
         })
         return code
     }
 
-    var parseEl = document.createElement('div')
+    function createElement(name) {
+        return document.createElement(name)
+    }
+
+    function createTextNode(value) {
+        return document.createTextNode(value)
+    }
+
+    function createComment(value) {
+        return document.createComment(value)
+    }
+
+    function insertBefore(node, target) {
+        target.parentNode.insertBefore(node, target)
+    }
+
+    function removeChild(node) {
+        node.parentNode.removeChild(node)
+    }
+
+    var parseEl = createElement('div')
 
     function parseHTML(html) {
         parseEl.innerHTML = html
@@ -182,7 +198,7 @@
         // 'text': 'innerText',
         // 'html': 'innerHTML'
     }
-    for(var name in document.createElement('input')){
+    for(var name in createElement('input')){
         if (!name.match(/[A-Z]/)) continue
         attrPropMap[name.toLowerCase()] = name
     }
@@ -228,6 +244,20 @@
             }
         }, useCapture)
     }
+
+    var canSetUidOnTextNode = (function() { // ie8-: false
+        try { return document.createTextNode('').uid = true } catch (e) {}
+    })()
+
+    var isCloneTextNodeAutoConcat = (function () { // ie8-: true
+        var parent = document.createElement('div')    
+        var text1 = document.createTextNode('1')
+        var text2 = document.createTextNode('2')
+        parent.appendChild(text1)
+        parent.appendChild(text2)
+        var cloneNode = parent.cloneNode(true)
+        return parent.childNodes.length != cloneNode.childNodes.length
+    })()
 
     /*
     forKeyPath = VNode.forKeyPath
@@ -491,7 +521,7 @@
                 var mark = document.createComment(this.uid) // @dev
                 // var mark = document.createComment(node.outerHTML) // @dev
             }
-            node.parentNode.insertBefore(mark, node)
+            insertBefore(mark, node)
             this.markNode = mark
             mark.node = node // @dev
 
@@ -517,7 +547,7 @@
             var parentNode = node.parentNode
             if (!parentNode || parentNode.nodeType != 1) {
                 var markNode = toNode || this.markNode || this.vfor.markNode
-                markNode.parentNode.insertBefore(node, markNode)
+                insertBefore(node, markNode)
             }
         },
         clone: function(key) {
@@ -1045,16 +1075,37 @@
 
                         // {{}}
                         if (nodeValue.match('{{')) {
-                            var vnode = VNode(node)
-                            vnode.initNodeValue = node.nodeValue.replace(/\n/g, ' ')  // @dev
 
-                            code += strVars('$VN(@id).property( "nodeValue", @value )', {
-                                '@id': vnode.uid,
-                                '@value': parseText(nodeValue)
+                            var nodeValue = node.nodeValue
+                            var arr = nodeValue.split('}}')
+                            node.nodeValue = arr.pop()
+                            forEach(arr, function (t_e_) {
+                                var t_e = t_e_.split('{{') // text {{ exp
+                                var text = t_e[0]
+                                var exp = t_e[1]
+                                var textNode = createTextNode(text)
+                                insertBefore(textNode, node)
+                                isCloneTextNodeAutoConcat && insertBefore(createComment('exp:'), node)
+                                if (!textNode.nodeValue) { // ie: !''
+                                    removeChild(textNode)
+                                }
+
+                                // {{ exp }}
+                                var expNode = createTextNode(' ') // ie: !''
+                                insertBefore(expNode, node)
+                                isCloneTextNodeAutoConcat && insertBefore(createComment('exp;'), node)
+
+                                var vexp = VNode(expNode)
+
+                                code += strVars('$VN(@id).property( "nodeValue", @value )', {
+                                    '@id': vexp.uid,
+                                    '@value': parseFilter(exp)
+                                })
                             })
+                            if (!node.nodeValue) { // ie: !''
+                                removeChild(node)
+                            }
 
-                            // --{{}}
-                            node.nodeValue = '　　' // ie !''
                         }
 
                         break;
@@ -1167,7 +1218,7 @@
     // 
     VM.optionsMap = {}
     VM.component = function(name, options) {
-        document.createElement(name) // ie8-: <component>+</component>
+        createElement(name) // ie8-: <component>+</component>
         options.isComponent = true
         VM.optionsMap[name] = options
     }
