@@ -820,7 +820,11 @@
         // compile render
         this.$foceUpdate = VM.compile(this.$el)
 
-        this.VNode = VNode
+        this.VNode = function (uid) {
+            var vnode = VNode(uid)
+            vnode.vm = this
+            return vnode
+        }
         this.$render = function() {
             var self = this
 
