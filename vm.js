@@ -745,9 +745,16 @@
                 // $mount && $render
                 component.$mount(vis.node)
             }
-            var component = vis.vcomponent.component
-            extend(component, vis.propertys)
-            component.$render()
+
+            var vcomponent = vis.vcomponent
+            var component = vcomponent.component
+
+            setTimeout(function () { // wait :value
+                // props
+                extend(component, vcomponent.propertys)
+                // render
+                component.$render()
+            }, 1)
         }
     }
 
