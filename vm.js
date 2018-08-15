@@ -50,7 +50,7 @@
 
     function forEach(list, fn) {
         if (!list) return
-        for (var i = 0; i < list.length; i++) {
+        for (var i = 0, length = list.length; i < length; i++) {
             var item = list[i]
             fn(item, i, i, list)
         }
@@ -69,14 +69,12 @@
         }
     }
 
-    function indexOf(array, value) {
-        if (array.indexOf) {
-            return array.indexOf(value)
-        } else {
-            for (var i = 0; i < array.length; i++) {
-                if (array[i] == value) {
-                    return i
-                }
+    var indexOf = [].indexOf ? function (array, value) {
+        return array.indexOf(value)
+    } : function (array, value) {
+        for (var i = 0; i < array.length; i++) {
+            if (array[i] == value) {
+                return i
             }
         }
         return -1
@@ -89,12 +87,17 @@
     function remove(array, value) {
         for (var i = 0; i < array.length; i++) {
             var item = array[i]
-            if (item === value) array.splice(i, 1), i--
+            if (item === value) {
+                array.splice(i, 1), i--
+                return
+            }
         }
     }
 
-    function trim(value) {
-        return String(value).replace(/^\s+|\s+$/g, '')
+    var trim = ''.trim ? function (string) {
+        return string.trim()
+    } : function (string) {
+        return String(string).replace(/^\s+|\s+$/g, '')
     }
 
     function toNumber(value) {
@@ -141,10 +144,9 @@
         return parseEl.innerHTML
     }
 
-    function contains(node, child) {
-        if (node.contains) {
-            return node.contains(child)
-        }
+    var contains = parseEl.contains ? function (node, child) {
+        return node.contains(child)
+    } : function (node, child) {
         return node == child || function loop(child) {
             var parentNode = child.parentNode
             return parentNode == node || (parentNode && loop(parentNode))
@@ -310,8 +312,6 @@
                 var nodeName = attribute.nodeName
                 var nodeValue = attribute.nodeValue
 
-                // dir                      v-    .on  . : @  on        .:   click    .mdf.s
-                var m = nodeName.match(/^(?:v-)?(\.on|\.|:|@|[^.:]+)(?:[.:]?([^.]+))?(.*)/) || []
                 // idr                      v-    .on  .:  @  on    :  click   .mdf.s
                 var m = nodeName.match(/^(?:v-)?(\.on|[.:]|@|[^.:]+):?([^.]+)?(.*)/) || []
                 var name = m[1]
@@ -351,7 +351,7 @@
     })
     // 虚拟节点方法：可以执行的指令
     VNode.prototype = {
-        pre: function(){},
+        pre: null,
         autofocus: function() {
             if (this.focused) return
             var self = this
@@ -538,18 +538,18 @@
 
             var forKeyPath = VNode.forKeyPath // **!!!**
             // try {
-                each(list, function(item, key, index) {
-                    // clone
-                    VNode.forKeyPath = forKeyPath + '.' + key // **!!!**
-                    var vnode = vfor.clone(key)
+            each(list, function(item, key, index) {
+                // clone
+                VNode.forKeyPath = forKeyPath + '.' + key // **!!!**
+                var vnode = vfor.clone(key)
 
-                    // 当 for, if 同时存在，for insert, if false remove, 会造成dom更新
-                    if (!vnode.isIf) {
-                        vnode.insert()
-                    }
+                // 当 for, if 同时存在，for insert, if false remove, 会造成dom更新
+                if (!vnode.isIf) {
+                    vnode.insert()
+                }
 
-                    fn(item, key, index)
-                })
+                fn(item, key, index)
+            })
             // } catch (e) {
             //     // 避免报错时 forKeyPath 混乱
             //     setTimeout(function() {
@@ -570,6 +570,7 @@
         on: function(type, mdfs, fn) {
             fn = arguments[arguments.length - 1] // mdfs?
             this.eventMap = this.eventMap || {}
+
             var key = type + mdfs // click.mdfs.ctrl
             var handler = this.eventMap[key]
             // 保存||更新 handler
