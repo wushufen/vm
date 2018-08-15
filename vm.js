@@ -799,15 +799,19 @@
 
         // el
         var el = getElement(options.el)
-        if (!options.el && !options.template) {
-            el = document.body.parentNode
-        }
+        // if (!options.el && !options.template) {
+        //     el = document.body
+        // }
         if (el && el.computed) {
             el = null
             options.template = '<b>-_-</b>'
         }
         if (el) {
             el.computed = true
+        }
+        if (el) {
+            // ie8-: component('tag') -> createElement('tag') -> <tag>ok</tag>
+            el.innerHTML = el.innerHTML
         }
 
         // template
@@ -1145,7 +1149,7 @@
     // 
     VM.optionsMap = {}
     VM.component = function(name, options) {
-        document.createElement(name) // ie: <component>+</component>
+        document.createElement(name) // ie8-: <component>+</component>
         options.isComponent = true
         VM.optionsMap[name] = options
     }
