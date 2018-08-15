@@ -731,7 +731,7 @@
             var vis = this.vis || this
             if (!vis.vcomponent) {
                 // new component
-                var options = VM.componentOptions[name]
+                var options = VM.optionsMap[name]
                 if (!options) {
                     setTimeout(function() { throw name + ' is not a component' }, 1)
                     return
@@ -786,9 +786,19 @@
 
         // el
         var el = getElement(options.el)
+        if (!options.el && !options.template) {
+            el = document.body.parentNode
+        }
+        if (el && el.computed) {
+            el = null
+            options.template = '<b>-_-</b>'
+        }
+        if (el) {
+            el.computed = true
+        }
 
         // template
-        var template = options.template || (el ? outerHTML(el) : '<b> -_-! </b>')
+        var template = options.template || (el ? outerHTML(el) : '<b>^_^</b>')
         // this.$template = template // @dev
 
         // $el
@@ -1032,7 +1042,6 @@
                 var Image = window.Image
                 window.Image = function(width, height) {
                     var self = new Image(width, height)
-                    console.dir(self)
                     setTimeout(function() {
                         each(self, function(handler, name){
                             if (name.match(/^on/) && typeof handler == 'function') {
@@ -1045,8 +1054,9 @@
                     return self
                 }
                 var XMLHttpRequest = window.XMLHttpRequest || window.ActiveXObject
-                var send = XMLHttpRequest.prototype.send
-                XMLHttpRequest.prototype.send = function() {
+                var XHRprototype = XMLHttpRequest.prototype
+                var send = XHRprototype.send
+                XHRprototype.send = function() {
                     var self = this
                     each(self, function (handler, name) {
                         if (name.match(/^on/) && typeof handler == 'function') {
@@ -1100,13 +1110,13 @@
 
 
     // 
-    // 组件 保存生成 vm 的 options
-    // VNode().is()->VM(options)->$mount()
+    // component
+    // VNode().is( name ) -> VM( optionsMap[name] )->$mount()
     // 
-    VM.componentOptions = {}
+    VM.optionsMap = {}
     VM.component = function(name, options) {
         options.isComponent = true
-        VM.componentOptions[name] = options
+        VM.optionsMap[name] = options
     }
 
 
