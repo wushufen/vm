@@ -1118,8 +1118,10 @@
             }
 
             // computed
-            $fn.toJSON = $fn.toString = $fn.valueOf = function () {
-                return fn.call(vm)
+            if (String(fn).match('return')) { // ie8-: log(vm) -> vm.method.toString()
+                $fn.toJSON = $fn.toString = $fn.valueOf = function () {
+                    return fn.call(vm)
+                }
             }
 
             $fn.fn = fn

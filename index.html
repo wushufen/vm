@@ -128,32 +128,23 @@
 		<!--  -->
 		<div id="component">
 			<input model="model">
-			<div is="tag" :value="model"></div>
-			<div for="item in list" is="tag" class="isTag" :value="model"></div>
+			<div is="counter"></div>
+			<counter for="item in list"></counter>
 		</div>
 		<div id="tree">
-			<tree :data="tree"></tree>
-			<datepicker>
-				text
-				<sub if="model">sub</sub>
-			</datepicker>
+			<div is="tree" :data="[]"></div>
 		</div>
 	</div>
 	<script src="vm.js"></script>
 	<script src="ajax.js"></script>
 	<!-- tpl -->
 	<div pre style="display:none">
-		<div id="tag">
-			<span class="tag">
-				<table>
-					<tr>
-						<td>{{value}}</td>
-						<td @click="n++"><b>{{n}}</b></td>
-					</tr>
-				</table>
+		<div id="counterTpl">
+			<span>
+				<button @click="n++">{{n}}</button>
 			</span>
 		</div>
-		<div id="treeTpl" pre style="display:none">
+		<div id="treeTpl">
 			<ul class="tree">
 				<li for="item in data">
 					<div @click="item.open=!item.open">
@@ -181,20 +172,16 @@
 		</div>
 	</div>
 	<script>
-		Vue.component('tag', {
-			template: tag.innerHTML,
-			props: ['value'],
+		Vue.component('counter', {
+			template: counterTpl.innerHTML,
 			data: function() {
 				return {
-					n: 0,
-					value: 'init'
+					n: 0
 				}
-			},
-			methods: {
-			},
+			}
+			,
 			mounted: function () {
-				var self = this
-				// console.log(self)
+				window.c = this
 			}
 		})
 
@@ -204,9 +191,10 @@
 				return {
 					data: []
 				}
-			},
+			}
+			,
 			mounted: function () {
-				console.log(this.$parent)
+				// console.log(this)
 			}
 		})
 	</script>
@@ -216,14 +204,14 @@
 		{ id:1, text:'todo1', status:'open', tags:['abc'] },
 		{ id:2, text:'todo2', status:'open', tags:['abc'] }
 	]
-	for (var i = 0; i < 5; i++) {
-		list.push({
-			text: i
-		})
-	}
+	// for (var i = 0; i < 5; i++) {
+	// 	list.push({
+	// 		text: i
+	// 	})
+	// }
 
 	vm = vue = new Vue({
-		// el: '#app',
+		el: '#app',
 		data: {
 			n: 0,
 			string: 'string',
