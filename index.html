@@ -138,7 +138,7 @@
 			<counter for="item in list"></counter>
 		</div>
 		<div id="tree">
-			<div is="tree" :data="array"></div>
+			<tree :data="tree"></tree>
 		</div>
 		<div id="slot">
 			<panel>
@@ -261,9 +261,7 @@
 						{
 							value: '1.1',
 							children: [
-								{
-									value: '1.1.1'
-								}
+								{value: '1.1.1'}
 							]
 						},
 						{

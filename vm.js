@@ -265,20 +265,6 @@
         return parent.childNodes.length != cloneNode.childNodes.length
     })()
 
-    /*
-    forKeyPath = VNode.forKeyPath
-    for(key in list){
-        VNode.forKeyPath += '.' + key
-    }
-    VNode.forKeyPath = forKeyPath
-
-    VNode(uid){
-        return VNode.map[uid + VNode.forKeyPath]
-    }
-    */
-    // 每个vm须重新开始
-    VNode.forKeyPath = '' // uid.for1ItemKey.for2ItemKey...
-    VNode.map = {} // uid: node
 
     // 
     // 虚拟节点
@@ -288,12 +274,8 @@
         if (!(this instanceof VNode)) return new VNode(node, cloneUid)
 
         // VNode(uid) -> vnode
-        if (typeof node != 'object') {
-            var uid = node
-            // VNode(number) -> vnode: uid+'.key.0'
-            var vnode = VNode.map[uid + VNode.forKeyPath] // **!!!**
-            // is="component"
-            return vnode.vcomponent || vnode
+        if (typeof node != 'object') { // @dev
+            return VNode.map[node]
         }
 
         // VNode(node) -> return saved
@@ -316,6 +298,7 @@
         VNode.map[uid] = this // uid -> vnode
     }
     extend(VNode, {
+        map: {}, // uid.key.path: node
         setUid: function(node, uid) {
             if (node.nodeType == 1) {
                 node.uid = uid
@@ -589,16 +572,27 @@
 
             return vnode
         },
-        'for': function(list, fn) {
+        /*
+        forKeyPath = vm.$VN.forKeyPath
+        for(key in list){
+            vm.$VN.forKeyPath += '.' + key
+        }
+        vm.$VN.forKeyPath = forKeyPath
+
+        vm.$VN(uid){
+            return VNode.map[uid + vm.$VN.forKeyPath]
+        }
+        */
+        'for': function(vm, list, fn) {
             var vfor = this.vis || this
 
             // this.mark()
             vfor.remove()
 
-            var forKeyPath = VNode.forKeyPath // **!!!**
+            var forKeyPath = vm.$VN.forKeyPath // **!!!**
             each(list, function(item, key, index) {
                 // clone
-                VNode.forKeyPath = forKeyPath + '.' + key // **!!!**
+                vm.$VN.forKeyPath = forKeyPath + '.' + key // **!!!**
                 var vnode = vfor.clone(key)
 
                 // 当 for, if 同时存在，for insert, if false remove, 会造成dom更新
@@ -610,7 +604,7 @@
 
                 // console.log(vnode.property('key'))
             })
-            VNode.forKeyPath = forKeyPath // **!!!**
+            vm.$VN.forKeyPath = forKeyPath // **!!!**
 
             // remove
             var clones = vfor.clones
@@ -870,26 +864,26 @@
         this.$foceUpdate = VM.compile(this.$el)
 
         this.$VN = function (uid) {
-            var vnode = VNode(uid)
-            vnode.vm = this
-            return vnode
+            var vnode = VNode.map[uid + this.$VN.forKeyPath]
+            return vnode.vcomponent || vnode
         }
-        this.$render = function() {
+        this.$VN.forKeyPath = ''
+        this.$render = function(f) {
             var self = this
 
-            var fps = 24
-            var timeGap = 1000 / fps
-            // var timeGap = 1
+            var timeGap = 1000 / 24
 
             var now = +new Date
             var lastTime = this.$render.lastTime || 0
 
-            // timeGap 间隔内只更新一次
             if (now > lastTime + timeGap) {
                 this.$render.lastTime = now
-                setTimeout(function() {
-                    self.$foceUpdate()
-                }, timeGap + 2) // +2 确保不漏
+                self.$foceUpdate()
+            } else {
+                clearTimeout(this.$render.timer)
+                this.$render.timer = setTimeout(function () {
+                    self.$render()
+                }, timeGap)
             }
         }
 
@@ -899,11 +893,12 @@
     }
     VM.prototype = {
         $mount: function(el) {
-            el.parentNode.replaceChild(this.$el, el)
-            this.$el = el
-
             // first render
             this.$render() // 必须异步，每个vm VNode.forKeyPath 独立
+
+            // mount
+            el.parentNode.replaceChild(this.$el, el)
+            this.$el = el
 
             // mounted
             this.$mounted && this.$mounted()
@@ -924,6 +919,7 @@
             VNode(uid).is('com')
             */
             var code = ''
+            // var code = 'console.log("r");' // @dev
             // var code = 'console.trace("r");' // @dev
 
             scan(node)
@@ -971,7 +967,7 @@
                                         key_ = item_key_index[1]
                                         index_ = item_key_index[2]
                                     }
-                                    code += strVars('$VN(@id)["for"]( @list, function( @item, @key, @index ){ ', {
+                                    code += strVars('$THISVM.$VN(@id)["for"]( $THISVM, @list, function( @item, @key, @index ){ ', {
                                         '@id': vnode.uid,
                                         '@list': list_,
                                         '@item': item_,
@@ -981,24 +977,24 @@
                                     break
                                 case 'if':
                                     vnode.isIf = true // if for insert
-                                    code += strVars('$VN(@id)["if"]( @value, function(){ ', {
+                                    code += strVars('$THISVM.$VN(@id)["if"]( @value, function(){ ', {
                                         '@id': vnode.uid,
                                         '@value': dir.exp
                                     })
                                     break
                                 case 'elseif':
-                                    code += strVars('["elseif"]( $VN(@id), @value, function(){ ', {
+                                    code += strVars('["elseif"]( $THISVM.$VN(@id), @value, function(){ ', {
                                         '@id': vnode.uid,
                                         '@value': dir.exp
                                     })
                                     break
                                 case 'else':
-                                    code += strVars('["else"]( $VN(@id), function(){ ', {
+                                    code += strVars('["else"]( $THISVM.$VN(@id), function(){ ', {
                                         '@id': vnode.uid
                                     })
                                     break
                                 case 'on':
-                                    code += strVars('$VN(@id).on("@type", "@mdfs", function($event){ @code ;$THISVM.$render()})', {
+                                    code += strVars('$THISVM.$VN(@id).on("@type", "@mdfs", function($event){ @code ;$THISVM.$render()})', {
                                         '@id': vnode.uid,
                                         '@type': dir.arg,
                                         '@mdfs': dir.mdfs,
@@ -1018,7 +1014,7 @@
                                         key_ = okm[2] ? '"' + okm[2] + '"' : okm[3]
                                     }
 
-                                    code += strVars('$VN(@id).model( @obj, @key, "@mdfs", $THISVM )', {
+                                    code += strVars('$THISVM.$VN(@id).model( @obj, @key, "@mdfs", $THISVM )', {
                                         '@id': vnode.uid,
                                         '@obj': obj_,
                                         '@key': key_,
@@ -1027,26 +1023,26 @@
 
                                     break
                                 case 'property':
-                                    code += strVars('$VN(@id).property("@name", @value)', {
+                                    code += strVars('$THISVM.$VN(@id).property("@name", @value)', {
                                         '@id': vnode.uid,
                                         '@name': attr2prop(dir.arg),
                                         '@value': dir.exp
                                     })
                                     break
                                 case 'is':
-                                    code += strVars('$VN(@id).is($THISVM, "@name")', {
+                                    code += strVars('$THISVM.$VN(@id).is($THISVM, "@name")', {
                                         '@id': vnode.uid,
                                         '@name': dir.exp
                                     })
                                     break
                                 case 'ref':
-                                    code += strVars('$VN(@id).ref($THISVM, "@name")', {
+                                    code += strVars('$THISVM.$VN(@id).ref($THISVM, "@name")', {
                                         '@id': vnode.uid,
                                         '@name': dir.exp
                                     })
                                     break
                                 default:
-                                    code += strVars('$VN(@id)["@dir"](@value, "@arg", "@mdfs")', {
+                                    code += strVars('$THISVM.$VN(@id)["@dir"](@value, "@arg", "@mdfs")', {
                                         '@id': vnode.uid,
                                         '@dir': dir.name,
                                         '@arg': dir.arg,
@@ -1097,7 +1093,7 @@
 
                                 var vexp = VNode(expNode)
 
-                                code += strVars('$VN(@id).property( "nodeValue", @value )', {
+                                code += strVars('$THISVM.$VN(@id).property( "nodeValue", @value )', {
                                     '@id': vexp.uid,
                                     '@value': parseFilter(exp)
                                 })
