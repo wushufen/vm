@@ -1002,8 +1002,9 @@
                                         '@id': vnode.uid,
                                         '@type': dir.arg,
                                         '@mdfs': dir.mdfs,
-                                        '@code': dir.exp.match(/[=;]/) ? dir.exp : // 语句
-                                            '!function(fn){typeof fn=="function"&&fn($event)}(' + dir.exp + ')' // 表达式
+                                        '@code': dir.exp.match(/[(=+-]/) ? 
+                                            dir.exp : // 语句
+                                            dir.exp + '($event)' // handler
                                     })
                                     break
                                 case 'model':
