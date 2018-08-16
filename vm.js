@@ -596,7 +596,6 @@
             vfor.remove()
 
             var forKeyPath = VNode.forKeyPath // **!!!**
-            // try {
             each(list, function(item, key, index) {
                 // clone
                 VNode.forKeyPath = forKeyPath + '.' + key // **!!!**
@@ -611,12 +610,6 @@
 
                 // console.log(vnode.property('key'))
             })
-            // } catch (e) {
-            //     // 避免报错时 forKeyPath 混乱
-            //     setTimeout(function() {
-            //         throw e
-            //     }, 1)
-            // }
             VNode.forKeyPath = forKeyPath // **!!!**
 
             // remove
