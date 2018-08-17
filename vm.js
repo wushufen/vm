@@ -36,6 +36,10 @@
         return obj
     }
 
+    function isArray(value) {
+        return value instanceof Array
+    }
+
     function toArray(list) {
         if (!list) return []
         var length = list.length
@@ -200,6 +204,7 @@
     }
 
     // readonly -> readOnly
+    // innerhtml -> innerHTML
     var attrPropMap = {
         // 'text': 'innerText',
         // 'html': 'innerHTML'
@@ -273,8 +278,9 @@
         // VNode(node) -> new VNode(node)
         if (!(this instanceof VNode)) return new VNode(node, cloneUid)
 
+        // @dev
         // VNode(uid) -> vnode
-        if (typeof node != 'object') { // @dev
+        if (typeof node != 'object') {
             return VNode.map[node]
         }
 
@@ -308,7 +314,8 @@
                     node.uid = uid
                 } else { // ie
                     // save on parentNode
-                    var map = node.parentNode.uidNodeMap || (node.parentNode.uidNodeMap = {})
+                    var parentNode = node.parentNode
+                    var map = parentNode.uidNodeMap || (parentNode.uidNodeMap = {})
                     map[uid] = node
                 }
             }
@@ -348,7 +355,7 @@
                 var nodeName = attribute.nodeName
                 var nodeValue = attribute.nodeValue
 
-                // idr                      v-    .on  .:  @  on    :  click   .mdf.s
+                // dir                      v-    .on  .:  @  on    :  click   .mdf.s
                 var m = nodeName.match(/^(?:v-)?(\.on|[.:]|@|[^.:]+):?([^.]+)?(.*)/) || []
                 var name = m[1]
                 if (name == '.') name = 'property'
@@ -390,9 +397,16 @@
     VNode.prototype = {
         pre: null,
         ref: function (vm, name) {
-            // todo: for ref
-            vm.$refs = vm.$refs = {}
-            vm.$refs[name] = this.node
+            var $refs = vm.$refs || (vm.$refs = {})
+            var node = $refs[name]
+            if (!node) {
+                $refs[name] = this.node
+            } else {
+                if (!isArray(node)) {
+                    $refs[name] = [node]
+                }
+                $refs[name].push(this.node)
+            }
         },
         autofocus: function() {
             if (this.focused) return
