@@ -785,7 +785,7 @@
                 }
 
                 // update view
-                vm.$foceUpdate()
+                vm.$render()
             })
         },
         is: function(vm, name) {
@@ -798,7 +798,9 @@
                     return
                 }
                 var component = VM(options)
-                component.$parent = vm
+                component.$parent = vm // $parent
+                vm.$children = vm.$children || [] // $children
+                vm.$children.push(component)
 
                 var vcomponent = VNode(component.$el)
                 vcomponent.component = component
@@ -816,7 +818,7 @@
             // props
             extend(component, vis.propertys)
             // render
-            component.$render()
+            // component.$render()
         }
     }
 
@@ -879,11 +881,10 @@
             return vnode.vcomponent || vnode
         }
         this.$VN.forKeyPath = ''
-        this.$render = function(f) {
+        this.$render = function($pop) {
             var self = this
 
-            var timeGap = 1000 / 24
-
+            var timeGap = 1000 / 2
             var now = +new Date
             var lastTime = this.$render.lastTime || 0
 
@@ -893,9 +894,24 @@
             } else {
                 clearTimeout(this.$render.timer)
                 this.$render.timer = setTimeout(function () {
-                    self.$render()
+                    self.$render($pop)
                 }, timeGap)
             }
+
+
+            // $children.$render
+            forEach(this.$children, function ($child) {
+                if ($pop == $child) return
+                $child.$render($child)
+            })
+
+            if ($pop) return
+
+            // $parent
+            if (this.$parent) {
+                this.$parent.$render(this)
+            }
+
         }
 
         // mount
@@ -1254,10 +1270,14 @@
                     window[name] = new Proxy(vm, {
                         set: function(vm, key, value) {
                             vm[key] = value
-                            vm.$render()
+                            setTimeout(function () {
+                                // vm.$render()
+                            }, 41)
                         },
                         get: function(vm, key) {
-                            vm.$render()
+                            setTimeout(function () {
+                                // vm.$render()
+                            }, 41)
                             return vm[key]
                         }
                     })

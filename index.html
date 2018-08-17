@@ -31,7 +31,9 @@
 
 <body>
 	<div id="test">
-		abc{{model}}waef{{string}}last<b></b>
+		{{++n}}|
+		<panel :n="n"></panel>
+		<panel :n="n"></panel>
 	</div>
 	<div id="app">
 		<div id="event">
@@ -138,7 +140,8 @@
 			<counter for="item in list"></counter>
 		</div>
 		<div id="tree">
-			<tree :data="tree"></tree>
+			<button @click="tree.length=0">0</button>
+			<tree :data="array"></tree>
 		</div>
 		<div id="slot">
 			<panel>
@@ -158,7 +161,7 @@
 		<div id="panelTpl">
 			<div>
 				<abc>
-					panel
+					panel {{++n}}
 				</abc>
 			</div>
 		</div>
@@ -224,7 +227,9 @@
 		Vue.component('panel', {
 			template: panelTpl.innerHTML,
 			data: function () {
-				return {}
+				return {
+					n: 0
+				}
 			}
 		})
 	</script>
@@ -241,7 +246,7 @@
 	// }
 
 	vm = vue = new Vue({
-		// el: '#for',
+		// el: '#test',
 		data: {
 			n: 0,
 			string: 'string',
