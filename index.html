@@ -175,7 +175,7 @@
 						<span else>+</span>
 						{{item.value}}
 					</div>
-					<ul is="tree" if="item.open" :data="item.children"></ul>
+					<ul is="tree" xif="item.open" :data="item.children"></ul>
 				</li>
 				<li @click="data.push({value:110,children:[]})">
 					<div>+</div>

@@ -345,7 +345,9 @@
             return attrs
         },
         getDirs: function(node) {
-            var dirs = Array(10) // 留位给 for 等特殊指令，位置代表优先级
+            // for 等特殊指令通过 dirs[name] 获取
+            // 普通指令遍历获取
+            var dirs = Array()
             dirs.size = 0 // 通过 size 判断数量
 
             // ie7: !!toArray ?? for??
@@ -377,11 +379,8 @@
                         exp: nodeValue || '""'
                     }
 
-                    var $dirs = 'pre,for,if,elseif,else,is'.split(',') // 特殊指令优先级排序
-                    var index = indexOf($dirs, name)
-                    if (index > -1) {
-                        dirs[index] = dir
-                        // dirs.for = true
+                    var $dirs = 'pre,for,if,elseif,else,is'.split(',') // 特殊指令
+                    if (includes($dirs, name)) {
                         dirs[name] = dir
                     } else {
                         dirs.push(dir)
@@ -814,12 +813,10 @@
             var vcomponent = vis.vcomponent
             var component = vcomponent.component
 
-            setTimeout(function () { // wait :value
-                // props
-                extend(component, vcomponent.propertys)
-                // render
-                component.$render()
-            }, 1)
+            // props
+            extend(component, vis.propertys)
+            // render
+            component.$render()
         }
     }
 
@@ -908,7 +905,7 @@
     VM.prototype = {
         $mount: function(el) {
             // first render
-            this.$render() // 必须异步，每个vm VNode.forKeyPath 独立
+            this.$render()
 
             // mount
             el.parentNode.replaceChild(this.$el, el)
@@ -956,57 +953,66 @@
                         var dirs = VNode.getDirs(node)
                         var vnode = VNode(node)
 
-                        // !
+                        // pre
                         if (dirs.pre) {
                             return
                         }
 
+                        // for
+                        var dir = dirs['for']
+                        if (dir) {
+                            var for_ = dir.exp
+                            var item_list = for_.split(' in ')
+                            var list_ = item_list[1]
+                            var item_ = item_list[0]
+                            var key_ = '$key'
+                            var index_ = '$index'
+
+                            var item_m = item_.match(/\((.*)\)/) // (item, key, index)
+                            if (item_m) {
+                                var item_key_index = item_m[1].split(',')
+                                item_ = item_key_index[0]
+                                key_ = item_key_index[1]
+                                index_ = item_key_index[2]
+                            }
+                            code += strVars('$THISVM.$VN(@id)["for"]( $THISVM, @list, function( @item, @key, @index ){ ', {
+                                '@id': vnode.uid,
+                                '@list': list_,
+                                '@item': item_,
+                                '@key': key_,
+                                '@index': index_
+                            })
+                        }
+                        // if
+                        var dir = dirs['if']
+                        if (dir) {
+                            vnode.isIf = true // if for insert
+                            code += strVars('$THISVM.$VN(@id)["if"]( @value, function(){ ', {
+                                '@id': vnode.uid,
+                                '@value': dir.exp
+                            })
+                        }
+                        // elseif
+                        var dir = dirs['elseif']
+                        if (dir) {
+                            code += strVars('["elseif"]( $THISVM.$VN(@id), @value, function(){ ', {
+                                '@id': vnode.uid,
+                                '@value': dir.exp
+                            })
+                        }
+                        // else
+                        var dir = dirs['else']
+                        if (dir) {
+                            code += strVars('["else"]( $THISVM.$VN(@id), function(){ ', {
+                                '@id': vnode.uid
+                            })
+                        }
+
+                        // dirs
                         each(dirs, function(dir) {
                             if (!dir) return
 
-                            var name = dir.name
                             switch (dir.name) {
-                                case 'for':
-                                    var for_ = dir.exp
-                                    var item_list = for_.split(' in ')
-                                    var list_ = item_list[1]
-                                    var item_ = item_list[0]
-                                    var key_ = '$key'
-                                    var index_ = '$index'
-
-                                    var item_m = item_.match(/\((.*)\)/) // (item, key, index)
-                                    if (item_m) {
-                                        var item_key_index = item_m[1].split(',')
-                                        item_ = item_key_index[0]
-                                        key_ = item_key_index[1]
-                                        index_ = item_key_index[2]
-                                    }
-                                    code += strVars('$THISVM.$VN(@id)["for"]( $THISVM, @list, function( @item, @key, @index ){ ', {
-                                        '@id': vnode.uid,
-                                        '@list': list_,
-                                        '@item': item_,
-                                        '@key': key_,
-                                        '@index': index_
-                                    })
-                                    break
-                                case 'if':
-                                    vnode.isIf = true // if for insert
-                                    code += strVars('$THISVM.$VN(@id)["if"]( @value, function(){ ', {
-                                        '@id': vnode.uid,
-                                        '@value': dir.exp
-                                    })
-                                    break
-                                case 'elseif':
-                                    code += strVars('["elseif"]( $THISVM.$VN(@id), @value, function(){ ', {
-                                        '@id': vnode.uid,
-                                        '@value': dir.exp
-                                    })
-                                    break
-                                case 'else':
-                                    code += strVars('["else"]( $THISVM.$VN(@id), function(){ ', {
-                                        '@id': vnode.uid
-                                    })
-                                    break
                                 case 'on':
                                     code += strVars('$THISVM.$VN(@id).on("@type", "@mdfs", function($event){ @code ;$THISVM.$render()})', {
                                         '@id': vnode.uid,
@@ -1043,12 +1049,6 @@
                                         '@value': dir.exp
                                     })
                                     break
-                                case 'is':
-                                    code += strVars('$THISVM.$VN(@id).is($THISVM, "@name")', {
-                                        '@id': vnode.uid,
-                                        '@name': dir.exp
-                                    })
-                                    break
                                 case 'ref':
                                     code += strVars('$THISVM.$VN(@id).ref($THISVM, "@name")', {
                                         '@id': vnode.uid,
@@ -1065,6 +1065,16 @@
                                     })
                             }
                         })
+
+                        // is
+                        // 要放在所有指令最后，等property等指令设置完才能获取数据更新组件
+                        var dir = dirs['is']
+                        if (dir) {
+                            code += strVars('$THISVM.$VN(@id).is($THISVM, "@name")', {
+                                '@id': vnode.uid,
+                                '@name': dir.exp
+                            })
+                        }
 
                         // compile childNodes
                         var childNodes = toArray(node.childNodes)
