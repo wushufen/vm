@@ -714,6 +714,7 @@
                 }
                 // input textarea ..
                 else {
+                    if ((document.hasFocus && document.hasFocus() )&& document.activeElement == node) return
                     vnode.property('value', value)
                 }
             }, 1)
@@ -884,7 +885,7 @@
         this.$render = function($pop) {
             var self = this
 
-            var timeGap = 1000 / 2
+            var timeGap = 1000 / 17
             var now = +new Date
             var lastTime = this.$render.lastTime || 0
 
