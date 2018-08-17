@@ -31,9 +31,7 @@
 
 <body>
 	<div id="test">
-		{{++n}}|
-		<panel :n="n"></panel>
-		<panel :n="n"></panel>
+		<div for="x in list"></div>
 	</div>
 	<div id="app">
 		<div id="event">
@@ -246,7 +244,7 @@
 	// }
 
 	vm = vue = new Vue({
-		// el: '#test',
+		el: '#test',
 		data: {
 			n: 0,
 			string: 'string',

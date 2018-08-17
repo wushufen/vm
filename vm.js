@@ -356,6 +356,7 @@
 
                 var nodeName = attribute.nodeName
                 var nodeValue = attribute.nodeValue
+                if (nodeName == 'for' && !nodeValue.match(/ (in|of) /)) return
 
                 // dir                      v-    .on  .:  @  on    :  click   .mdf.s
                 var m = nodeName.match(/^(?:v-)?(\.on|[.:]|@|[^.:]+):?([^.]+)?(.*)/) || []
@@ -979,7 +980,7 @@
                         var dir = dirs['for']
                         if (dir) {
                             var for_ = dir.exp
-                            var item_list = for_.split(' in ')
+                            var item_list = for_.split(/ (?:in|of) /)
                             var list_ = item_list[1]
                             var item_ = item_list[0]
                             var key_ = '$key'
