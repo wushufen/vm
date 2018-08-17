@@ -391,6 +391,39 @@
 
             })
             return dirs
+        },
+        getSlots: function (node) {
+            var slots = {}
+            'IIF',
+            function loop(node) {
+                forEach(node.children, function (child) {
+                    if (child.nodeName.match(/slot/i)) {
+                        var name = child.getAttribute('name')
+                        slots[name||'default'] = child
+                    }
+                    loop(child)
+                })
+            }(node)
+            return slots
+        },
+        getSlotContents: function (node) {
+            var slotContents = {}
+            var childNodes = toArray(node.childNodes)
+            slotContents['default'] = childNodes
+            for (var i = 0; i < childNodes.length; i++) {
+                var child = childNodes[i]
+                if (child.nodeType == 1) {
+                    var slotName = child.getAttribute('slot')
+                    if (slotName) {
+                        slotContents[slotName] = child
+                        if (child.nodeName.match(/template/i)) {
+                            slotContents[slotName] = toArray(child.childNodes)
+                        }
+                        remove(childNodes, child), i--
+                    }
+                }
+            }
+            return slotContents
         }
     })
     // 虚拟节点方法：可以执行的指令
@@ -799,16 +832,27 @@
                     setTimeout(function() { throw name + ' is not a component' }, 1)
                     return
                 }
+
+                // $parent <-> $children
                 var component = VM(options)
-                component.$parent = vm // $parent
-                vm.$children = vm.$children || [] // $children
+                component.$parent = vm
+                vm.$children = vm.$children || []
                 vm.$children.push(component)
 
+                // vis <-> vcomponent
                 var vcomponent = VNode(component.$el)
                 vcomponent.component = component
-
                 vis.vcomponent = vcomponent
                 vcomponent.vis = vis
+
+                // slots
+                var slots = VNode.getSlots(vcomponent.node)
+                var slotContents = VNode.getSlotContents(vis.node)
+                each(slots, function (slot, name) {
+                    var content = slotContents[name] || slot.childNodes
+                    insertBefore(content, slot)
+                    removeChild(slot)
+                })
 
                 // $mount && $render
                 component.$mount(vis.node)

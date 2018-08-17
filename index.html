@@ -143,13 +143,10 @@
 		</div>
 		<div id="slot">
 			<panel>
-				{{'my panel'}}
+				<div slot="header">{{model}}</div>
+				<div>body</div>
+				<div slot="footer">footer</div>
 			</panel>
-			<div>
-				<abc>
-					panel
-				</abc>
-			</div>
 		</div>
 	</div>
 	<script src="vm.js"></script>
@@ -158,9 +155,15 @@
 	<div pre style="display:none">
 		<div id="panelTpl">
 			<div>
-				<abc>
-					panel {{++n}}
-				</abc>
+				<h2>
+					<slot name="header">title</slot>
+				</h2>
+				<div>
+					<slot>default</slot>
+				</div>
+				<div>
+					<slot name="footer"></slot>
+				</div>
 			</div>
 		</div>
 		<div id="counterTpl">
@@ -244,7 +247,7 @@
 	// }
 
 	vm = vue = new Vue({
-		el: '#test',
+		// el: '#slot',
 		data: {
 			n: 0,
 			string: 'string',
