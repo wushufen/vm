@@ -434,13 +434,17 @@
         ref: function (vm, name) {
             var $refs = vm.$refs || (vm.$refs = {})
             var node = $refs[name]
-            if (!node) {
-                $refs[name] = this.node
-            } else {
-                if (!isArray(node)) {
-                    $refs[name] = [node]
+            if (!this.vfor) {
+                if (!node) {
+                    $refs[name] = this.node
                 }
-                $refs[name].push(this.node)
+            } else {
+                if (!node) {
+                    $refs[name] = []
+                }
+                if (!$refs[name][this.key]) {
+                    $refs[name][this.key] = this.node
+                }
             }
         },
         autofocus: function() {
@@ -643,6 +647,7 @@
                 // clone
                 vm.$VN.forKeyPath = forKeyPath + '.' + key // **!!!**
                 var vnode = vfor.clone(key)
+                vnode.key = key
 
                 // 当 for, if 同时存在，for insert, if false remove, 会造成dom更新
                 if (!vnode.isIf) {
