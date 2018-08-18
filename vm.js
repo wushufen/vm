@@ -1,4 +1,4 @@
-// ! function(window, document) {
+! function(window, document) {
     var SHOW = {
         uid: true,
         mark: true,
@@ -456,7 +456,7 @@
             var self = this
             setTimeout(function() { // ie?
                 self.node.focus()
-            }, 1)
+            }, 411)
             this.focused = true
         },
         property: function(name, value) {
@@ -712,57 +712,68 @@
             var value = obj[key]
 
             // m -> v
-            setTimeout(function() { //wait VNode(node||option).property('value', 'value')
-                // checkbox
-                if (node.type == 'checkbox') {
-                    // array
-                    if (value instanceof Array) {
-                        var has = includes(value, vnode.property('value'))
-                        vnode.property('checked', has)
-                    }
-                    // boolean
-                    else {
-                        vnode.property('checked', value)
-                    }
+            'IIF',
+            function updateView(i) {
+                if (!this._ieDelay && document.readyState == 'loading' && i < 5) { // ie: 刷新页面表单还保留上次的值
+                    setTimeout(function () {
+                        updateView(++i)
+                    }, 41)
+                    return
                 }
-                // radio
-                else if (node.type == 'radio') {
-                    var eq = vnode.property('value') === value // ==?
-                    vnode.property('checked', eq)
-                }
-                // select
-                else if (node.nodeName.match(/^select$/i)) {
-                    var hasSelected = false
-                    forEach(node.options, function(option) {
-                        var voption = VNode(option)
+                this._ieDelay = true
 
-                        // array [multiple]
+                setTimeout(function() { //wait VNode(node||option).property('value', 'value')
+                    // checkbox
+                    if (node.type == 'checkbox') {
+                        // array
                         if (value instanceof Array) {
-                            var bool = includes(value, voption.property('value'))
-                            voption.property('selected', bool)
+                            var has = includes(value, vnode.property('value'))
+                            vnode.property('checked', has)
                         }
-                        // one
+                        // boolean
                         else {
-                            vnode.property('value', value)
-
-                            if (voption.property('value') === value) { // ==?
-                                voption.property('selected', true)
-                                hasSelected = true
-                            } else {
-                                voption.property('selected', false) // !ie
-                            }
+                            vnode.property('checked', value)
                         }
-                    })
-                    if (!(value instanceof Array) && !hasSelected) { // ie
-                        node.selectedIndex = -1
                     }
-                }
-                // input textarea ..
-                else {
-                    if ((document.hasFocus && document.hasFocus() )&& document.activeElement == node) return
-                    vnode.property('value', value)
-                }
-            }, 1)
+                    // radio
+                    else if (node.type == 'radio') {
+                        var eq = vnode.property('value') === value // ==?
+                        vnode.property('checked', eq)
+                    }
+                    // select
+                    else if (node.nodeName.match(/^select$/i)) {
+                        var hasSelected = false
+                        forEach(node.options, function(option) {
+                            var voption = VNode(option)
+
+                            // array [multiple]
+                            if (value instanceof Array) {
+                                var bool = includes(value, voption.property('value'))
+                                voption.property('selected', bool)
+                            }
+                            // one
+                            else {
+                                vnode.property('value', value)
+
+                                if (voption.property('value') === value) { // ==?
+                                    voption.property('selected', true)
+                                    hasSelected = true
+                                } else {
+                                    voption.property('selected', false) // !ie
+                                }
+                            }
+                        })
+                        if (!(value instanceof Array) && !hasSelected) { // ie
+                            node.selectedIndex = -1
+                        }
+                    }
+                    // input textarea ..
+                    else {
+                        // if ((document.hasFocus && document.hasFocus() )&& document.activeElement == node) return
+                        vnode.property('value', value)
+                    }
+                }, 1)
+            }(0)
 
             // v -> m
             var type = 'input'
@@ -1368,4 +1379,4 @@
         window.Vue = VM
         window.VNode = VNode // @dev
     }
-// }(window, document)
+}(window, document)
