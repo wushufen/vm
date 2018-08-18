@@ -157,7 +157,7 @@
     }
 
     function insertBefore(node, target) {
-        if (!node.nodeType && node.length) {
+        if (!node.nodeType && 'length' in node) {
             forEach(toArray(node), function (node) {
                 insertBefore(node, target)
             })
@@ -409,7 +409,6 @@
         getSlotContents: function (node) {
             var slotContents = {}
             var childNodes = toArray(node.childNodes)
-            slotContents['default'] = childNodes
             for (var i = 0; i < childNodes.length; i++) {
                 var child = childNodes[i]
                 if (child.nodeType == 1) {
@@ -422,6 +421,9 @@
                         remove(childNodes, child), i--
                     }
                 }
+            }
+            if (childNodes.length) {
+                slotContents['default'] = childNodes
             }
             return slotContents
         }
@@ -748,7 +750,7 @@
                 }
                 // input textarea ..
                 else {
-                    if ((document.hasFocus && document.hasFocus() )&& document.activeElement == node) return
+                    // if ((document.hasFocus && document.hasFocus() )&& document.activeElement == node) return
                     vnode.property('value', value)
                 }
             }, 1)
@@ -832,12 +834,7 @@
                     setTimeout(function() { throw name + ' is not a component' }, 1)
                     return
                 }
-
-                // $parent <-> $children
                 var component = VM(options)
-                component.$parent = vm
-                vm.$children = vm.$children || []
-                vm.$children.push(component)
 
                 // vis <-> vcomponent
                 var vcomponent = VNode(component.$el)
@@ -856,6 +853,15 @@
 
                 // $mount && $render
                 component.$mount(vis.node)
+
+                // component 第一次不能 $parent.$render , 父组件还没运行完
+                // 那么 for 指令又会运行导致 forKeyPath 错误
+                // !!! for is $render $parent.$render
+                //  -> for ... => xxx forKeyPath => xxx uid.0.0
+                // $parent <-> $children
+                component.$parent = vm
+                vm.$children = vm.$children || []
+                vm.$children.push(component)
             }
 
             var vcomponent = vis.vcomponent
@@ -864,7 +870,7 @@
             // props
             extend(component, vis.propertys)
             // render
-            // component.$render()
+            // component.$render() // $render by $parent.$children..$render
         }
     }
 
@@ -927,7 +933,7 @@
             return vnode.vcomponent || vnode
         }
         this.$VN.forKeyPath = ''
-        this.$render = function($pop) {
+        this.$render = function($by) {
             var self = this
 
             var timeGap = 1000 / 17
@@ -940,18 +946,18 @@
             } else {
                 clearTimeout(this.$render.timer)
                 this.$render.timer = setTimeout(function () {
-                    self.$render($pop)
+                    self.$render($by)
                 }, timeGap)
             }
 
 
             // $children.$render
             forEach(this.$children, function ($child) {
-                if ($pop == $child) return
+                if ($by == $child) return // 不更新自己
                 $child.$render($child)
             })
 
-            if ($pop) return
+            if ($by) return // 不更新父组件
 
             // $parent
             if (this.$parent) {
@@ -967,7 +973,7 @@
     VM.prototype = {
         $mount: function(el) {
             // first render
-            this.$render()
+            this.$render(this)
 
             // mount
             el.parentNode.replaceChild(this.$el, el)

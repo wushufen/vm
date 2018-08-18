@@ -31,8 +31,9 @@
 
 <body>
 	<div id="test">
-		<div for="x in list"></div>
+		<div is="counter" for="item in list"></div>
 	</div>
+	<hr>
 	<div id="app">
 		<div id="event">
 			<div @click.stop.self="console.log">
@@ -135,7 +136,9 @@
 		<div id="component">
 			<input model="model">
 			<div is="counter"></div>
-			<counter for="item in list"></counter>
+			<counter for="item in list">
+				{{item.text}}
+			</counter>
 		</div>
 		<div id="tree">
 			<button @click="tree.length=0">0</button>
@@ -143,7 +146,6 @@
 		</div>
 		<div id="slot">
 			<panel>
-				<div slot="header">{{model}}</div>
 				<div>body</div>
 				<div slot="footer">footer</div>
 			</panel>
@@ -168,7 +170,10 @@
 		</div>
 		<div id="counterTpl">
 			<span>
-				<button @click="n++">{{n}}</button>
+				<button @click="n++">
+					<!-- <slot>counter:</slot> -->
+					{{n}}
+				</button>
 			</span>
 		</div>
 		<div id="treeTpl">
@@ -247,7 +252,7 @@
 	// }
 
 	vm = vue = new Vue({
-		// el: '#slot',
+		el: '#test',
 		data: {
 			n: 0,
 			string: 'string',
