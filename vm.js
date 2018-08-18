@@ -750,7 +750,7 @@
                 }
                 // input textarea ..
                 else {
-                    // if ((document.hasFocus && document.hasFocus() )&& document.activeElement == node) return
+                    if ((document.hasFocus && document.hasFocus() )&& document.activeElement == node) return
                     vnode.property('value', value)
                 }
             }, 1)
@@ -973,7 +973,7 @@
     VM.prototype = {
         $mount: function(el) {
             // first render
-            this.$render(this)
+            this.$render(this.$parent)
 
             // mount
             el.parentNode.replaceChild(this.$el, el)
