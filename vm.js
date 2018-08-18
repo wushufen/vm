@@ -421,6 +421,9 @@
                         remove(childNodes, child), i--
                     }
                 }
+                if (child.nodeType == 3 && !child.nodeValue.match(/\S/)) {
+                    remove(childNodes, child), i--
+                }
             }
             if (childNodes.length) {
                 slotContents['default'] = childNodes
