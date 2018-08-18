@@ -31,7 +31,7 @@
 
 <body>
 	<div id="test">
-		<button for="item in list" ref="button">{{item.text}}</button>
+		<button for="item in object" ref="button" :key="item.text">{{item}}</button>
 	</div>
 	<hr>
 	<div id="app">

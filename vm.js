@@ -440,10 +440,11 @@
                 }
             } else {
                 if (!node) {
+                    // ??object
                     $refs[name] = []
                 }
-                if (!$refs[name][this.key]) {
-                    $refs[name][this.key] = this.node
+                if (!$refs[name][this.index]) {
+                    $refs[name][this.index] = this.node
                 }
             }
         },
@@ -647,7 +648,7 @@
                 // clone
                 vm.$VN.forKeyPath = forKeyPath + '.' + key // **!!!**
                 var vnode = vfor.clone(key)
-                vnode.key = key
+                vnode.index = index
 
                 // 当 for, if 同时存在，for insert, if false remove, 会造成dom更新
                 if (!vnode.isIf) {
