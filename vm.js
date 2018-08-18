@@ -416,7 +416,7 @@
                     if (slotName) {
                         slotContents[slotName] = child
                         if (child.nodeName.match(/template/i)) {
-                            slotContents[slotName] = toArray(child.childNodes)
+                            slotContents[slotName] = child.content || toArray(child.childNodes)
                         }
                         remove(childNodes, child), i--
                     }
