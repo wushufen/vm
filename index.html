@@ -31,6 +31,7 @@
 
 <body>
 	<div id="test">
+		{{++n}}
 		<div is="counter" for="item in list"></div>
 	</div>
 	<hr>
@@ -170,9 +171,9 @@
 		</div>
 		<div id="counterTpl">
 			<span>
-				<button @click="n++">
+				<button @click="n+1">
 					<slot>counter:</slot>
-					{{n}}
+					{{++n}}
 				</button>
 			</span>
 		</div>
@@ -212,7 +213,7 @@
 				}
 			}
 			,
-			mounted: function () {
+			mountedxx: function () {
 				window.c = this
 			}
 		})
@@ -252,7 +253,7 @@
 	// }
 
 	vm = vue = new Vue({
-		// el: '#form',
+		el: '#test',
 		data: {
 			n: 0,
 			string: 'string',

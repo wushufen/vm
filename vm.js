@@ -933,37 +933,47 @@
             return vnode.vcomponent || vnode
         }
         this.$VN.forKeyPath = ''
-        this.$render = function($by) {
+        this.$render = function(vms) {
             var self = this
 
-            var timeGap = 1000 / 17
+            // timeGap
+            var timeGap = 1000 / 24
             var now = +new Date
             var lastTime = this.$render.lastTime || 0
-
-            if (now > lastTime + timeGap) {
-                this.$render.lastTime = now
-                self.$foceUpdate()
-            } else {
+            if (now - lastTime < timeGap) {
                 clearTimeout(this.$render.timer)
                 this.$render.timer = setTimeout(function () {
-                    self.$render($by)
+                    self.$render(vms)
                 }, timeGap)
+                return
             }
+            this.$render.lastTime = now
 
+            // component tree updated
+            vms = vms || []
+            if (includes(vms, this)) return
+            vms.push(this.$vm || this) // ||proxy
+
+            // update self
+            self.$foceUpdate()
+
+            // update component tree
 
             // $children.$render
             forEach(this.$children, function ($child) {
-                if ($by == $child) return // 不更新自己
-                $child.$render($child)
+                $child.$render(vms)
             })
-
-            if ($by) return // 不更新父组件
 
             // $parent
             if (this.$parent) {
-                this.$parent.$render(this)
+                this.$parent.$render(vms)
             }
 
+        }
+
+        // first $render
+        if (!options.isComponent) {  // $children.$render
+            this.$render()
         }
 
         // mount
@@ -972,9 +982,6 @@
     }
     VM.prototype = {
         $mount: function(el) {
-            // first render
-            this.$render(this.$parent)
-
             // mount
             el.parentNode.replaceChild(this.$el, el)
             this.$el = el
@@ -1319,7 +1326,7 @@
                 if (name.match('webkit')) continue // !warn
                 var vm = window[name]
                 if (vm && typeof vm.$render == 'function') {
-                    window[name] = new Proxy(vm, {
+                    var proxy = window[name] = new Proxy(vm, {
                         set: function(vm, key, value) {
                             vm[key] = value
                             setTimeout(function () {
@@ -1333,6 +1340,7 @@
                             return vm[key]
                         }
                     })
+                    proxy.$vm = vm
                 }
             }
         }, 500)
