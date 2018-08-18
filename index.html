@@ -31,7 +31,7 @@
 
 <body>
 	<div id="test">
-		{{++n}}
+		<!-- {{++n}} -->
 		<div is="counter" for="item in list"></div>
 	</div>
 	<hr>
@@ -143,7 +143,8 @@
 		</div>
 		<div id="tree">
 			<button @click="tree.length=0">0</button>
-			<tree :data="array"></tree>
+			<tree :data="tree"></tree>
+			<tree :data="tree"></tree>
 		</div>
 		<div id="slot">
 			<panel>
@@ -253,7 +254,7 @@
 	// }
 
 	vm = vue = new Vue({
-		el: '#test',
+		// el: '#test',
 		data: {
 			n: 0,
 			string: 'string',

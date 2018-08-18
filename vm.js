@@ -934,6 +934,7 @@
         }
         this.$VN.forKeyPath = ''
         this.$render = function(vms) {
+            var renderTimeStart = new Date
             var self = this
 
             // timeGap
@@ -969,6 +970,7 @@
                 this.$parent.$render(vms)
             }
 
+            this.$render.renderTime = new Date - renderTimeStart
         }
 
         // first $render
