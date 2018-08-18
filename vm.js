@@ -380,7 +380,7 @@
                         exp: nodeValue || '""'
                     }
 
-                    var $dirs = 'pre,for,if,elseif,else,is'.split(',') // 特殊指令
+                    var $dirs = 'pre,for,if,elseif,else,model,is'.split(',') // 特殊指令
                     if (includes($dirs, name)) {
                         dirs[name] = dir
                     } else {
@@ -714,7 +714,7 @@
             // m -> v
             'IIF',
             function updateView(i) {
-                if (!this._ieDelay && document.readyState == 'loading' && i < 5) { // ie: 刷新页面表单还保留上次的值
+                if (!this._ieDelay && document.readyState != 'complete' && i < 5) { // ie: 刷新页面表单还保留上次的值
                     setTimeout(function () {
                         updateView(++i)
                     }, 41)
@@ -722,26 +722,27 @@
                 }
                 this._ieDelay = true
 
-                setTimeout(function() { //wait VNode(node||option).property('value', 'value')
-                    // checkbox
-                    if (node.type == 'checkbox') {
-                        // array
-                        if (value instanceof Array) {
-                            var has = includes(value, vnode.property('value'))
-                            vnode.property('checked', has)
-                        }
-                        // boolean
-                        else {
-                            vnode.property('checked', value)
-                        }
+
+                // checkbox
+                if (node.type == 'checkbox') {
+                    // array
+                    if (value instanceof Array) {
+                        var has = includes(value, vnode.property('value'))
+                        vnode.property('checked', has)
                     }
-                    // radio
-                    else if (node.type == 'radio') {
-                        var eq = vnode.property('value') === value // ==?
-                        vnode.property('checked', eq)
+                    // boolean
+                    else {
+                        vnode.property('checked', value)
                     }
-                    // select
-                    else if (node.nodeName.match(/^select$/i)) {
+                }
+                // radio
+                else if (node.type == 'radio') {
+                    var eq = vnode.property('value') === value // ==?
+                    vnode.property('checked', eq)
+                }
+                // select
+                else if (node.nodeName.match(/^select$/i)) {
+                    setTimeout(function() { //wait option:value
                         var hasSelected = false
                         forEach(node.options, function(option) {
                             var voption = VNode(option)
@@ -766,13 +767,13 @@
                         if (!(value instanceof Array) && !hasSelected) { // ie
                             node.selectedIndex = -1
                         }
-                    }
-                    // input textarea ..
-                    else {
-                        // if ((document.hasFocus && document.hasFocus() )&& document.activeElement == node) return
-                        vnode.property('value', value)
-                    }
-                }, 1)
+                    }, 1)
+                }
+                // input textarea ..
+                else {
+                    // if ((document.hasFocus && document.hasFocus() )&& document.activeElement == node) return
+                    vnode.property('value', value)
+                }
             }(0)
 
             // v -> m
@@ -1120,25 +1121,6 @@
                                             dir.exp + '($event)' // handler
                                     })
                                     break
-                                case 'model':
-                                    // "model"
-                                    var obj_ = '$THISVM'
-                                    var key_ = '"' + dir.exp + '"'
-                                    //                       obj     .key  | ['key' ]
-                                    var okm = dir.exp.match(/(.+)(?:\.(.+?)|\[(.+?)\])\s*$/)
-                                    if (okm) {
-                                        obj_ = okm[1]
-                                        key_ = okm[2] ? '"' + okm[2] + '"' : okm[3]
-                                    }
-
-                                    code += strVars('$THISVM.$VN(@id).model( @obj, @key, "@mdfs", $THISVM )', {
-                                        '@id': vnode.uid,
-                                        '@obj': obj_,
-                                        '@key': key_,
-                                        '@mdfs': dir.mdfs
-                                    })
-
-                                    break
                                 case 'property':
                                     code += strVars('$THISVM.$VN(@id).property("@name", @value)', {
                                         '@id': vnode.uid,
@@ -1162,6 +1144,27 @@
                                     })
                             }
                         })
+
+                        // model
+                        // 放于 :value 后
+                        var dir = dirs['model']
+                        if (dir) {
+                            var obj_ = '$THISVM'
+                            var key_ = '"' + dir.exp + '"'
+                            //                       obj     .key  | ['key' ]
+                            var okm = dir.exp.match(/(.+)(?:\.(.+?)|\[(.+?)\])\s*$/)
+                            if (okm) {
+                                obj_ = okm[1]
+                                key_ = okm[2] ? '"' + okm[2] + '"' : okm[3]
+                            }
+
+                            code += strVars('$THISVM.$VN(@id).model( @obj, @key, "@mdfs", $THISVM )', {
+                                '@id': vnode.uid,
+                                '@obj': obj_,
+                                '@key': key_,
+                                '@mdfs': dir.mdfs
+                            })
+                        }
 
                         // is
                         // 要放在所有指令最后，等property等指令设置完才能获取数据更新组件
