@@ -1,6 +1,7 @@
 ! function(window, document) {
     var SHOW = {
         uid: true,
+        vid: true,
         mark: true,
         dir: false
     }
@@ -9,6 +10,12 @@
         return function () {
            return ++i
         } 
+    }(0)
+
+    var incVid = function (i) {
+       return function () {
+           return ++i
+       } 
     }(0)
 
     function hasOwn(obj, property) { // ie: !node.hasOwnProperty
@@ -953,6 +960,8 @@
             var vnode = VNode.map[uid + this.$VN.forKeyPath]
             return vnode.vcomponent || vnode
         }
+        this.$vid = incVid()
+        SHOW.vid && this.$el.setAttribute('vid', this.$vid)
         this.$VN.forKeyPath = ''
         this.$render = function(vms) {
             var renderTimeStart = new Date

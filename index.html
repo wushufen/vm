@@ -34,6 +34,8 @@
 	<div id="test">
 		<input model="model" name="">
 		<label><input type="radio" model="model" :value="string">string</label>
+		{{console.log('m')}}
+		{{setTimeout(function(){console.log('st')},100)}}
 	</div>
 	<hr>
 	<div id="app">
@@ -189,6 +191,7 @@
 						<span if="item.open">-</span>
 						<span else>+</span>
 						{{item.value}}
+						{{console.log('tt')}}
 					</div>
 					<ul is="tree" xif="item.open" :data="item.children"></ul>
 				</li>
