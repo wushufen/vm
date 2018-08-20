@@ -1117,8 +1117,6 @@
 
                         // dirs
                         each(dirs, function(dir) {
-                            if (!dir) return
-
                             switch (dir.name) {
                                 case 'on':
                                     code += strVars('$THISVM.$VN(@id).on("@type", "@mdfs", function($event){ @code ;$THISVM.$render()})', {
