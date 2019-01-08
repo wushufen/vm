@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>todo list</title>
+  <script src="../vm.js"></script>
+  <style>
+    li{
+      display: flex;
+    }
+    .done{
+      color: #eee;
+      text-decoration: line-through
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="app">
+
+    <input v-model="input" placeholder="enter input" @keyup.enter="add">
+
+    <ul>
+      <li v-for="item in list" :class="{done:item.done}">
+        <input type="checkbox" v-model="item.done">
+        <div>{{item.content}}</div>
+      </li>
+    </ul>
+
+  </div>
+
+  <script>
+    var vm = new Vue({
+      el: '#app',
+      data: {
+        input: '',
+        list: []
+      },
+      methods: {
+        add: function () {
+          vm.list.push({
+            content: vm.input,
+            done: false
+          })
+
+          vm.input = ''
+        }
+      }
+    })
+  </script>
+</body>
+
+</html>
