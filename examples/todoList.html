@@ -8,11 +8,8 @@
   <title>todo list</title>
   <script src="../vm.js"></script>
   <style>
-    li{
-      display: flex;
-    }
     .done{
-      color: #eee;
+      color: #aaa;
       text-decoration: line-through
     }
   </style>
@@ -22,12 +19,18 @@
 
   <div id="app">
 
-    <input v-model="input" placeholder="enter input" @keyup.enter="add">
+    <input v-model="input" @keyup.enter="add" placeholder="enter input">
 
     <ul>
-      <li v-for="item in list" :class="{done:item.done}">
-        <input type="checkbox" v-model="item.done">
-        <div>{{item.content}}</div>
+      <li v-for="(item,index) in list" :class="{done:item.done}">
+
+        <label>
+          <input type="checkbox" v-model="item.done">
+          <span>{{item.content}}</span>
+        </label>
+
+        <button v-if="item.done" @click="remove(index)" type="button">x</button>
+
       </li>
     </ul>
 
@@ -38,16 +41,17 @@
       el: '#app',
       data: {
         input: '',
-        list: []
+        list: [
+          {content:'todo1', done:false}
+        ]
       },
       methods: {
         add: function () {
-          vm.list.push({
-            content: vm.input,
-            done: false
-          })
-
+          vm.list.push({content: vm.input})
           vm.input = ''
+        },
+        remove: function (index) {
+          vm.list.splice(index, 1)
         }
       }
     })
