@@ -1,8 +1,8 @@
 ! function(window, document) {
     var SHOW = {
-        uid: true,
-        vid: true,
-        mark: true,
+        uid: false,
+        vid: false,
+        mark: false,
         dir: false
     }
 
@@ -1362,12 +1362,12 @@
                         set: function(vm, key, value) {
                             vm[key] = value
                             setTimeout(function () {
-                                // vm.$render()
+                                vm.$render()
                             }, 41)
                         },
                         get: function(vm, key) {
                             setTimeout(function () {
-                                // vm.$render()
+                                vm.$render()
                             }, 41)
                             return vm[key]
                         }
