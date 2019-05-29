@@ -8,9 +8,9 @@
   <title>todo list</title>
   <script src="../vm.js"></script>
   <style>
-    .done{
+    .done {
       color: #aaa;
-      text-decoration: line-through
+      text-decoration: line-through;
     }
   </style>
 </head>
@@ -19,7 +19,7 @@
 
   <div id="app">
 
-    <input v-model="input" @keyup.enter="add" placeholder="enter input">
+    <input v-model="input" @keydown.enter="add" placeholder="enter input">
 
     <ul>
       <li v-for="(item,index) in list" :class="{done:item.done}">
@@ -42,12 +42,12 @@
       data: {
         input: '',
         list: [
-          {content:'todo1', done:false}
+          { content: 'todo1', done: false }
         ]
       },
       methods: {
         add: function () {
-          vm.list.push({content: vm.input})
+          vm.list.push({ content: vm.input })
           vm.input = ''
         },
         remove: function (index) {
