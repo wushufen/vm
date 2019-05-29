@@ -15,7 +15,7 @@
 // getVnodeData
 // createVnode
 // createNode
-// setProps
+// updateProps
 // compile
 // domDiff
 // injectRender
@@ -25,7 +25,7 @@
 // watch
 // computed
 
-(function(window, document){
+(function (window, document) {
   var requestAnimationFrame = window.requestAnimationFrame
   var cancelAnimationFrame = window.cancelAnimationFrame
   if (!requestAnimationFrame) {
@@ -36,7 +36,7 @@
       clearTimeout(timer)
     }
   }
-  
+
   // for array|arrayLike
   function forEach(arrayLike, fn) {
     if (!arrayLike) return
@@ -44,7 +44,7 @@
       fn.call(this, arrayLike[i], i)
     }
   }
-  
+
   // for array|object|string|number => []
   function each(list, fn) {
     var array = [], i = 0, rs
@@ -68,7 +68,7 @@
     }
     return array
   }
-  
+
   // obj extend ... => obj
   function assign(obj) {
     forEach(arguments, function (arg, i) {
@@ -78,14 +78,14 @@
     })
     return obj
   }
-  
+
   // arrayLike => array
   function toArray(arrayLike, start) {
     var array = [], i = arrayLike.length
     while (i--) array[i] = arrayLike[i]
     return array.slice(start)
   }
-  
+
   // val => json
   function toJson(val) {
     if (val && typeof val === 'object') {
@@ -102,7 +102,7 @@
     }
     return String(val)
   }
-  
+
   // html => dom
   function parse(html) {
     parse.el = parse.el || document.createElemnt('div')
@@ -111,7 +111,7 @@
     parse.el.removeChild(node) // ie
     return node
   }
-  
+
   // node => vnodeData
   function getVnodeData(node) {
     var vnodeData = {
@@ -127,19 +127,19 @@
       if (!attribute.specified) return // ie
       var attr = attribute.nodeName
       var value = attribute.nodeValue
-  
+
       // v-bind:title  :title  v-on:click  @click.prevent.stop
       var m = attr.match(/^(:|@|v-([^.]*))([^.]*)(.*)/)
       if (m) {
         // remove directive attr
         node.removeAttribute(attr)
-  
+
         var name = m[2]
         if (m[1] === ':') name = 'bind'
         if (m[1] === '@') name = 'on'
         var arg = m[3]
         var mdfs = m[4]
-  
+
         // "@~:value" => value without "" in runtime code
         var dir = {
           raw: attr,
@@ -149,7 +149,7 @@
           arg: arg,
           mdfs: mdfs
         }
-  
+
         if (name === 'on') {
           if (value.match(/[=();]/)) {
             dir.value = '@~:function(){' + value + '}'
@@ -167,7 +167,7 @@
           dir.index = m[2] || '$index'
           dir.list = m[4]
         }
-  
+
         if (/^(for|if)$/.test(name)) {
           vnodeData.directives[name] = dir
         } else if (name === 'bind') {
@@ -181,7 +181,7 @@
     })
     return vnodeData
   }
-  
+
   // vnodeData + childNodes => vnode tree
   function createVnode(vnodeData, childNodes) {
     var vnode = assign({
@@ -192,7 +192,7 @@
       childNodes: []
       // parentNode: null,
     }, vnodeData)
-  
+
     // ['child', [for...]] => ['child', ...]
     // 'text' => {nodeType:3, nodeValue:'text'}
     forEach(childNodes, function (child) {
@@ -212,10 +212,10 @@
         // child.parentNode = vnode
       }
     })
-  
+
     return vnode
   }
-  
+
   // vue createElement => createVnode => vnode
   function createElement(tag, data, children) {
     if (data instanceof Array) {
@@ -228,46 +228,46 @@
     }, data)
     return createVnode(data, children)
   }
-  
+
   // vnode tree => node tree
   function createNode(vnode) {
     if (vnode.nodeType === 3) {
       return document.createTextNode(vnode.nodeValue)
     }
-  
+
     // createElemnt namespaceURI
     var tagName = vnode.tagName.toLowerCase()
     var node = vnode.ns && document.createElementNS
       ? document.createElementNS(vnode.ns, tagName)
       : document.createElement(tagName)
-  
+
     // attrs
     each(vnode.attrs, function (value, name) {
       node.setAttribute(name, value)
     })
-  
+
     // directives.bind
     each(vnode.directives, function (directive) {
       var name = directive.name
       var bind = VM.options.directives[name].bind
       bind(node, directive, vnode)
     })
-  
+
     // props
-    setProps(node, vnode.props)
-  
+    updateProps(node, vnode.props)
+
     // childNodes
     forEach(vnode.childNodes, function (vchild) {
       var child = createNode(vchild)
       node.appendChild(child)
     })
-  
+
     node.vnode = vnode // dev
     return node
   }
-  
+
   // node :props
-  function setProps(node, props) {
+  function updateProps(node, props) {
     each(props, function (value, name) {
       if (name === 'style') {
         assign(node.style, value)
@@ -294,7 +294,7 @@
       }
     })
   }
-  
+
   // node => render() => vnode
   function compile(node) {
     /*
@@ -315,14 +315,14 @@
     loop(node)
     function loop(node) {
       if (!code.match(/^$|\[\s*$/)) code += ',\n' // [childNode, ..]
-  
+
       // parse element
       if (node.nodeType === 1) {
         var vnodeData = getVnodeData(node)
         var vnodeJson = toJson(vnodeData)
         var dirs = vnodeData.directives
         vnodeJson = vnodeJson.replace(/"@~:((?:\\.|.)*?)"/g, '$1') // rutime value without ""
-  
+
         // for if?
         // each(, ()=> bool? createVnode(, [ loop ]): "" )
         if (dirs['for']) {
@@ -334,16 +334,16 @@
         if (dirs['if']) {
           code += dirs['if'].expression + '? '
         }
-  
+
         // createVnode
         code += 'this.__createVnode(' + vnodeJson + ', [\n'
-  
+
         // childNodes
         var childNodes = toArray(node.childNodes)
         forEach(childNodes, function (childNode) {
           loop(childNode)
         })
-  
+
         // end createVnode
         code += '])\n'
         // end if
@@ -359,7 +359,7 @@
             // \ => \\ " => \"
             return str.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
           })
-        // str{{exp}}str => str" + (exp) + "str
+          // str{{exp}}str => str" + (exp) + "str
           .replace(/{{(.*?)}}/g, '"+($1)+"')
         code += '"' + nodeValue + '"'
       }
@@ -368,11 +368,11 @@
         code += '""' // empty textNode
       }
     }
-  
+
     var render = Function('data', 'var __vm=this;with(__vm){return ' + code + '}')
     return render
   }
-  
+
   // node => dom diff update
   function diff(node, vnode, parentNode) {
     if (node && (!node.parentNode || node.parentNode.nodeType !== 1)) { // out of document
@@ -408,7 +408,7 @@
       })
       // *props
       if (node.tagName && vnode.tagName) {
-        setProps(node, vnode.props)
+        updateProps(node, vnode.props)
       }
       // childNodes
       var childNodes = toArray(node.childNodes)
@@ -419,7 +419,7 @@
       }
     }
   }
-  
+
   // fn => fn() vm.$render()
   function injectRender(vm, fn) {
     var $fn = function () {
@@ -430,7 +430,7 @@
     }
     return $fn
   }
-  
+
   // setTimout(fn) => fn() vm.$render()
   function injectRenderToAsyncs(vm) {
     var setTimeout = window.setTimeout
@@ -440,7 +440,7 @@
         injectRender(vm, fn).apply(this, args)
       }, delay)
     }
-  
+
     var setInterval = window.setInterval
     window.setInterval = function (fn, delay) {
       var args = toArray(arguments, 2)
@@ -448,7 +448,7 @@
         injectRender(vm, fn).apply(this, args)
       }, delay)
     }
-  
+
     var XMLHttpRequest = window.XMLHttpRequest || window.ActiveXObject
     var XHRprototype = XMLHttpRequest.prototype
     var send = XHRprototype.send
@@ -461,63 +461,63 @@
       })
       return send && send.apply(xhr, arguments)
     }
-  
+
     return function restoreAsyncs() {
       window.setTimeout = setTimeout
       window.setInterval = setInterval
       XHRprototype.send = send
     }
   }
-  
+
   // VM class
   function VM(options) {
     var vm = this
     vm.$options = options || (options = {})
-  
+
     // data
     var data = options.data
     if (typeof data === 'function') data = data.call(vm) // compoment data()
     assign(vm, data)
-  
+
     // methods
     each(options.methods, function (fn, key) {
       vm[key] = injectRender(vm, fn)
     })
-  
+
     // hooks
     each(options, function (fn, key) {
       if (typeof fn === 'function') {
         vm[key] = injectRender(vm, fn)
       }
     })
-  
+
     // $el
     if (options.el) {
       vm.$el = options.el
     }
-  
+
     // tpl
     var tplNode = options.el
     if (options.template) {
       tplNode = parse(options.template)
     }
-  
+
     // render: options.render || compile
     var render = options.render
     if (!render) {
       tplNode = tplNode || {}
       render = options.render = compile(tplNode)
     }
-  
+
     // async render
     vm.$render = function () {
       // update computed
       // each(options.computed, function (fn, key) {
       //   vm[key] = fn.call(vm)
       // })
-  
+
       // trigger watch
-  
+
       // dom diff update view
       cancelAnimationFrame(render.timer)
       render.timer = requestAnimationFrame(function () {
@@ -527,18 +527,18 @@
         }
       })
     }
-  
+
     // async call hooks
     requestAnimationFrame(function () {
       // created hook
       vm.created && vm.created()
-  
+
       // $mount
       if (vm.$el) {
         vm.$mount(vm.$el)
       }
     })
-  
+
     // test: return proxy
     if (typeof Proxy === 'function') {
       return new Proxy(vm, {
@@ -553,8 +553,8 @@
       })
     }
   }
-  
-  
+
+
   var __createVnode = createVnode
   var __each = each
   VM.prototype = {
@@ -563,17 +563,17 @@
     __each: __each,
     $mount: function (el) {
       this.$el = el
-  
+
       // render first
       this.$render()
-  
+
       // mounted hook
       this.mounted && this.mounted()
     }
   }
-  
-  VM.options = {directives: {}}
-  
+
+  VM.options = { directives: {} }
+
   // define directive: v-directive
   // definition
   //   bind -> createNode
@@ -587,17 +587,17 @@
     }
     VM.options.directives[name] = definition
   }
-  
+
   // v-bind:prop  :prop
   // vnode.props || directive('bind') ??
-  
+
   // v-on:click @click
   VM.directive('on', function (el, binding) {
     el['on' + binding.arg] = function (e) {
       binding.value(e)
     }
   })
-  
+
   // v-model
   VM.directive('model', function (el, binding, vnode) {
     vnode.props.value = binding.value
@@ -605,7 +605,7 @@
       binding.setModel(el.value)
     }
   })
-  
+
   // exports
   if (typeof module === 'object') {
     module.exports = VM
@@ -613,6 +613,5 @@
     window.VM = VM
     window.Vue = VM
   }
-  
+
 })(window, document)
-  
