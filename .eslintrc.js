@@ -42,7 +42,7 @@ module.exports = {
     "object-curly-newline": [
       1,
       {
-        "multiline": true
+        "consistent": true
       }
     ],
     // 对象属性多行

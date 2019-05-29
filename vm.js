@@ -572,7 +572,9 @@
     }
   }
 
-  VM.options = { directives: {} }
+  VM.options = {
+    directives: {}
+  }
 
   // define directive: v-directive
   // definition

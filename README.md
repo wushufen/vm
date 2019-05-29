@@ -492,8 +492,6 @@ var vnode = {
 
 当 `dom diff` 发现 `vnode` 对应的 `node` 不存在时，需要创建真实dom。
 
-`props` 中的 `style` 与 `class` 需要特别处理
-
 考虑到可以内嵌 `svg` ，创建 `svg` 及子节点时需要 `createElementNS`
 
 `directives` 后面会讲到，现在可以先注释掉
@@ -518,11 +516,11 @@ var vnode = {
     })
 
     // directives.bind
-    // each(vnode.directives, function (directive) {
-    //   var name = directive.name
-    //   var bind = VM.options.directives[name].bind
-    //   bind(node, directive, vnode)
-    // })
+    each(vnode.directives, function (directive) {
+      var name = directive.name
+      var bind = VM.options.directives[name].bind
+      bind(node, directive, vnode)
+    })
 
     // props
     updateProps(node, vnode.props)
@@ -541,6 +539,8 @@ var vnode = {
 ## updateProps 设置或更新props
 
 当 `createNode` 或者后面 `dom diff` 时，需要设置或更新 `props`
+
+`props` 中的 `style` 与 `class` 需要特别处理
 
 下面是 `updateProps` 的实现：
 ```javascript
@@ -635,7 +635,7 @@ var render = function(){
       "nodeType": 1,
       "props": {
         "title": {
-          "value": value
+          "value": value // 解开了引号
         }
       }
     }, ['chidlNodes'])
@@ -805,7 +805,7 @@ updateProps(oldNode, newNode.props)
 当我们更新数据时，如何触发 `dom diff` 从而更新视图呢？
 
 ### 方式一：`vm.setState()`
-最原始也最简单，就是 `=` 赋值要改用函数来写了。不符合我们的要求
+最原始也最简单，就是 `=` 赋值要改用函数来写了
 ```javascript
 vm.setState = function(state){
   // dom diff
@@ -825,7 +825,7 @@ Object.defineProperty(vm, 'key', {
 ```
 
 ### 方式三：`Proxy`
-同上
+兼容不太好处理
 ```javascript
 vm = new Proxy(vm, {
   set: function(vm, key, val){
@@ -836,8 +836,7 @@ vm = new Proxy(vm, {
 ```
 
 ## 方式四：脏检查
-比较费性能，不行
-当各种事件发生时进行，异步函数通过封装的代替 `$setTimeout`，再加个定时器会保险点，再不行就手动触发吧 `$apply`
+比较费性能。当各种事件发生时进行，异步函数通过封装的代替 `$setTimeout`，再加个定时器会保险点，再不行就手动触发吧 `$apply`
 ```javascript
 addEventListener('click', function(){
   // dom diff
@@ -959,10 +958,163 @@ vm = {
 
 
 ## VM 构造函数
-待续
+
+1. 把 `options.data` 的数据拷到 `vm`
+1. 对 `methods` 注入 `vm.$render` 并拷到 `vm`
+1. 对 `mouted` 等注入 `vm.$render`
+1. `compile` 编译模板生成 `render`
+1. `createVnode`, `each` 放到原型传入 `render`
+1. `vm.$render` 里进行异步 `dom diff`
+1. 如果支持 `Proxy` 则使用返回的是 `proxy` 方便在在控制台调试
+1. 如 `vm.$el` 存在，则关联其到 `dom diff`，并初始渲染
+
+```javascript
+
+  // VM class
+  function VM(options) {
+    var vm = this
+    vm.$options = options || (options = {})
+
+    // data
+    var data = options.data
+    if (typeof data === 'function') data = data.call(vm) // compoment data()
+    assign(vm, data)
+
+    // methods
+    each(options.methods, function (fn, key) {
+      vm[key] = injectRender(vm, fn)
+    })
+
+    // hooks
+    each(options, function (fn, key) {
+      if (typeof fn === 'function') {
+        vm[key] = injectRender(vm, fn)
+      }
+    })
+
+    // $el
+    if (options.el) {
+      vm.$el = options.el
+    }
+
+    // tpl
+    var tplNode = options.el
+    if (options.template) {
+      tplNode = parse(options.template)
+    }
+
+    // render: options.render || compile
+    var render = options.render
+    if (!render) {
+      tplNode = tplNode || {}
+      render = options.render = compile(tplNode)
+    }
+
+    // async render
+    vm.$render = function () {
+      // update computed
+      // each(options.computed, function (fn, key) {
+      //   vm[key] = fn.call(vm)
+      // })
+
+      // trigger watch
+
+      // dom diff update view
+      cancelAnimationFrame(render.timer)
+      render.timer = requestAnimationFrame(function () {
+        var vnode = options.__vnode = render.call(vm, createElement)
+        if (vm.$el) {
+          diff(vm.$el, vnode)
+        }
+      })
+    }
+
+    // async call hooks
+    requestAnimationFrame(function () {
+      // created hook
+      vm.created && vm.created()
+
+      // $mount
+      if (vm.$el) {
+        vm.$mount(vm.$el)
+      }
+    })
+
+    // test: return proxy
+    if (typeof Proxy === 'function') {
+      return new Proxy(vm, {
+        set: function (vm, key, val) {
+          vm[key] = val
+          vm.$render()
+        },
+        get: function (vm, key) {
+          vm.$render()
+          return vm[key]
+        }
+      })
+    }
+  }
+
+
+  var __createVnode = createVnode
+  var __each = each
+  VM.prototype = {
+    constructor: VM,
+    __createVnode: __createVnode,
+    __each: __each,
+    $mount: function (el) {
+      this.$el = el
+
+      // render first
+      this.$render()
+
+      // mounted hook
+      this.mounted && this.mounted()
+    }
+  }
+  VM.options = {
+    directives: {}
+  }
+```
 
 ## drirective 指令
-待续
+
+v-bind, v-on, v-model, ...
+
+```javascript
+  // define directive: v-directive
+  // definition
+  //   bind -> createNode
+  //   update -> diff
+  VM.directive = function (name, definition) {
+    if (typeof definition === 'function') {
+      definition = {
+        bind: definition,
+        update: definition
+      }
+    }
+    VM.options.directives[name] = definition
+  }
+
+  // v-bind:prop  :prop
+  // vnode.props || directive('bind') ??
+
+  // v-on:click @click
+  VM.directive('on', function (el, binding) {
+    el['on' + binding.arg] = function (e) {
+      binding.value(e)
+    }
+  })
+
+  // v-model
+  VM.directive('model', function (el, binding, vnode) {
+    vnode.props.value = binding.value
+    el.onkeyup = el.oninput = function () {
+      binding.setModel(el.value)
+    }
+  })
+
+```
 
 ## watch 观测者模式
 待续
