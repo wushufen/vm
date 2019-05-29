@@ -49,15 +49,7 @@
 * :class
 * :style
 * v-on:event | @event
-  * .prevent
-  * .stop
-  * .self
-  * .ctrl
-  * .alt
-  * .shift
-  * .meta
-  * .enter
-  * .13(keycode)
+  * .prevent.stop.self.ctrl.alt.shift.meta.enter.(keycode)
 * options
   * el
   * template
