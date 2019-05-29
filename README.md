@@ -1,10 +1,14 @@
-# 从零实现mvvm框架，重写一个轻量的vue并兼容ie
+## vm.js
 
-[实现过程](https://github.com/wusfen/vm/wiki)
+[从零实现mvvm框架，重写一个轻量的vue并兼容ie](https://github.com/wusfen/vm/wiki)
 
-## 示例
+* 兼容ie所有版本！！
+* 超轻量gzip才6k左右
+* 与vue语法完全一致
 
-与vue语法完全一致
+
+### 示例
+
 
 ```html
 <!DOCTYPE html>

@@ -1,29 +1,4 @@
-// VM构造函数
-// 辅助函数
-// vnode虚拟节点与真实节点
-// compile编译
-// dom diff算法
-// directive指令
-// 双向绑定之model到view
-// 双向绑定之view到model
-// compoment组件
-
-// ====================
-
-// utils
-// parse
-// getVnodeData
-// createVnode
-// createNode
-// updateProps
-// compile
-// domDiff
-// injectRender
-// VM
-// directive
-// compoment
-// watch
-// computed
+/*! @preserve https://github.com/wusfen/vm */
 
 (function (window, document) {
   var requestAnimationFrame = window.requestAnimationFrame
