@@ -28,7 +28,7 @@
 => render() + data
   => createVnode()
 => diff(oldNode, newNode)
-  => removeNode(), crateNode(), diffProps()
+  => removeNode(), crateNode(), updateProps()
 => updatedView
 
 // model -> view
@@ -180,7 +180,106 @@ console.timeEnd('node')
 ```
 node: 3134.69580078125ms
 
-## attrs 与 props
+## attribute 与 property
+
+### 概念
+
+* `attribute` 常简写成 `attr` ，是 `html` 的概念
+* `property` 常简写成 `prop` ，是 javascript `dom` 的概念
+
+### 读写
+
+* `atrribute` 通过 `node.getAtrribute` ， `node.setAtrribute` 读写
+* `property` 通过 `.property` 或 `['property']` 读写
+
+### 大小写
+
+* `attrbite` 都是小写，即使在写html时用的是大写也会转成小写
+```html
+<div accesskey="k"></div>
+```
+* `property` 使用的是小写驼峰
+```javascript
+node.accessKey
+```
+
+### 对应关系
+
+* 标准的 `attribute` 一般都会有对应的 `property`
+```
+id, title, src, href, ...
+```
+
+* 自定义的 `attribute` 没有对应的 `property`
+```html
+<div myattr="str"></div>
+```
+
+* `property` 不一定会有对应的 `atrribute`
+```javascript
+innerHTML, innertext, ...
+```
+
+* 对应的名字可能会不一样
+```html
+<div class="list"></div>
+```
+```javascript
+node.className
+```
+
+### 修改影响
+
+* 修改标准 `atrribute` 会更新 `property`
+```javascript
+input.title = 'new string'
+```
+```html
+<input title="new string">
+```
+
+* 修改自定义 `atrribute` 也不会有 `property`
+```javascript
+node.setAtrribute('myattr', 'new value')
+```
+
+* 修改 `property` 不一定会更新 `atrribute`
+```html
+<input value="string">
+```
+```javascript
+input.value = 'new string'
+```
+
+* 修改有的 `property` 会更新 `atrribute`
+```html
+<input title="string">
+```
+```javascript
+input.title = 'new string'
+```
+```html
+<input title="new string">
+```
+
+### 值的区别
+
+* `attribute` 都是字符串，不存在时为 `null`
+* `property` 任意类型
+* 同型值可能不一样，如 `href` 的 `atrribute` 不管是否相对地址， `property` 都是绝对地址
+
+### 布尔型
+```
+hidden, disabled, checked, selected, contentEditable, ...
+```
+
+* 当 `attribute` 存在时，不管其值是什么，对就的 `property` 为 `true`
+* 当 `attribute` 不存在时，对应的 `property` 为 `false`
+
+### 该用哪个
+
+一般更新dom使用 `property` 比较合适
+
 
 ## getVnodeData 获取虚拟节点信息
 
@@ -702,7 +801,162 @@ updateProps(oldNode, newNode.props)
 ```
 
 ## domDiff 如何触发
-待续
+
+当我们更新数据时，如何触发 `dom diff` 从而更新视图呢？
+
+### 方式一：`vm.setState()`
+最原始也最简单，就是 `=` 赋值要改用函数来写了。不符合我们的要求
+```javascript
+vm.setState = function(state){
+  // dom diff
+  console.log('dom diff')
+}
+```
+
+### 方式二：`Object.defineProperty`
+`Object.defineProperty` 要兼容 `ie` 的话比较困难
+```javascript
+Object.defineProperty(vm, 'key', {
+  set: function(vm, key, val){
+    // dom diff
+    console.log('dom diff')
+  }
+})
+```
+
+### 方式三：`Proxy`
+同上
+```javascript
+vm = new Proxy(vm, {
+  set: function(vm, key, val){
+    // dom diff
+    console.log('dom diff')
+  }
+})
+```
+
+## 方式四：脏检查
+比较费性能，不行
+当各种事件发生时进行，异步函数通过封装的代替 `$setTimeout`，再加个定时器会保险点，再不行就手动触发吧 `$apply`
+```javascript
+addEventListener('click', function(){
+  // dom diff
+  console.log('dom diff')
+})
+vm.$apply = function(){
+  // dom diff
+  console.log('dom diff')
+}
+```
+
+## 采用哪种方式
+
+本框架采用另一种思路。我们修改数据一般都在 `mv` 的方法里修改的，那能不能在 `vm` 的方法里都注入一个触发 `dom diff` 的 `$render` 函数呢？然后异步函数在方法运行时，临时替换成已注入 `$render` 的函数，然后在运行结束时将其还原。
+
+伪代码如下：
+```javascript
+vm = {
+  methods: {
+    click: function(){
+      var vm = this
+      vm.model = 'value'
+
+      setTimeout(function(){ 
+        vm.model = 'value2'
+      }, 3000)
+   }
+ } 
+}
+```
+=>
+```javascript
+vm = {
+  methods: {
+    click: function $click(){ // 已替换
+      // 异步函数临时替换
+      var oldSetTimeout = window.setTimeout
+      window.setTimeout = function(fn, delay){
+        oldSetTimeout(function(){
+          fn.apply(this, arguments)
+          // 注入了 $render
+          vm.$render()
+        }, delay)
+      }
+
+      // 原来的 click
+      oldClick.apply(vm, arguments)
+      // 相当于原来的 click 代码写在了这里
+      // var vm = this
+      // vm.model = 'value'
+
+      // setTimeout(function(){ 
+      //   vm.model = 'value2'
+      // }, 3000)
+
+      // 注入了 $render
+      vm.$render()
+
+      // 异步函数还原
+      window.setTimout = oldSetTimeout
+   }
+    }
+ } 
+}
+```
+
+以下是代码实现：
+```javascript
+  // fn => fn() vm.$render()
+  function injectRender(vm, fn) {
+    var $fn = function () {
+      var restoreAsyncs = injectRenderToAsyncs(vm) // inject render to setTimout...
+      fn.apply(this, arguments)
+      restoreAsyncs() // restore setTimout...
+      vm.$render() // trigger render
+    }
+    return $fn
+  }
+
+  // setTimout(fn) => fn() vm.$render()
+  function injectRenderToAsyncs(vm) {
+    var setTimeout = window.setTimeout
+    window.setTimeout = function (fn, delay) {
+      var args = toArray(arguments, 2)
+      return setTimeout(function () {
+        injectRender(vm, fn).apply(this, args)
+      }, delay)
+    }
+
+    var setInterval = window.setInterval
+    window.setInterval = function (fn, delay) {
+      var args = toArray(arguments, 2)
+      return setInterval(function () {
+        injectRender(vm, fn).apply(this, args)
+      }, delay)
+    }
+
+    var XMLHttpRequest = window.XMLHttpRequest || window.ActiveXObject
+    var XHRprototype = XMLHttpRequest.prototype
+    var send = XHRprototype.send
+    XMLHttpRequest.prototype.send = function () {
+      var xhr = this
+      each(xhr, function (handler, name) {
+        if (name.match(/^on/) && typeof handler === 'function') {
+          xhr[name] = injectRender(vm, handler)
+        }
+      })
+      return send && send.apply(xhr, arguments)
+    }
+
+    return function restoreAsyncs() {
+      window.setTimeout = setTimeout
+      window.setInterval = setInterval
+      XHRprototype.send = send
+    }
+  }
+```
+
+
 
 ## VM 构造函数
 待续
