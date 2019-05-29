@@ -41,7 +41,8 @@
   function forEach(arrayLike, fn) {
     if (!arrayLike) return
     for (var i = 0; i < arrayLike.length; i++) {
-      fn.call(this, arrayLike[i], i)
+      var rs = fn.call(this, arrayLike[i], i)
+      if (rs) return rs
     }
   }
 
@@ -101,6 +102,25 @@
       return '"' + val + '"'
     }
     return String(val)
+  }
+
+  // selector => node
+  function querySelector(selector) {
+    if (typeof selector === 'string') {
+      var s = selector.substr(1)
+      if (selector.match(/^#/)) {
+        return document.getElementById(s)
+      } else if(selector.match(/^\./)){
+        return forEach(document.getElementsByTagName('*'), function (el) {
+          if (el.className.match('\\b' + s + '\\b')) {
+            return el
+          }
+        })
+      }
+    }
+    if (selector.nodeType === 1) {
+      return selector
+    }
   }
 
   // html => dom
@@ -493,11 +513,11 @@
 
     // $el
     if (options.el) {
-      vm.$el = options.el
+      vm.$el = querySelector(options.el)
     }
 
     // tpl
-    var tplNode = options.el
+    var tplNode = vm.$el
     if (options.template) {
       tplNode = parse(options.template)
     }
@@ -596,12 +616,41 @@
   // v-on:click @click
   VM.directive('on', function (el, binding) {
     el['on' + binding.arg] = function (e) {
+      // mdfs
+      var mdfs = binding.mdfs
+      if (mdfs.match(/\.prevent\b/)) event.preventDefault()
+      if (mdfs.match(/\.stop\b/)) event.stopPropagation()
+      if (mdfs.match(/\.self\b/) && event.target !== el) return
+
+      if (mdfs.match(/\.ctrl\b/) && !event.ctrlKey) return
+      if (mdfs.match(/\.alt\b/) && !event.altKey) return
+      if (mdfs.match(/\.shift\b/) && !event.shiftKey) return
+      if (mdfs.match(/\.meta\b/) && !event.metaKey) return
+
+      if (mdfs.match(/\.enter\b/) && event.keyCode !== 13) return
+
+      var m = mdfs.match(/\.(\d+)/)
+      if (m && event.keyCode !== m[1]) return
       binding.value(e)
     }
   })
 
   // v-model
   VM.directive('model', function (el, binding, vnode) {
+    // checkbox
+    if (el.type === 'checkbox') {
+      vnode.props.checked = binding.value
+      el.onclick = function () {
+        binding.setModel(el.checked)
+      }
+      return
+    }
+
+    // radio
+
+    // select
+
+    // input ...
     vnode.props.value = binding.value
     el.onkeyup = el.oninput = function () {
       binding.setModel(el.value)
