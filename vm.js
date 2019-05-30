@@ -17,7 +17,7 @@
     if (!arrayLike) return
     for (var i = 0; i < arrayLike.length; i++) {
       var rs = fn.call(this, arrayLike[i], i)
-      if (rs) return rs
+      if (rs !== undefined) return rs // can break
     }
   }
 
@@ -42,17 +42,7 @@
         }
       }
     }
-    return array
-  }
-
-  // obj extend ... => obj
-  function assign(obj) {
-    forEach(arguments, function (arg, i) {
-      i > 0 && each(arg, function (value, key) {
-        obj[key] = value
-      })
-    })
-    return obj
+    return array // [].map
   }
 
   // arrayLike => array
@@ -60,6 +50,31 @@
     var array = [], i = arrayLike.length
     while (i--) array[i] = arrayLike[i]
     return array.slice(start)
+  }
+
+  // item index of array
+  function indexOf(array, item) {
+    var index = -1
+    forEach(array, function (_item, i) {
+      if (item === _item) return index = i
+    })
+    return index
+  }
+
+  // array remove item
+  function remove(array, item) {
+    var index = indexOf(array, item)
+    index !== -1 && array.splice(index, 1)
+  }
+
+  // obj extend ... => obj
+  function assign(obj) {
+    forEach(toArray(arguments, 1), function (arg) {
+      each(arg, function (value, key) {
+        obj[key] = value
+      })
+    })
+    return obj
   }
 
   // val => json
@@ -85,7 +100,7 @@
       var s = selector.substr(1)
       if (selector.match(/^#/)) {
         return document.getElementById(s)
-      } else if(selector.match(/^\./)){
+      } else if (selector.match(/^\./)) {
         return forEach(document.getElementsByTagName('*'), function (el) {
           if (el.className.match('\\b' + s + '\\b')) {
             return el
@@ -93,14 +108,50 @@
         })
       }
     }
-    if (selector.nodeType === 1) {
-      return selector
-    }
+    return selector
   }
+
+  // input => onkeyup
+  function ieEventType(type) { // ie
+    return 'on' + ({
+      input: 'keyup',
+      focus: 'focusin',
+      blur: 'focusout'
+    }[type] || type)
+  }
+
+  // addEventListener
+  var on = function () {
+    return window.addEventListener ? function (node, type, fn, useCapture) {
+      node.addEventListener(type, fn, useCapture)
+    } : function (node, type, fn) { // ie
+      type = ieEventType(type)
+      var __ieFn = function () {
+        var event = window.event
+        event.target = event.srcElement
+        event.preventDefault = function () { event.returnValue = false }
+        event.stopPropagation = function () { event.cancelBubble = true }
+        fn.call(node, event)
+      }
+      fn.__ieFn = __ieFn // for off
+      node.attachEvent(type, __ieFn)
+    }
+  }()
+
+  // removeEventListener
+  var off = function () {
+    return window.removeEventListener ? function (node, type, fn) {
+      node.removeEventListener(type, fn)
+    } : function (node, type, fn) {
+      type = ieEventType(type)
+      fn = fn ? (fn.__ieFn || fn) : null
+      node.detachEvent(type, fn)
+    }
+  }()
 
   // html => dom
   function parse(html) {
-    parse.el = parse.el || document.createElemnt('div')
+    parse.el = parse.el || document.createElement('div')
     parse.el.innerHTML = html
     var node = parse.el.children[0]
     parse.el.removeChild(node) // ie
@@ -119,7 +170,7 @@
     }
     var attributes = toArray(node.attributes)
     forEach(attributes, function (attribute) {
-      if (!attribute.specified) return // ie
+      if (!attribute.specified && attribute.nodeName !== 'value') return // ie
       var attr = attribute.nodeName
       var value = attribute.nodeValue
 
@@ -230,7 +281,7 @@
       return document.createTextNode(vnode.nodeValue)
     }
 
-    // createElemnt namespaceURI
+    // createElement namespaceURI
     var tagName = vnode.tagName.toLowerCase()
     var node = vnode.ns && document.createElementNS
       ? document.createElementNS(vnode.ns, tagName)
@@ -261,7 +312,7 @@
     return node
   }
 
-  // node :props
+  // *:props
   function updateProps(node, props) {
     each(props, function (value, name) {
       if (name === 'style') {
@@ -305,7 +356,7 @@
           return createVnode()
         }
       ])
-      */
+    */
     var code = ''
     loop(node)
     function loop(node) {
@@ -399,7 +450,7 @@
       each(vnode.directives, function (directive) {
         var name = directive.name
         var update = VM.options.directives[name].update
-        update(node, directive, vnode)
+        update && update(node, directive, vnode)
       })
       // *props
       if (node.tagName && vnode.tagName) {
@@ -557,10 +608,14 @@
     __createVnode: __createVnode,
     __each: __each,
     $mount: function (el) {
+      var vm = this
       this.$el = el
 
       // render first
       this.$render()
+      setTimeout(function(){ // ie update form
+        vm.$render()
+      }, 41)
 
       // mounted hook
       this.mounted && this.mounted()
@@ -571,10 +626,9 @@
     directives: {}
   }
 
-  // define directive: v-directive
-  // definition
-  //   bind -> createNode
-  //   update -> diff
+  // directive: v-directive
+  // definition.bind -> createNode
+  // definition.update -> diff
   VM.directive = function (name, definition) {
     if (typeof definition === 'function') {
       definition = {
@@ -590,7 +644,8 @@
 
   // v-on:click @click
   VM.directive('on', function (el, binding) {
-    el['on' + binding.arg] = function (e) {
+    off(el, binding.arg, el['__' + binding.raw]) // one
+    on(el, binding.arg, el['__' + binding.raw] = function (e) {
       // mdfs
       var mdfs = binding.mdfs
       if (mdfs.match(/\.prevent\b/)) event.preventDefault()
@@ -607,29 +662,90 @@
       var m = mdfs.match(/\.(\d+)/)
       if (m && event.keyCode !== m[1]) return
       binding.value(e)
-    }
+    })
   })
 
   // v-model
   VM.directive('model', function (el, binding, vnode) {
+    var model = binding.value
+    var attrs = vnode.attrs
+    var props = vnode.props
+    var value = props.value !== undefined? props.value: attrs.value
+    
     // checkbox
     if (el.type === 'checkbox') {
-      vnode.props.checked = binding.value
-      el.onclick = function () {
-        binding.setModel(el.checked)
+      if (model instanceof Array) {
+        props.checked = indexOf(model, value) !== -1
+        off(el, 'click', el.__modelFn) // one
+        on(el, 'click', el.__modelFn = function () {
+          if (el.checked) {
+            model.push(value)
+          } else {
+            remove(model, value)
+          }
+          binding.setModel(model)
+        })
+        return
       }
+      props.checked = model
+      off(el, 'click', el.__modelFn) // one
+      on(el, 'click', el.__modelFn = function () {
+        binding.setModel(el.checked)
+      })
       return
     }
 
     // radio
+    if (el.type === 'radio') {
+      props.checked = model === value
+      off(el, 'click', el.__modelFn) // one
+      on(el, 'click', el.__modelFn = function () {
+        binding.setModel(value)
+      })
+      return
+    }
 
     // select
+    if (el.type === 'select-one') {
+      vnode.props.value = model
+      forEach(vnode.childNodes, function (voption) {
+        if (voption.nodeType === 1) {
+          var optionValue = voption.props.value
+          if (optionValue === undefined) {
+            optionValue = voption.attrs.value || voption.childNodes[0].nodeValue
+          }
+          voption.props.selected = optionValue === model
+        }
+      })
+      off(el, 'change', el.__modelFn) // one
+      on(el, 'change', el.__modelFn = function () {
+        forEach(el.options, function (option) {
+          if (option.selected) {
+            var vindex = -1
+            forEach(vnode.childNodes, function (voption) {
+              if (voption.nodeType === 1) {
+                vindex += 1
+                if (vindex === option.index) {
+                  var optionValue = voption.props.value
+                  if (optionValue === undefined) {
+                    optionValue = voption.attrs.value || voption.childNodes[0].nodeValue
+                  }
+                  binding.setModel(optionValue)
+                }
+              }
+            })
+          }
+        })
+      })
+      return
+    }
 
     // input ...
-    vnode.props.value = binding.value
-    el.onkeyup = el.oninput = function () {
+    props.value = model
+    off(el, 'input', el.__modelFn) // one
+    on(el, 'input', el.__modelFn = function () {
       binding.setModel(el.value)
-    }
+    })
   })
 
   // exports
