@@ -12,9 +12,9 @@
 <body>
 
   <div id="app">
-    <h1>{{model || '--'}}</h1>
-    <h2>list: {{list}}</h2>
-    <input v-model="model">
+    <h1>model: {{model}}</h1>
+    <h2>list: [ {{list}} ]</h2>
+    <input v-model="model" placeholder="model">
     <br>
     <input v-model="model" type="checkbox">
     <br>
@@ -25,7 +25,6 @@
     <input v-model="model" :value="'radio2'" type="radio">
     <br>
     <select v-model="model">
-      <option>0</option>
       <option v-for="(item,i) in list">{{item}}</option>
     </select>
   </div>
@@ -36,7 +35,7 @@
       el: app,
       data: {
         model: 'hello vm.js',
-        list: [1]
+        list: []
       }
     })
   </script>
