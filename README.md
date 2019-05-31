@@ -1,5 +1,6 @@
 ## vm.js
 
+没有用到 `Object.defineProperty()` ，所有代码都是基于 `es3` 所以兼容性强，实现原理如下：  
 [从零实现mvvm框架，重写一个轻量的vue并兼容ie](https://github.com/wusfen/vm/wiki)
 
 ### 特性
