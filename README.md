@@ -4,7 +4,7 @@
 
 ### 特性
 * 兼容ie所有版本
-* 超轻量压缩gzip才2.61k
+* 超轻量压缩gzip才3k
 * 与vue语法完全一致，实现了常用的功能
 
 ### 示例
@@ -38,6 +38,9 @@
 
 * [hello world](https://wusfen.github.io/vm/examples/helloWorld.html) | [源码](examples/helloWorld.html)
 * [todo list](https://wusfen.github.io/vm/examples/todoList.html) | [源码](examples/todoList.html)
+
+svg 需浏览器支持才支持 (ie9+)
+* [svg](https://wusfen.github.io/vm/examples/svg.html) | [源码](examples/svg.html)
 
 ## 已实现的功能列表
 
