@@ -1,7 +1,7 @@
 ## vm.js
 
-没有用到 `Object.defineProperty()` 等 `es5, es6` 特性，所有代码都是基于 `es3` 所以兼容性强。  
-超轻量，可考虑用于 活动页、广告投放页 等轻量项目
+没有用到 `Object.defineProperty()` 等 `es5, es6` 特性，所有代码都是基于 `es3` 所以兼容性强，可用于需要兼容老ie的项目。  
+超轻量，可考虑用于 活动页、广告投放页 等轻量的项目。
 
 实现原理如下：  
 [从零实现mvvm框架，重写一个轻量的vue并兼容ie](https://github.com/wusfen/vm/wiki)
