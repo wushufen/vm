@@ -231,13 +231,13 @@
   // vnodeData + childNodes => vnode tree
   function createVnode(vnodeData, childNodes) {
     var vnode = assign({
-      tagName: vnodeData.tagName,
+      tagName: '',
       attrs: {},
       props: {},
       directives: [],
       childNodes: []
-      // parentNode: null,
     }, vnodeData)
+    vnode.tagName = vnode.tagName.toLowerCase()
 
     // ['child', [for...]] => ['child', ...]
     // 'text' => {nodeType:3, nodeValue:'text'}
@@ -248,14 +248,12 @@
             child = { nodeType: 3, nodeValue: String(child) }
           }
           vnode.childNodes.push(child)
-          // child.parentNode = vnode
         })
       } else {
         if (typeof child !== 'object') {
           child = { nodeType: 3, nodeValue: String(child) }
         }
         vnode.childNodes.push(child)
-        // child.parentNode = vnode
       }
     })
 
@@ -263,13 +261,13 @@
   }
 
   // vue createElement => createVnode => vnode
-  function createElement(tag, data, children) {
+  function createElement(tagName, data, children) {
     if (data instanceof Array) {
       children = data
       data = {}
     }
     data = assign({
-      tagName: tag.toUpperCase(),
+      tagName: tagName,
       nodeType: 1
     }, data)
     return createVnode(data, children)
@@ -282,7 +280,7 @@
     }
 
     // createElement namespaceURI
-    var tagName = vnode.tagName.toLowerCase()
+    var tagName = vnode.tagName
     var node = vnode.ns && document.createElementNS
       ? document.createElementNS(vnode.ns, tagName)
       : document.createElement(tagName)
@@ -424,6 +422,8 @@
     if (node && (!node.parentNode || node.parentNode.nodeType !== 1)) { // out of document
       return
     }
+    // console.log(node && node.tagName, vnode && vnode.tagName)
+    
     parentNode = parentNode || node.parentNode
     var newNode
     // +
@@ -436,7 +436,7 @@
       parentNode.removeChild(node)
     }
     // +- *nodeType || *tagName
-    else if (node.tagName !== vnode.tagName) {
+    else if (String(node.tagName).toLowerCase() !== String(vnode.tagName)) {
       newNode = createNode(vnode)
       parentNode.replaceChild(newNode, node)
     }

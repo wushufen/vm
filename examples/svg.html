@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>svg</title>
+  <script src="../vm.js"></script>
+  <style>
+    rect {
+      fill: #0af;
+      transition: .25s;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="app">
+    <svg width="600" height="600">
+      <rect v-for="(item,i) in list" x="10" :y="i*40" :width="item" :height="20" />
+    </svg>
+  </div>
+
+  <script>
+    var vm = new Vue({
+      el: '#app',
+      el: app,
+      data: {
+        list: []
+      },
+      methods: {
+        update: function () {
+          this.list = []
+          for (var i = 0; i < 10; i++) {
+            this.list.push(Math.random() * 200)
+          }
+          // setTimeout(function () {
+          //   vm.update()
+          // }, 5000)
+        }
+      },
+      mounted: function () {
+        this.update()
+      }
+    })
+  </script>
+</body>
+
+</html>
