@@ -10,7 +10,7 @@
   <style>
     rect {
       fill: #0af;
-      transition: .25s;
+      transition: .5s;
     }
   </style>
 </head>
@@ -18,8 +18,9 @@
 <body>
 
   <div id="app">
-    <svg width="600" height="600">
-      <rect v-for="(item,i) in list" x="10" :y="i*40" :width="item" :height="20" />
+    <svg width="400" height="400">
+      <rect v-for="(item,i) in list" x="0" :y="i*40" :width="item" :height="20" />
+      <rect v-for="(item,i) in list" :x="i*40" :y="0" :width="20" :height="item" />
     </svg>
   </div>
 
@@ -34,11 +35,11 @@
         update: function () {
           this.list = []
           for (var i = 0; i < 10; i++) {
-            this.list.push(Math.random() * 200)
+            this.list.push(Math.random() * (400 - 20))
           }
-          // setTimeout(function () {
-          //   vm.update()
-          // }, 5000)
+          setTimeout(function () {
+            vm.update()
+          }, 1000)
         }
       },
       mounted: function () {
