@@ -18,8 +18,9 @@
 
     #app {
       max-width: 375px;
-      padding: 2em 0;
-      margin: auto;
+      padding: 2em 1em;
+      margin: 2em auto;
+      box-shadow: 0px 1px 10px #bbb;
     }
 
     .input {
@@ -69,6 +70,7 @@
         </label>
         <button class="del" v-if="item.done" @click="remove(index)" type="button">-</button>
       </li>
+      <li v-if="!list.length">empty!</li>
     </ul>
   </div>
 

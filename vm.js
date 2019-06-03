@@ -195,11 +195,11 @@
         var arg = m[3]
         var mdfs = m[4]
 
-        // "@~:value" => value without "" in runtime code
+        // "🐒value" => value without "" in runtime code
         var dir = {
           raw: attr,
           expression: value,
-          value: '@~:' + value,
+          value: '🐒' + value,
           name: name,
           arg: arg,
           mdfs: mdfs
@@ -207,13 +207,13 @@
 
         if (name === 'on') {
           if (value.match(/[=();]/)) {
-            dir.value = '@~:function(){' + value + '}'
+            dir.value = '🐒function(){' + value + '}'
           } else {
-            dir.value = '@~:function(){' + value + '.apply(__vm,arguments)}'
+            dir.value = '🐒function(){' + value + '.apply(__vm,arguments)}'
           }
         }
         if (name === 'model') {
-          dir.setModel = '@~:function(value){' + value + '=value; __vm.$render()}'
+          dir.setModel = '🐒function(value){' + value + '=value; __vm.$render()}'
         }
         if (name === 'for') {
           // (item, i) in list
@@ -226,7 +226,7 @@
         if (/^(for|if)$/.test(name)) {
           vnodeData.directives[name] = dir
         } else if (name === 'bind') {
-          vnodeData.props[arg] = '@~:' + value
+          vnodeData.props[arg] = '🐒' + value
         } else {
           vnodeData.directives.push(dir)
         }
@@ -270,16 +270,16 @@
   }
 
   // vue createElement => createVnode => vnode
-  function createElement(tagName, data, children) {
-    if (data instanceof Array) {
-      children = data
+  function createElement(tagName, data, childNodes) {
+    if (!childNodes) {
+      childNodes = data
       data = {}
     }
     data = assign({
       tagName: tagName,
       nodeType: 1
     }, data)
-    return createVnode(data, children)
+    return createVnode(data, childNodes)
   }
 
   // vnode tree => node tree
@@ -375,7 +375,7 @@
         var vnodeData = getVnodeData(node)
         var vnodeJson = toJson(vnodeData)
         var dirs = vnodeData.directives
-        vnodeJson = vnodeJson.replace(/"@~:((?:\\.|.)*?)"/g, '$1') // rutime value without ""
+        vnodeJson = vnodeJson.replace(/"🐒((?:\\.|.)*?)"/g, '$1') // rutime value without ""
 
         // for if?
         // each(, ()=> bool? createVnode(, [ loop ]): "" )
@@ -478,9 +478,9 @@
   // fn => fn() vm.$render()
   function injectRender(vm, fn) {
     var $fn = function () {
-      var restoreAsyncs = injectRenderToAsyncs(vm) // inject render to setTimout...
+      var restoreAsyncs = injectRenderToAsyncs(vm) // inject render to setTimout..
       var rs = fn.apply(this, arguments)
-      restoreAsyncs() // restore setTimout...
+      restoreAsyncs() // restore setTimout..
       vm.$render() // trigger render
       return rs
     }
