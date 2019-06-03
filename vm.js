@@ -1,6 +1,6 @@
 /*! @preserve https://github.com/wusfen/vm */
 
-(function (window, document) //
+(function (window, document) //---
 {
   var requestAnimationFrame = window.requestAnimationFrame
   var cancelAnimationFrame = window.cancelAnimationFrame
@@ -297,6 +297,7 @@
     // attrs
     each(vnode.attrs, function (value, name) {
       node.setAttribute(name, value)
+      if (name === 'class') node.className = value // ie
     })
 
     // directives.bind
@@ -778,4 +779,4 @@
   }
 
 } //
-)(window, document)
+)(window, document) //---
