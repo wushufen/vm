@@ -1,6 +1,7 @@
 /*! @preserve https://github.com/wusfen/vm */
 
-(function (window, document) {
+(function (window, document) //
+{
   var requestAnimationFrame = window.requestAnimationFrame
   var cancelAnimationFrame = window.cancelAnimationFrame
   if (!requestAnimationFrame) {
@@ -79,19 +80,27 @@
 
   // val => json
   function toJson(val) {
+    if (val instanceof Array) {
+      return '[' + each(val, toJson).join(', ') + ']'
+    }
     if (val && typeof val === 'object') {
       var items = each(val, function (item, key) {
         return '"' + key + '": ' + toJson(item)
       })
-      return '{' + items.join(',\n') + '}'
-    }
-    if (val instanceof Array) {
-      return '[' + each(val, toJson).join(',\n') + ']'
+      return '{' + items.join(', ') + '}'
     }
     if (typeof val === 'string') {
       return '"' + val + '"'
     }
     return String(val)
+  }
+
+  // undefined => ''
+  // obj => json
+  function outValue(val) {
+    if (val === undefined) return ''
+    if (typeof val === 'object') return toJson(val)
+    return val
   }
 
   // selector => node
@@ -111,7 +120,7 @@
     return selector
   }
 
-  // input => onkeyup
+  // ie: input => onkeyup, focus => onfocusin
   function ieEventType(type) { // ie
     return 'on' + ({
       input: 'keyup',
@@ -149,7 +158,7 @@
     }
   }()
 
-  // html => dom
+  // html => node
   function parse(html) {
     parse.el = parse.el || document.createElement('div')
     parse.el.innerHTML = html
@@ -342,18 +351,18 @@
   // node => render() => vnode
   function compile(node) {
     /*
-      createVnode({tagName:'div'}, [
-        'textNode',
-        createVnode({tagName:'ul'}, [
-          each(list, function(item, index){
-            return createVnode({tagName:'li'}, [ loop ])
-          })
-        ]),
-        bool? createVnode({tagName:'span'}, [ loop ]) : '',
-        function component(){
-          return createVnode()
-        }
-      ])
+    createVnode({tagName:'div'}, [
+      'textNode', // textNode
+      createVnode({tagName:'ul'}, [
+        each(list, function(item, index){ // v-for
+          return createVnode({tagName:'li'}, [ loop ])
+        })
+      ]),
+      bool? createVnode({tagName:'span'}, [ loop ]) : '', // v-if
+      function component(){ // component
+        return createVnode()
+      }
+    ])
     */
     var code = ''
     loop(node)
@@ -397,14 +406,13 @@
       }
       // parse textNode
       else if (node.nodeType === 3) {
-        // abc{{ exp }}efg"h  =>  "abc" +(exp)+ "efg\"h"
+        // str{{exp}}in"g  =>  "str" +(exp)+ "in\"g"
         var nodeValue = node.nodeValue.replace(/\s+/g, ' ')
           .replace(/(^|}}).*?({{|$)/g, function (str) {
-            // \ => \\ " => \"
+            // \ => \\  " => \"
             return str.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
           })
-          // str{{exp}}str => str" + (exp) + "str
-          .replace(/{{(.*?)}}/g, '"+($1)+"')
+          .replace(/{{(.*?)}}/g, '"+__outValue($1)+"')
         code += '"' + nodeValue + '"'
       }
       // parse commentNode ...
@@ -423,7 +431,7 @@
       return
     }
     // console.log(node && node.tagName, vnode && vnode.tagName)
-    
+
     parentNode = parentNode || node.parentNode
     var newNode
     // +
@@ -470,9 +478,10 @@
   function injectRender(vm, fn) {
     var $fn = function () {
       var restoreAsyncs = injectRenderToAsyncs(vm) // inject render to setTimout...
-      fn.apply(this, arguments)
+      var rs = fn.apply(this, arguments)
       restoreAsyncs() // restore setTimout...
       vm.$render() // trigger render
+      return rs
     }
     return $fn
   }
@@ -500,18 +509,28 @@
     var send = XHRprototype.send
     XMLHttpRequest.prototype.send = function () {
       var xhr = this
-      each(xhr, function (handler, name) {
-        if (name.match(/^on/) && typeof handler === 'function') {
-          xhr[name] = injectRender(vm, handler)
+      each(xhr, function (callback, name) {
+        if (name.match(/^on/) && typeof callback === 'function') {
+          xhr[name] = injectRender(vm, callback)
         }
       })
       return send && send.apply(xhr, arguments)
+    }
+
+    var fetch = window.fetch
+    window.fetch = fetch && function () {
+      var pm = fetch.apply(this, arguments)
+      forEach(['then', 'catch', 'finally'], function (name) {
+        pm[name] = injectRender(vm, pm[name])
+      })
+      return pm
     }
 
     return function restoreAsyncs() {
       window.setTimeout = setTimeout
       window.setInterval = setInterval
       XHRprototype.send = send
+      window.fetch = fetch
     }
   }
 
@@ -603,17 +622,19 @@
 
   var __createVnode = createVnode
   var __each = each
+  var __outValue = outValue
   VM.prototype = {
     constructor: VM,
     __createVnode: __createVnode,
     __each: __each,
+    __outValue: __outValue,
     $mount: function (el) {
       var vm = this
       this.$el = el
 
       // render first
       this.$render()
-      setTimeout(function(){ // ie update form
+      setTimeout(function () { // ie update form
         vm.$render()
       }, 41)
 
@@ -670,8 +691,8 @@
     var model = binding.value
     var attrs = vnode.attrs
     var props = vnode.props
-    var value = props.value !== undefined? props.value: attrs.value
-    
+    var value = props.value !== undefined ? props.value : attrs.value
+
     // checkbox
     if (el.type === 'checkbox') {
       if (model instanceof Array) {
@@ -756,4 +777,5 @@
     window.Vue = VM
   }
 
-})(window, document)
+} //
+)(window, document)

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>async</title>
+  <script src="../vm.js"></script>
+</head>
+
+<body>
+
+  <div id="app">
+    <input v-model="model"> {{model}}
+  </div>
+
+  <script>
+    var vm = new Vue({
+      el: '#app',
+      el: app,
+      data: {
+        model: 'hello vm.js'
+      },
+      methods: {
+        timeout: function () {
+          setTimeout(function () {
+            vm.model += '|st1'
+            setTimeout(function () {
+              vm.model += '|st2'
+            }, 500)
+          }, 1000)
+        },
+        xhr: function () {
+          var xhr = new XMLHttpRequest
+          xhr.open('GET', '.')
+          xhr.onreadystatechange = function () {
+            vm.model += '|xhr'
+            setTimeout(function () {
+              vm.model += '|xhr.st'
+            }, 500)
+          }
+          xhr.send()
+        },
+        fetch: function () {
+          fetch('.').then(function () {
+            vm.model += '|fetch.then'
+          }).catch(function () {
+            vm.model += '|fetch.catch'
+          }).finally(function () {
+            vm.model += '|fetch.finally'
+            setTimeout(function () {
+              vm.model += '|fetch.then.st'
+            }, 500)
+          })
+        }
+      },
+      mounted: function () {
+        vm.timeout()
+        vm.xhr()
+        vm.fetch()
+      }
+    })
+  </script>
+</body>
+
+</html>
