@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>hello world</title>
+  <script src="../vm.js"></script>
+</head>
+
+<body>
+
+  <div id="app">
+    <button style="position: absolute" :style="{top:top+'px'}">{{top}}</button>
+    <div style="width: 1px">
+      ---------------------------------------------------------------------------------------------
+      ---------------------------------------------------------------------------------------------
+    </div>
+  </div>
+
+  <script>
+    var vm = new Vue({
+      el: '#app',
+      data: {
+        top: 0
+      },
+      methods: {
+        update: function (top) {
+          this.top = top + 100
+        }
+      }
+    })
+    addEventListener = window.addEventListener || function (type, fn) {
+      attachEvent('on' + type, fn)
+    }
+    addEventListener('scroll', function (e) {
+      vm.top = document.documentElement.scrollTop || document.body.scrollTop
+      vm.update(vm.top)
+    })
+  </script>
+</body>
+
+</html>

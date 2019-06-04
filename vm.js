@@ -135,12 +135,12 @@
       node.addEventListener(type, fn, useCapture)
     } : function (node, type, fn) { // ie
       type = ieEventType(type)
-      var __ieFn = function () {
+      var __ieFn = fn.__ieFn || function () {
         var event = window.event
         event.target = event.srcElement
         event.preventDefault = function () { event.returnValue = false }
         event.stopPropagation = function () { event.cancelBubble = true }
-        fn.call(node, event)
+        fn.call(this, event)
       }
       fn.__ieFn = __ieFn // for off
       node.attachEvent(type, __ieFn)
@@ -195,11 +195,11 @@
         var arg = m[3]
         var mdfs = m[4]
 
-        // "🐒value" => value without "" in runtime code
+        // "🚩value" => value without "" in runtime code
         var dir = {
           raw: attr,
           expression: value,
-          value: '🐒' + value,
+          value: '🚩' + value,
           name: name,
           arg: arg,
           mdfs: mdfs
@@ -207,13 +207,13 @@
 
         if (name === 'on') {
           if (value.match(/[=();]/)) {
-            dir.value = '🐒function(){' + value + '}'
+            dir.value = '🚩function(){' + value + '}'
           } else {
-            dir.value = '🐒function(){' + value + '.apply(__vm,arguments)}'
+            dir.value = '🚩function(){' + value + '.apply(__vm,arguments)}'
           }
         }
         if (name === 'model') {
-          dir.setModel = '🐒function(value){' + value + '=value; __vm.$render()}'
+          dir.setModel = '🚩function(value){' + value + '=value; __vm.$render()}'
         }
         if (name === 'for') {
           // (item, i) in list
@@ -226,7 +226,7 @@
         if (/^(for|if)$/.test(name)) {
           vnodeData.directives[name] = dir
         } else if (name === 'bind') {
-          vnodeData.props[arg] = '🐒' + value
+          vnodeData.props[arg] = '🚩' + value
         } else {
           vnodeData.directives.push(dir)
         }
@@ -375,7 +375,7 @@
         var vnodeData = getVnodeData(node)
         var vnodeJson = toJson(vnodeData)
         var dirs = vnodeData.directives
-        vnodeJson = vnodeJson.replace(/"🐒((?:\\.|.)*?)"/g, '$1') // rutime value without ""
+        vnodeJson = vnodeJson.replace(/"🚩((?:\\.|.)*?)"/g, '$1') // rutime value without ""
 
         // for if?
         // each(, ()=> bool? createVnode(, [ loop ]): "" )
@@ -575,6 +575,12 @@
       render = options.render = compile(tplNode)
     }
 
+    // force render
+    vm.$forceUpdate = function () {
+      var vnode = render.call(vm, createElement)
+      vm.$el && diff(vm.$el, vnode)
+      options.__vnode = vnode // dev
+    }
     // async render
     vm.$render = function () {
       // update computed
@@ -587,10 +593,7 @@
       // dom diff update view
       cancelAnimationFrame(render.timer)
       render.timer = requestAnimationFrame(function () {
-        var vnode = options.__vnode = render.call(vm, createElement)
-        if (vm.$el) {
-          diff(vm.$el, vnode)
-        }
+        vm.$forceUpdate()
       })
     }
 
