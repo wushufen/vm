@@ -1,6 +1,6 @@
 /*! @preserve https://github.com/wusfen/vm */
 
-(function (window, document) //---
+(function (window, document, undefined) //---
 {
   var requestAnimationFrame = window.requestAnimationFrame
   var cancelAnimationFrame = window.cancelAnimationFrame
@@ -65,7 +65,7 @@
   // array remove item
   function remove(array, item) {
     var index = indexOf(array, item)
-    index !== -1 && array.splice(index, 1)
+    index != -1 && array.splice(index, 1)
   }
 
   // obj extend ... => obj
@@ -179,7 +179,7 @@
     }
     var attributes = toArray(node.attributes)
     forEach(attributes, function (attribute) {
-      if (!attribute.specified && attribute.nodeName !== 'value') return // ie
+      if (!attribute.specified && attribute.nodeName != 'value') return // ie
       var attr = attribute.nodeName
       var value = attribute.nodeValue
 
@@ -253,13 +253,13 @@
     forEach(childNodes, function (child) {
       if (child instanceof Array) {
         forEach(child, function (child) {
-          if (typeof child !== 'object') {
+          if (typeof child != 'object') {
             child = { nodeType: 3, nodeValue: String(child) }
           }
           vnode.childNodes.push(child)
         })
       } else {
-        if (typeof child !== 'object') {
+        if (typeof child != 'object') {
           child = { nodeType: 3, nodeValue: String(child) }
         }
         vnode.childNodes.push(child)
@@ -339,7 +339,7 @@
         return
       }
       var oldValue = node[name]
-      if (value !== oldValue) {
+      if (value != oldValue) {
         node[name] = value
         // polygon:points ...
         if (typeof oldValue == 'object') {
@@ -428,7 +428,7 @@
 
   // node => dom diff update
   function diff(node, vnode, parentNode) {
-    if (node && (!node.parentNode || node.parentNode.nodeType !== 1)) { // out of document
+    if (node && (!node.parentNode || node.parentNode.nodeType != 1)) { // out of document
       return
     }
     // console.log(node && node.tagName, vnode && vnode.tagName)
@@ -445,12 +445,12 @@
       parentNode.removeChild(node)
     }
     // +- *nodeType || *tagName
-    else if (String(node.tagName).toLowerCase() !== String(vnode.tagName)) {
+    else if (String(node.tagName).toLowerCase() != String(vnode.tagName)) {
       newNode = createNode(vnode)
       parentNode.replaceChild(newNode, node)
     }
     // *text
-    else if (node.nodeType == 3 && node.nodeValue !== vnode.nodeValue) {
+    else if (node.nodeType == 3 && node.nodeValue != vnode.nodeValue) {
       node.nodeValue = vnode.nodeValue
     }
     // *node
@@ -524,15 +524,15 @@
       var then = Promise_prototype.then
       var _catch = Promise_prototype['catch']
       var _finally = Promise_prototype['finally']
-      Promise_prototype.then = function(fn){
+      Promise_prototype.then = function (fn) {
         Promise_prototype.then = then // !!??
         return then.call(this, injectRender(vm, fn))
       }
-      Promise_prototype['catch'] = function(fn){
+      Promise_prototype['catch'] = function (fn) {
         Promise_prototype['catch'] = _catch // !!??
         return _catch.call(this, injectRender(vm, fn))
       }
-      Promise_prototype['finally'] = function(fn){
+      Promise_prototype['finally'] = function (fn) {
         Promise_prototype['finally'] = _finally // !!??
         return _finally.call(this, injectRender(vm, fn))
       }
@@ -690,17 +690,17 @@
       var mdfs = binding.mdfs
       if (mdfs.match(/\.prevent\b/)) event.preventDefault()
       if (mdfs.match(/\.stop\b/)) event.stopPropagation()
-      if (mdfs.match(/\.self\b/) && event.target !== el) return
+      if (mdfs.match(/\.self\b/) && event.target != el) return
 
       if (mdfs.match(/\.ctrl\b/) && !event.ctrlKey) return
       if (mdfs.match(/\.alt\b/) && !event.altKey) return
       if (mdfs.match(/\.shift\b/) && !event.shiftKey) return
       if (mdfs.match(/\.meta\b/) && !event.metaKey) return
 
-      if (mdfs.match(/\.enter\b/) && event.keyCode !== 13) return
+      if (mdfs.match(/\.enter\b/) && event.keyCode != 13) return
 
       var m = mdfs.match(/\.(\d+)/)
-      if (m && event.keyCode !== m[1]) return
+      if (m && event.keyCode != m[1]) return
       binding.value(e)
     })
   })
@@ -715,7 +715,7 @@
     // checkbox
     if (el.type == 'checkbox') {
       if (model instanceof Array) {
-        props.checked = indexOf(model, value) !== -1
+        props.checked = indexOf(model, value) != -1
         off(el, 'click', el.__modelFn) // one
         on(el, 'click', el.__modelFn = function () {
           if (el.checked) {
