@@ -6,48 +6,55 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <title>async</title>
-  <script src="../vm.js"></script>
   <style>
     input {
-      pointer-events: none
+      pointer-events: none;
+      box-shadow: 0px 0px 5px 2px #f00;
+    }
+
+    :checked {
+      box-shadow: 0px 0px 5px 2px #00ff0a;
+    }
+
+    :disabled {
+      opacity: 0;
     }
   </style>
 </head>
 
 <body>
 
-  <div id="app">
-    <ul>
-      <li><input v-model="status.setTimeout" type="checkbox">setTimeout</li>
-      <li><input v-model="status.setTimeoutSetTimeout" type="checkbox">setTimeoutSetTimeout</li>
+  <ul id="app">
+    <li><input v-model="S.setTimeout" type="checkbox">setTimeout</li>
+    <li><input v-model="S.setTimeoutSetTimeout" type="checkbox">setTimeoutSetTimeout</li>
 
-      <li><input v-model="status.xhr" type="checkbox">xhr</li>
-      <li><input v-model="status.xhrSetTimeout" type="checkbox">xhrSetTimeout</li>
+    <li><input v-model="S.xhr" type="checkbox">xhr</li>
+    <li><input v-model="S.xhrSetTimeout" type="checkbox">xhrSetTimeout</li>
 
-      <li><input v-model="status.fetch" type="checkbox">fetch</li>
-      <li v-if="!status.fetchCatch"><input v-model="status.fetchThen" type="checkbox">fetchThen</li>
-      <li v-if="!status.fetchCatch"><input v-model="status.fetchThenSetTimeout" type="checkbox">fetchThenSetTimeout</li>
-      <li v-if="!status.fetchThen"><input v-model="status.fetchCatch" type="checkbox">fetchCatch</li>
-      <li><input v-model="status.fetchFinally" type="checkbox">fetchFinally</li>
-      <li><input v-model="status.fetchFinallySetTimeout" type="checkbox">fetchFinallySetTimeout</li>
+    <li><input v-model="S.fetch" type="checkbox">fetch</li>
+    <li><input :disabled="S.fetchCatch" v-model="S.fetchThen" type="checkbox">fetchThen</li>
+    <li><input :disabled="S.fetchCatch" v-model="S.fetchThenSetTimeout" type="checkbox">fetchThenSetTimeout</li>
+    <li><input :disabled="S.fetchThen" v-model="S.fetchCatch" type="checkbox">fetchCatch</li>
+    <li><input v-model="S.fetchFinally" type="checkbox">fetchFinally</li>
+    <li><input v-model="S.fetchFinallySetTimeout" type="checkbox">fetchFinallySetTimeout</li>
 
-      <li><input v-model="status.promise" type="checkbox">promise</li>
-      <li><input v-model="status.promiseSetTimeout" type="checkbox">promiseSetTimeout</li>
-      <li v-if="!status.promiseCatch"><input v-model="status.promiseThen" type="checkbox">promiseThen</li>
-      <li v-if="!status.promiseThen"><input v-model="status.promiseCatch" type="checkbox">promiseCatch</li>
-      <li v-if="!status.promiseCatch"><input v-model="status.promiseThenSetTimeout"
-          type="checkbox">promiseThenSetTimeout</li>
-      <li><input v-model="status.promiseFinally" type="checkbox">promiseFinally</li>
-      <li><input v-model="status.promiseFinallySetTimeout" type="checkbox">promiseFinallySetTimeout</li>
-    </ul>
-  </div>
+    <li><input v-model="S.promise" type="checkbox">promise</li>
+    <li><input v-model="S.promiseSetTimeout" type="checkbox">promiseSetTimeout</li>
+    <li><input :disabled="S.promiseCatch" v-model="S.promiseThen" type="checkbox">promiseThen</li>
+    <li><input :disabled="S.promiseThen" v-model="S.promiseCatch" type="checkbox">promiseCatch</li>
+    <li><input :disabled="S.promiseCatch" v-model="S.promiseThenSetTimeout" type="checkbox">promiseThenSetTimeout</li>
+    <li><input v-model="S.promiseFinally" type="checkbox">promiseFinally</li>
+    <li><input v-model="S.promiseFinallySetTimeout" type="checkbox">promiseFinallySetTimeout</li>
+  </ul>
 
+  <script>Proxy = null</script>
+  <script src="../vm.js"></script>
   <script>
     var vm = new Vue({
       el: '#app',
       el: app,
       data: {
-        status: {
+        S: {
           setTimeout: false,
           setTimeoutSetTimeout: false,
           xhr: false,
@@ -70,58 +77,58 @@
       methods: {
         setTimeout: function () {
           setTimeout(function () {
-            vm.status.setTimeout = true
+            vm.S.setTimeout = true
             setTimeout(function () {
-              vm.status.setTimeoutSetTimeout = true
-            }, 1000)
-          }, 1000)
+              vm.S.setTimeoutSetTimeout = true
+            }, 500)
+          }, 500)
         },
         xhr: function () {
           var xhr = new XMLHttpRequest
           xhr.open('GET', '.')
           xhr.onreadystatechange = function () {
-            vm.status.xhr = true
+            vm.S.xhr = true
             setTimeout(function () {
-              vm.status.xhrSetTimeout = true
-            }, 1000)
+              vm.S.xhrSetTimeout = true
+            }, 500)
           }
           xhr.send()
         },
         fetch: function () {
-          vm.status.fetch = true
+          vm.S.fetch = true
           fetch(Math.random() > .5 ? 'x://' : 'http://github.com').then(function () {
-            vm.status.fetchThen = true
+            vm.S.fetchThen = true
             setTimeout(function () {
-              vm.status.fetchThenSetTimeout = true
-            }, 1000)
+              vm.S.fetchThenSetTimeout = true
+            }, 500)
           }).catch(function () {
-            vm.status.fetchCatch = true
+            vm.S.fetchCatch = true
           }).finally(function () {
-            vm.status.fetchFinally = true
+            vm.S.fetchFinally = true
             setTimeout(function () {
-              vm.status.fetchFinallySetTimeout = true
-            }, 1000)
+              vm.S.fetchFinallySetTimeout = true
+            }, 500)
           })
         },
         promise: function () {
           new Promise(function (rs, rj) {
-            vm.status.promise = true
+            vm.S.promise = true
             setTimeout(function () {
-              vm.status.promiseSetTimeout = true
+              vm.S.promiseSetTimeout = true
               Math.random() > .5 ? rs() : rj()
-            }, 1000)
+            }, 500)
           }).then(function () {
-            vm.status.promiseThen = true
+            vm.S.promiseThen = true
             setTimeout(function () {
-              vm.status.promiseThenSetTimeout = true
-            }, 1000)
+              vm.S.promiseThenSetTimeout = true
+            }, 500)
           }).catch(function () {
-            vm.status.promiseCatch = true
+            vm.S.promiseCatch = true
           }).finally(function () {
-            vm.status.promiseFinally = true
+            vm.S.promiseFinally = true
             setTimeout(function () {
-              vm.status.promiseFinallySetTimeout = true
-            }, 1000)
+              vm.S.promiseFinallySetTimeout = true
+            }, 500)
           })
         }
       },
@@ -131,6 +138,10 @@
         vm.fetch()
         vm.promise()
       }
+    })
+
+    addEventListener('message', function (e) {
+      document.title = e.data
     })
   </script>
 </body>
