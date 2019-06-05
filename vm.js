@@ -25,12 +25,12 @@
   // for array|object|string|number => []
   function each(list, fn) {
     var array = [], i = 0, rs
-    if (list instanceof Array || typeof list === 'string') {
+    if (list instanceof Array || typeof list == 'string') {
       while (i < list.length) {
         rs = fn.call(this, list[i], i, i++)
         array.push(rs)
       }
-    } else if (typeof list === 'number') {
+    } else if (typeof list == 'number') {
       while (i++ < list) {
         rs = fn.call(this, i, i, i)
         array.push(rs)
@@ -57,7 +57,7 @@
   function indexOf(array, item) {
     var index = -1
     forEach(array, function (_item, i) {
-      if (item === _item) return index = i
+      if (item == _item) return index = i
     })
     return index
   }
@@ -83,13 +83,13 @@
     if (val instanceof Array) {
       return '[' + each(val, toJson).join(', ') + ']'
     }
-    if (val && typeof val === 'object') {
+    if (val && typeof val == 'object') {
       var items = each(val, function (item, key) {
         return '"' + key + '": ' + toJson(item)
       })
       return '{' + items.join(', ') + '}'
     }
-    if (typeof val === 'string') {
+    if (typeof val == 'string') {
       return '"' + val + '"'
     }
     return String(val)
@@ -98,14 +98,14 @@
   // undefined => ''
   // obj => json
   function outValue(val) {
-    if (val === undefined) return ''
-    if (typeof val === 'object') return toJson(val)
+    if (val == undefined) return ''
+    if (typeof val == 'object') return toJson(val)
     return val
   }
 
   // selector => node
   function querySelector(selector) {
-    if (typeof selector === 'string') {
+    if (typeof selector == 'string') {
       var s = selector.substr(1)
       if (selector.match(/^#/)) {
         return document.getElementById(s)
@@ -190,8 +190,8 @@
         node.removeAttribute(attr)
 
         var name = m[2]
-        if (m[1] === ':') name = 'bind'
-        if (m[1] === '@') name = 'on'
+        if (m[1] == ':') name = 'bind'
+        if (m[1] == '@') name = 'on'
         var arg = m[3]
         var mdfs = m[4]
 
@@ -205,17 +205,17 @@
           mdfs: mdfs
         }
 
-        if (name === 'on') {
+        if (name == 'on') {
           if (value.match(/[=();]/)) {
             dir.value = '🚩function(){' + value + '}'
           } else {
             dir.value = '🚩function(){' + value + '.apply(__vm,arguments)}'
           }
         }
-        if (name === 'model') {
+        if (name == 'model') {
           dir.setModel = '🚩function(value){' + value + '=value; __vm.$render()}'
         }
-        if (name === 'for') {
+        if (name == 'for') {
           // (item, i) in list
           m = value.match(/(?:\(([^,]+),(\S+?)\)|(\S+))\s+(?:in|of)\s+(\S+)/)
           dir.item = m[1] || m[3]
@@ -225,7 +225,7 @@
 
         if (/^(for|if)$/.test(name)) {
           vnodeData.directives[name] = dir
-        } else if (name === 'bind') {
+        } else if (name == 'bind') {
           vnodeData.props[arg] = '🚩' + value
         } else {
           vnodeData.directives.push(dir)
@@ -284,7 +284,7 @@
 
   // vnode tree => node tree
   function createNode(vnode) {
-    if (vnode.nodeType === 3) {
+    if (vnode.nodeType == 3) {
       return document.createTextNode(vnode.nodeValue)
     }
 
@@ -297,7 +297,7 @@
     // attrs
     each(vnode.attrs, function (value, name) {
       node.setAttribute(name, value)
-      if (name === 'class') node.className = value // ie
+      if (name == 'class') node.className = value // ie
     })
 
     // directives.bind
@@ -323,11 +323,11 @@
   // *:props
   function updateProps(node, props) {
     each(props, function (value, name) {
-      if (name === 'style') {
+      if (name == 'style') {
         assign(node.style, value)
         return
       }
-      if (name === 'class') {
+      if (name == 'class') {
         each(value, function (bool, key) {
           var className = node.className.replace(RegExp('(?:^|\\s+)' + key, 'g'), '')
           if (bool) {
@@ -342,7 +342,7 @@
       if (value !== oldValue) {
         node[name] = value
         // polygon:points ...
-        if (typeof oldValue === 'object') {
+        if (typeof oldValue == 'object') {
           node.setAttribute(name, value)
         }
       }
@@ -371,7 +371,7 @@
       if (!code.match(/^$|\[\s*$/)) code += ',\n' // [childNode, ..]
 
       // parse element
-      if (node.nodeType === 1) {
+      if (node.nodeType == 1) {
         var vnodeData = getVnodeData(node)
         var vnodeJson = toJson(vnodeData)
         var dirs = vnodeData.directives
@@ -406,7 +406,7 @@
         if (dirs['for']) code += '})\n'
       }
       // parse textNode
-      else if (node.nodeType === 3) {
+      else if (node.nodeType == 3) {
         // str{{exp}}in"g  =>  "str" +(exp)+ "in\"g"
         var nodeValue = node.nodeValue.replace(/\s+/g, ' ')
           .replace(/(^|}}).*?({{|$)/g, function (str) {
@@ -450,7 +450,7 @@
       parentNode.replaceChild(newNode, node)
     }
     // *text
-    else if (node.nodeType === 3 && node.nodeValue !== vnode.nodeValue) {
+    else if (node.nodeType == 3 && node.nodeValue !== vnode.nodeValue) {
       node.nodeValue = vnode.nodeValue
     }
     // *node
@@ -511,7 +511,7 @@
     XMLHttpRequest.prototype.send = function () {
       var xhr = this
       each(xhr, function (callback, name) {
-        if (name.match(/^on/) && typeof callback === 'function') {
+        if (name.match(/^on/) && typeof callback == 'function') {
           xhr[name] = injectRender(vm, callback)
         }
       })
@@ -557,7 +557,7 @@
 
     // data
     var data = options.data
-    if (typeof data === 'function') data = data.call(vm) // compoment data()
+    if (typeof data == 'function') data = data.call(vm) // compoment data()
     assign(vm, data)
 
     // methods
@@ -567,7 +567,7 @@
 
     // hooks
     each(options, function (fn, key) {
-      if (typeof fn === 'function') {
+      if (typeof fn == 'function') {
         vm[key] = injectRender(vm, fn)
       }
     })
@@ -624,7 +624,7 @@
     })
 
     // test: return proxy
-    if (typeof Proxy === 'function') {
+    if (typeof Proxy == 'function') {
       return new Proxy(vm, {
         set: function (vm, key, val) {
           vm[key] = val
@@ -670,7 +670,7 @@
   // definition.bind -> createNode
   // definition.update -> diff
   VM.directive = function (name, definition) {
-    if (typeof definition === 'function') {
+    if (typeof definition == 'function') {
       definition = {
         bind: definition,
         update: definition
@@ -713,7 +713,7 @@
     var value = props.value !== undefined ? props.value : attrs.value
 
     // checkbox
-    if (el.type === 'checkbox') {
+    if (el.type == 'checkbox') {
       if (model instanceof Array) {
         props.checked = indexOf(model, value) !== -1
         off(el, 'click', el.__modelFn) // one
@@ -736,8 +736,8 @@
     }
 
     // radio
-    if (el.type === 'radio') {
-      props.checked = model === value
+    if (el.type == 'radio') {
+      props.checked = model == value
       off(el, 'click', el.__modelFn) // one
       on(el, 'click', el.__modelFn = function () {
         binding.setModel(value)
@@ -746,15 +746,15 @@
     }
 
     // select
-    if (el.type === 'select-one') {
+    if (el.type == 'select-one') {
       vnode.props.value = model
       forEach(vnode.childNodes, function (voption) {
-        if (voption.nodeType === 1) {
+        if (voption.nodeType == 1) {
           var optionValue = voption.props.value
-          if (optionValue === undefined) {
+          if (optionValue == undefined) {
             optionValue = voption.attrs.value || voption.childNodes[0].nodeValue
           }
-          voption.props.selected = optionValue === model
+          voption.props.selected = optionValue == model
         }
       })
       off(el, 'change', el.__modelFn) // one
@@ -763,11 +763,11 @@
           if (option.selected) {
             var vindex = -1
             forEach(vnode.childNodes, function (voption) {
-              if (voption.nodeType === 1) {
+              if (voption.nodeType == 1) {
                 vindex += 1
-                if (vindex === option.index) {
+                if (vindex == option.index) {
                   var optionValue = voption.props.value
-                  if (optionValue === undefined) {
+                  if (optionValue == undefined) {
                     optionValue = voption.attrs.value || voption.childNodes[0].nodeValue
                   }
                   binding.setModel(optionValue)
@@ -789,7 +789,7 @@
   })
 
   // exports
-  if (typeof module === 'object') {
+  if (typeof module == 'object') {
     module.exports = VM
   } else {
     window.VM = VM
