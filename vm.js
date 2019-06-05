@@ -506,8 +506,8 @@
     }
 
     var XMLHttpRequest = window.XMLHttpRequest || window.ActiveXObject
-    var XHRprototype = XMLHttpRequest.prototype
-    var send = XHRprototype.send
+    var XMLHttpRequest_prototype = XMLHttpRequest.prototype
+    var send = XMLHttpRequest_prototype.send
     XMLHttpRequest.prototype.send = function () {
       var xhr = this
       each(xhr, function (callback, name) {
@@ -518,20 +518,35 @@
       return send && send.apply(xhr, arguments)
     }
 
-    var fetch = window.fetch
-    window.fetch = fetch && function () {
-      var pm = fetch.apply(this, arguments)
-      forEach(['then', 'catch', 'finally'], function (name) {
-        pm[name] = injectRender(vm, pm[name])
-      })
-      return pm
+    var Promise = window.Promise
+    if (Promise) {
+      var Promise_prototype = Promise.prototype
+      var then = Promise_prototype.then
+      var _catch = Promise_prototype['catch']
+      var _finally = Promise_prototype['finally']
+      Promise_prototype.then = function(fn){
+        Promise_prototype.then = then // !!??
+        return then.call(this, injectRender(vm, fn))
+      }
+      Promise_prototype['catch'] = function(fn){
+        Promise_prototype['catch'] = _catch // !!??
+        return _catch.call(this, injectRender(vm, fn))
+      }
+      Promise_prototype['finally'] = function(fn){
+        Promise_prototype['finally'] = _finally // !!??
+        return _finally.call(this, injectRender(vm, fn))
+      }
     }
 
     return function restoreAsyncs() {
       window.setTimeout = setTimeout
       window.setInterval = setInterval
-      XHRprototype.send = send
-      window.fetch = fetch
+      XMLHttpRequest_prototype.send = send
+      if (Promise) {
+        Promise_prototype.then = then
+        Promise_prototype['catch'] = _catch
+        Promise_prototype['finally'] = _finally
+      }
     }
   }
 

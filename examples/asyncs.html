@@ -7,12 +7,39 @@
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <title>async</title>
   <script src="../vm.js"></script>
+  <style>
+    input {
+      pointer-events: none
+    }
+  </style>
 </head>
 
 <body>
 
   <div id="app">
-    <input v-model="model"> {{model}}
+    <ul>
+      <li><input v-model="status.setTimeout" type="checkbox">setTimeout</li>
+      <li><input v-model="status.setTimeoutSetTimeout" type="checkbox">setTimeoutSetTimeout</li>
+
+      <li><input v-model="status.xhr" type="checkbox">xhr</li>
+      <li><input v-model="status.xhrSetTimeout" type="checkbox">xhrSetTimeout</li>
+
+      <li><input v-model="status.fetch" type="checkbox">fetch</li>
+      <li v-if="!status.fetchCatch"><input v-model="status.fetchThen" type="checkbox">fetchThen</li>
+      <li v-if="!status.fetchCatch"><input v-model="status.fetchThenSetTimeout" type="checkbox">fetchThenSetTimeout</li>
+      <li v-if="!status.fetchThen"><input v-model="status.fetchCatch" type="checkbox">fetchCatch</li>
+      <li><input v-model="status.fetchFinally" type="checkbox">fetchFinally</li>
+      <li><input v-model="status.fetchFinallySetTimeout" type="checkbox">fetchFinallySetTimeout</li>
+
+      <li><input v-model="status.promise" type="checkbox">promise</li>
+      <li><input v-model="status.promiseSetTimeout" type="checkbox">promiseSetTimeout</li>
+      <li v-if="!status.promiseCatch"><input v-model="status.promiseThen" type="checkbox">promiseThen</li>
+      <li v-if="!status.promiseThen"><input v-model="status.promiseCatch" type="checkbox">promiseCatch</li>
+      <li v-if="!status.promiseCatch"><input v-model="status.promiseThenSetTimeout"
+          type="checkbox">promiseThenSetTimeout</li>
+      <li><input v-model="status.promiseFinally" type="checkbox">promiseFinally</li>
+      <li><input v-model="status.promiseFinallySetTimeout" type="checkbox">promiseFinallySetTimeout</li>
+    </ul>
   </div>
 
   <script>
@@ -20,45 +47,89 @@
       el: '#app',
       el: app,
       data: {
-        model: 'hello vm.js'
+        status: {
+          setTimeout: false,
+          setTimeoutSetTimeout: false,
+          xhr: false,
+          xhrSetTimeout: false,
+          fetch: false,
+          fetchThen: false,
+          fetchThenSetTimeout: false,
+          fetchCatch: false,
+          fetchFinally: false,
+          fetchFinallySetTimeout: false,
+          promise: false,
+          promiseSetTimeout: false,
+          promiseThen: false,
+          promiseThenSetTimeout: false,
+          promiseCatch: false,
+          promiseFinally: false,
+          promiseFinallySetTimeout: false,
+        }
       },
       methods: {
-        timeout: function () {
+        setTimeout: function () {
           setTimeout(function () {
-            vm.model += '|st1'
+            vm.status.setTimeout = true
             setTimeout(function () {
-              vm.model += '|st2'
-            }, 500)
+              vm.status.setTimeoutSetTimeout = true
+            }, 1000)
           }, 1000)
         },
         xhr: function () {
           var xhr = new XMLHttpRequest
           xhr.open('GET', '.')
           xhr.onreadystatechange = function () {
-            vm.model += '|xhr'
+            vm.status.xhr = true
             setTimeout(function () {
-              vm.model += '|xhr.st'
-            }, 500)
+              vm.status.xhrSetTimeout = true
+            }, 1000)
           }
           xhr.send()
         },
         fetch: function () {
-          fetch('.').then(function () {
-            vm.model += '|fetch.then'
-          }).catch(function () {
-            vm.model += '|fetch.catch'
-          }).finally(function () {
-            vm.model += '|fetch.finally'
+          vm.status.fetch = true
+          fetch(Math.random() > .5 ? 'x://' : 'http://github.com').then(function () {
+            vm.status.fetchThen = true
             setTimeout(function () {
-              vm.model += '|fetch.then.st'
-            }, 500)
+              vm.status.fetchThenSetTimeout = true
+            }, 1000)
+          }).catch(function () {
+            vm.status.fetchCatch = true
+          }).finally(function () {
+            vm.status.fetchFinally = true
+            setTimeout(function () {
+              vm.status.fetchFinallySetTimeout = true
+            }, 1000)
+          })
+        },
+        promise: function () {
+          new Promise(function (rs, rj) {
+            vm.status.promise = true
+            setTimeout(function () {
+              vm.status.promiseSetTimeout = true
+              Math.random() > .5 ? rs() : rj()
+            }, 1000)
+          }).then(function () {
+            vm.status.promiseThen = true
+            setTimeout(function () {
+              vm.status.promiseThenSetTimeout = true
+            }, 1000)
+          }).catch(function () {
+            vm.status.promiseCatch = true
+          }).finally(function () {
+            vm.status.promiseFinally = true
+            setTimeout(function () {
+              vm.status.promiseFinallySetTimeout = true
+            }, 1000)
           })
         }
       },
       mounted: function () {
-        vm.timeout()
+        vm.setTimeout()
         vm.xhr()
         vm.fetch()
+        vm.promise()
       }
     })
   </script>
