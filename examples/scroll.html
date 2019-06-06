@@ -6,19 +6,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <title>hello world</title>
-  <script src="../vm.js"></script>
 </head>
 
 <body>
 
   <div id="app">
-    <button style="position: absolute" :style="{top:top+'px'}">{{top}}</button>
+    <button id="button" style="position: absolute" :style="{top:top+'px'}">{{top}}</button>
     <div style="width: 1px">
       ---------------------------------------------------------------------------------------------
       ---------------------------------------------------------------------------------------------
     </div>
   </div>
 
+  <script>Proxy = null</script>
+  <script src="../vm.js"></script>
   <script>
     var vm = new Vue({
       el: '#app',
@@ -37,6 +38,7 @@
     addEventListener('scroll', function (e) {
       vm.top = document.documentElement.scrollTop || document.body.scrollTop
       vm.update(vm.top)
+      // button.style.top = vm.top + 100 + 'px'
     })
   </script>
 </body>
