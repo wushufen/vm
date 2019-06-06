@@ -13,7 +13,7 @@
 
   <div id="app">
     <h1>model: {{model}}</h1>
-    <h2>list: [ {{list}} ]</h2>
+    <h2>list: {{list}}</h2>
     <input v-model="model" placeholder="model">
     <br>
     <input v-model="model" type="checkbox">
@@ -35,7 +35,7 @@
       el: app,
       data: {
         model: 'hello vm.js',
-        list: []
+        list: [1]
       }
     })
   </script>

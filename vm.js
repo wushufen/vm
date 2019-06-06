@@ -716,8 +716,7 @@
     if (el.type == 'checkbox') {
       if (model instanceof Array) {
         props.checked = indexOf(model, value) != -1
-        off(el, 'click', el.__modelFn) // one
-        on(el, 'click', el.__modelFn = function () {
+        el.__m || on(el, 'click', el.__m = function () { // once
           if (el.checked) {
             model.push(value)
           } else {
@@ -728,8 +727,7 @@
         return
       }
       props.checked = model
-      off(el, 'click', el.__modelFn) // one
-      on(el, 'click', el.__modelFn = function () {
+      el.__m || on(el, 'click', el.__m = function () { // once
         binding.setModel(el.checked)
       })
       return
@@ -738,8 +736,7 @@
     // radio
     if (el.type == 'radio') {
       props.checked = model == value
-      off(el, 'click', el.__modelFn) // one
-      on(el, 'click', el.__modelFn = function () {
+      el.__m || on(el, 'click', el.__m = function () { // once
         binding.setModel(value)
       })
       return
@@ -757,8 +754,8 @@
           voption.props.selected = optionValue == model
         }
       })
-      off(el, 'change', el.__modelFn) // one
-      on(el, 'change', el.__modelFn = function () {
+      off(el, 'change', el.__modelFn) // once !!
+      on(el, 'change', el.__modelFn = function () { // !! update closure vnode
         forEach(el.options, function (option) {
           if (option.selected) {
             var vindex = -1
@@ -782,8 +779,7 @@
 
     // input ...
     props.value = model
-    off(el, 'input', el.__modelFn) // one
-    on(el, 'input', el.__modelFn = function () {
+    el.__m || on(el, 'input', el.__m = function () { // once
       binding.setModel(el.value)
     })
   })
