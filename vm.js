@@ -199,9 +199,6 @@
       // v-bind:title  :title  v-on:click  @click.prevent.stop
       var m = attr.match(/^(:|@|v-([^.]*))([^.]*)(.*)/)
       if (m) {
-        // remove directive attr
-        node.removeAttribute(attr)
-
         var name = m[2]
         if (m[1] == ':') name = 'bind'
         if (m[1] == '@') name = 'on'
@@ -226,11 +223,14 @@
           }
         }
         if (name == 'model') {
-          dir.setModel = '🚩function(value){' + value + '=value; __vm.$render()}'
+          dir.setModel = '🚩function(value){' + value + '=value; $render()}'
         }
         if (name == 'for') {
           // (item, i) in list
-          m = value.match(/(?:\(([^,]+),(\S+?)\)|(\S+))\s+(?:in|of)\s+(\S+)/)
+          m = value.match(/(?:\(([^,()]+),([^,()]+)\)|([^,()]+))\s+(?:in|of)\s+(\S+)/)
+          if (!m) {
+            throw '[template error] ' + node.outerHTML
+          }
           dir.item = m[1] || m[3]
           dir.index = m[2] || '$index'
           dir.list = m[4]
@@ -243,6 +243,11 @@
         } else {
           vnodeData.directives.push(dir)
         }
+
+        // remove directive attr
+        setTimeout(function () { // timeout for template error
+          node.removeAttribute(attr)
+        }, 0)
       } else {
         vnodeData.attrs[attr] = value
       }
@@ -362,8 +367,21 @@
     })
   }
 
+  // → errorNodeTpl
+  function detectTeamplateError(code, root, errorNode) {
+    try {
+      new Function('!' + code)
+    } catch (error) {
+      errorNode = errorNode.cloneNode()
+      var errorTpl = errorNode.outerHTML || errorNode.nodeValue
+      errorTpl = errorTpl.replace(/<\/.*?>/, '')
+      errorTpl = root.outerHTML.replace(errorTpl, '😭→ ' + errorTpl)
+      throw '[template error]\n' + errorTpl
+    }
+  }
+
   // node => render() => vnode
-  function compile(node) {
+  function compile(node, isDebug) {
     /*
     createVnode({tagName:'div'}, [
       'textNode', // textNode
@@ -379,7 +397,8 @@
     ])
     */
     var code = ''
-    loop(node)
+    var root = node
+    loop(root)
     function loop(node) {
       if (!code.match(/^$|\[\s*$/)) code += ',\n' // [childNode, ..]
 
@@ -388,22 +407,29 @@
         var vnodeData = getVnodeData(node)
         var vnodeJson = toJson(vnodeData)
         var dirs = vnodeData.directives
-        vnodeJson = vnodeJson.replace(/"🚩((?:\\.|.)*?)"/g, '$1') // rutime value without ""
+        var vnodeCode = vnodeJson.replace(/"🚩((?:\\.|.)*?)"/g, '$1') // rutime value without ""
+
+        isDebug && detectTeamplateError(vnodeCode, root, node)
 
         // for if?
         // each(, ()=> bool? createVnode(, [ loop ]): "" )
         if (dirs['for']) {
           var dir = dirs['for']
           code += '__each(' + dir.list + ',function(' + dir.item + ',' + dir.index + '){return '
+
+          isDebug && detectTeamplateError(dir.expression.replace(/in|of/, '+'), root, node)
         }
         // if
         // bool? createVnode(,,[..loop..]): ""
         if (dirs['if']) {
-          code += dirs['if'].expression + '? '
+          var expression = dirs['if'].expression
+          code += expression + '? '
+
+          isDebug && detectTeamplateError(expression, root, node)
         }
 
         // createVnode
-        code += '__createVnode(' + vnodeJson + ', [\n'
+        code += '__createVnode(' + vnodeCode + ', [\n'
 
         // childNodes
         var childNodes = toArray(node.childNodes)
@@ -421,10 +447,12 @@
       // parse textNode
       else if (node.nodeType == 3) {
         // text{{exp}}no"de  =>  "text" +(exp)+ "no\"de"
-        var nodeValue = node.nodeValue.replace(/\s+/g, ' ')
+        var vnodeCode = node.nodeValue.replace(/\s+/g, ' ')
           .replace(/(^|}})(.*?)({{|$)/g, function (str, $1, $2, $3) {return $1 + quot($2) + $3})
           .replace(/{{(.*?)}}/g, '+__outValue($1)+')
-        code += nodeValue
+        code += vnodeCode
+
+        isDebug && detectTeamplateError(vnodeCode, root, node)
       }
       // parse commentNode ...
       else {
@@ -432,8 +460,14 @@
       }
     }
 
-    var render = Function('data', 'var __vm=this;with(__vm){return ' + code + '}')
-    return render
+    if (!isDebug) {
+      try {
+        var render = Function('data', 'var __vm=this;with(__vm){return ' + code + '}')
+        return render
+      } catch (error) {
+        compile(node, true)
+      }
+    }
   }
 
   // node => dom diff update

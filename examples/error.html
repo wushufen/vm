@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>log error template</title>
+  <script>
+    location.hash = '#f12'
+  </script>
+  <script src="https://wusfen.github.io/console.js/dist/console.js"></script>
+  <script src="../vm.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    input[type="checkbox"] {
+      vertical-align: -.25ex;
+    }
+
+    #app {
+      max-width: 375px;
+      padding: 2em 1em;
+      margin: 2em auto;
+      box-shadow: 0px 1px 10px #bbb;
+    }
+
+    .input {
+      display: block;
+      width: 100%;
+      border: solid 1px #bbb;
+      border-radius: 3px;
+      padding: .75em;
+    }
+
+    .list {
+      color: #4ca6d4;
+      line-height: 1.5;
+      user-select: none;
+    }
+
+    .list li {
+      margin-bottom: .5em;
+    }
+
+    .done {
+      color: #ffa5a5;
+      text-decoration: line-through;
+    }
+
+    .del {
+      width: 1.5em;
+      height: 1.5em;
+      text-align: center;
+      border: solid 1px #bbb;
+      border-radius: 50%;
+      background: #fff;
+      margin-left: 1em;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="app">
+    <input class="input" v-model="input" @keydown.enter="xxxx add" placeholder="enter add">
+    <ul class="list">
+      <li v-for="(item,index) in list" :class="{done:item.done}">
+        <label>
+          <input type="checkbox" v-model="item.done">
+          <span>{{item.content}}</span>
+        </label>
+        <button class="del" v-if="item.done" @click="remove(index)" type="button">-</button>
+      </li>
+      <li v-if="!list.length">empty!</li>
+    </ul>
+  </div>
+
+  <script>
+    var vm = new Vue({
+      el: '#app',
+      data: {
+        input: '',
+        list: [
+          { content: 'todo1', done: true },
+          { content: 'todo2', done: false }
+        ]
+      },
+      methods: {
+        add: function () {
+          vm.input && vm.list.push({ content: vm.input })
+          vm.input = ''
+        },
+        remove: function (index) {
+          vm.list.splice(index, 1)
+        }
+      }
+    })
+  </script>
+</body>
+
+</html>
