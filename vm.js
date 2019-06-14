@@ -375,7 +375,7 @@
       errorNode = errorNode.cloneNode()
       var errorTpl = errorNode.outerHTML || errorNode.nodeValue
       errorTpl = errorTpl.replace(/<\/.*?>/, '')
-      errorTpl = root.outerHTML.replace(errorTpl, '😭→ ' + errorTpl)
+      errorTpl = root.outerHTML.replace(errorTpl, '🐞→ ' + errorTpl)
       throw '[template error]\n' + errorTpl
     }
   }
