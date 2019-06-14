@@ -78,19 +78,31 @@
     return obj
   }
 
-  // val => json
-  function toJson(val) {
+  // str"\q"ing => "str\"\\q\"ing"
+  function quot(string) {
+    return '"' + string.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"'
+  }
+
+  // any => json
+  function toJson(val, indentChars, n) {
+    n = n || 2
+    var indent = indentChars ? '\n' + Array(n).join(indentChars) : ''
+    var indentPop = indentChars ? '\n' + Array(n - 1).join(indentChars) : ''
     if (val instanceof Array) {
-      return '[' + each(val, toJson).join(', ') + ']'
+      return '[' + indent + each(val, function(item){
+        return toJson(item, indentChars, n + 1)
+      }).join(',' + indent) + indentPop + ']'
     }
     if (val && typeof val == 'object') {
-      var items = each(val, function (item, key) {
-        return '"' + key + '": ' + toJson(item)
+      var items = []
+      each(val, function (item, key) {
+        if (item === undefined) return
+        items.push(quot(key) + ': ' + toJson(item, indentChars, n + 1))
       })
-      return '{' + items.join(', ') + '}'
+      return '{' + indent + items.join(',' + indent) + indentPop + '}'
     }
     if (typeof val == 'string') {
-      return '"' + val + '"'
+      return quot(val)
     }
     return String(val)
   }
@@ -99,7 +111,7 @@
   // obj => json
   function outValue(val) {
     if (val == undefined) return ''
-    if (typeof val == 'object') return toJson(val)
+    if (typeof val == 'object') return toJson(val, '  ')
     return val
   }
 
@@ -151,7 +163,7 @@
   var off = function () {
     return window.removeEventListener ? function (node, type, fn) {
       node.removeEventListener(type, fn)
-    } : function (node, type, fn) {
+    } : function (node, type, fn) { // ie
       type = ieEventType(type)
       fn = fn ? (fn.__ieFn || fn) : null
       node.detachEvent(type, fn)
@@ -169,10 +181,11 @@
 
   // node => vnodeData
   function getVnodeData(node) {
+    var ns = node.namespaceURI
     var vnodeData = {
       nodeType: node.nodeType,
       tagName: node.tagName,
-      ns: node.namespaceURI,
+      ns: ns == document.documentElement.namespaceURI ? undefined : ns,
       attrs: {}, // attr="value"
       props: {}, // :prop="value"
       directives: [] // v-dir.mdfs="value"
@@ -381,7 +394,7 @@
         // each(, ()=> bool? createVnode(, [ loop ]): "" )
         if (dirs['for']) {
           var dir = dirs['for']
-          code += 'this.__each(' + dir.list + ',function(' + dir.item + ',' + dir.index + '){return '
+          code += '__each(' + dir.list + ',function(' + dir.item + ',' + dir.index + '){return '
         }
         // if
         // bool? createVnode(,,[..loop..]): ""
@@ -390,7 +403,7 @@
         }
 
         // createVnode
-        code += 'this.__createVnode(' + vnodeJson + ', [\n'
+        code += '__createVnode(' + vnodeJson + ', [\n'
 
         // childNodes
         var childNodes = toArray(node.childNodes)
@@ -407,14 +420,11 @@
       }
       // parse textNode
       else if (node.nodeType == 3) {
-        // str{{exp}}in"g  =>  "str" +(exp)+ "in\"g"
+        // text{{exp}}no"de  =>  "text" +(exp)+ "no\"de"
         var nodeValue = node.nodeValue.replace(/\s+/g, ' ')
-          .replace(/(^|}}).*?({{|$)/g, function (str) {
-            // \ => \\  " => \"
-            return str.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
-          })
-          .replace(/{{(.*?)}}/g, '"+__outValue($1)+"')
-        code += '"' + nodeValue + '"'
+          .replace(/(^|}})(.*?)({{|$)/g, function (str, $1, $2, $3) {return $1 + quot($2) + $3})
+          .replace(/{{(.*?)}}/g, '+__outValue($1)+')
+        code += nodeValue
       }
       // parse commentNode ...
       else {
@@ -711,40 +721,40 @@
     var attrs = vnode.attrs
     var props = vnode.props
     var value = props.value !== undefined ? props.value : attrs.value
+    var eventType
+    var viewToModel
 
     // checkbox
     if (el.type == 'checkbox') {
+      eventType = 'click'
       if (model instanceof Array) {
         props.checked = indexOf(model, value) != -1
-        el.__m || on(el, 'click', el.__m = function () { // once
+        viewToModel = function () {
           if (el.checked) {
             model.push(value)
           } else {
             remove(model, value)
           }
           binding.setModel(model)
-        })
-        return
+        }
+      } else {
+        props.checked = model
+        viewToModel = function () {
+          binding.setModel(el.checked)
+        }
       }
-      props.checked = model
-      el.__m || on(el, 'click', el.__m = function () { // once
-        binding.setModel(el.checked)
-      })
-      return
     }
-
     // radio
-    if (el.type == 'radio') {
+    else if (el.type == 'radio') {
       props.checked = model == value
-      el.__m || on(el, 'click', el.__m = function () { // once
+      eventType = 'click'
+      viewToModel = function () {
         binding.setModel(value)
-      })
-      return
+      }
     }
-
     // select
-    if (el.type == 'select-one') {
-      vnode.props.value = model
+    else if (el.type == 'select-one') {
+      props.value = model
       forEach(vnode.childNodes, function (voption) {
         if (voption.nodeType == 1) {
           var optionValue = voption.props.value
@@ -754,8 +764,8 @@
           voption.props.selected = optionValue == model
         }
       })
-      off(el, 'change', el.__modelFn) // once !!
-      on(el, 'change', el.__modelFn = function () { // !! update closure vnode
+      eventType = 'change'
+      viewToModel = function () {
         forEach(el.options, function (option) {
           if (option.selected) {
             var vindex = -1
@@ -773,15 +783,19 @@
             })
           }
         })
-      })
-      return
+      }
+    }
+    // input, textarea, ...
+    else {
+      props.value = model
+      eventType = 'input'
+      viewToModel = function () {
+        binding.setModel(el.value)
+      }
     }
 
-    // input ...
-    props.value = model
-    el.__m || on(el, 'input', el.__m = function () { // once
-      binding.setModel(el.value)
-    })
+    off(el, eventType, el.__mf) // once !!
+    on(el, eventType, el.__mf = viewToModel)
   })
 
   // exports
