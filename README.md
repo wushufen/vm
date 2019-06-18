@@ -43,9 +43,7 @@
 * [hello world](https://wusfen.github.io/vm/examples/helloWorld.html) | [源码](examples/helloWorld.html)
 * [todo list](https://wusfen.github.io/vm/examples/todoList.html) | [源码](examples/todoList.html)
 * [template error](https://wusfen.github.io/vm/examples/templateError.html) | [源码](examples/templateError.html)
-
-svg 需浏览器支持才支持 (ie9+)
-* [svg](https://wusfen.github.io/vm/examples/svg.html) | [源码](examples/svg.html)
+* [svg (需浏览器支持 ie9+)](https://wusfen.github.io/vm/examples/svg.html) | [源码](examples/svg.html) 
 
 ## 已实现的功能列表
 
@@ -53,11 +51,11 @@ svg 需浏览器支持才支持 (ie9+)
 * v-model
 * v-if
 * v-for
-* v-bind:prop | :prop
+* v-bind:prop :prop
+* v-on:event @event
+  * .prevent.stop.self.ctrl.alt.shift.meta.enter.(keycode)
 * :class
 * :style
-* v-on:event | @event
-  * .prevent.stop.self.ctrl.alt.shift.meta.enter.(keycode)
 * options
   * el
   * template
@@ -66,5 +64,5 @@ svg 需浏览器支持才支持 (ie9+)
   * methods
   * created
   * mounted
-* vm.$mount
-* Vue.directive
+* VM.prototype.$mount
+* VM.directive
