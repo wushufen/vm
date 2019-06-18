@@ -1,12 +1,12 @@
 /*! @preserve https://github.com/wusfen/vm */
 
-(function (window, document, undefined) //---
+(function (window, document, undefined) ////
 {
   var requestAnimationFrame = window.requestAnimationFrame
   var cancelAnimationFrame = window.cancelAnimationFrame
   if (!requestAnimationFrame) {
     requestAnimationFrame = function (fn) {
-      return setTimeout(fn, 0)
+      return setTimeout(fn)
     }
     cancelAnimationFrame = function (timer) {
       clearTimeout(timer)
@@ -227,10 +227,7 @@
         }
         if (name == 'for') {
           // (item, i) in list
-          m = value.match(/(?:\(([^,()]+),([^,()]+)\)|([^,()]+))\s+(?:in|of)\s+(\S+)/)
-          if (!m) {
-            throw '[template error] ' + node.outerHTML
-          }
+          m = value.match(/(?:\(([^,()]+),([^,()]+)\)|([^,()]+))\s+(?:in|of)\s+(\S+)/) || [0, ',']
           dir.item = m[1] || m[3]
           dir.index = m[2] || '$index'
           dir.list = m[4]
@@ -247,7 +244,7 @@
         // remove directive attr
         setTimeout(function () { // timeout for template error
           node.removeAttribute(attr)
-        }, 0)
+        })
       } else {
         vnodeData.attrs[attr] = value
       }
@@ -416,8 +413,7 @@
         if (dirs['for']) {
           var dir = dirs['for']
           code += '__each(' + dir.list + ',function(' + dir.item + ',' + dir.index + '){return '
-
-          isDebug && detectTeamplateError(dir.expression.replace(/in|of/, '+'), root, node)
+          isDebug && detectTeamplateError(dir.expression.replace(/ (in|of) /, '/'), root, node)
         }
         // if
         // bool? createVnode(,,[..loop..]): ""
@@ -465,6 +461,7 @@
         var render = Function('data', 'var __vm=this;with(__vm){return ' + code + '}')
         return render
       } catch (error) {
+        // setTimeout(code)
         compile(node, true)
       }
     }
@@ -692,14 +689,10 @@
     __each: __each,
     __outValue: __outValue,
     $mount: function (el) {
-      var vm = this
       this.$el = el
 
       // render first
       this.$render()
-      setTimeout(function () { // ie update form
-        vm.$render()
-      }, 41)
 
       // mounted hook
       this.mounted && this.mounted()
@@ -841,4 +834,4 @@
   }
 
 } //
-)(window, document) //---
+)(window, document) ////
