@@ -365,7 +365,7 @@
   }
 
   // → errorNodeTpl
-  function detectTeamplateError(code, root, errorNode) {
+  function detectTemplateError(code, root, errorNode) {
     try {
       new Function('!' + code)
     } catch (error) {
@@ -406,14 +406,14 @@
         var dirs = vnodeData.directives
         var vnodeCode = vnodeJson.replace(/"🚩((?:\\.|.)*?)"/g, '$1') // rutime value without ""
 
-        isDebug && detectTeamplateError(vnodeCode, root, node)
+        isDebug && detectTemplateError(vnodeCode, root, node)
 
         // for if?
         // each(, ()=> bool? createVnode(, [ loop ]): "" )
         if (dirs['for']) {
           var dir = dirs['for']
           code += '__each(' + dir.list + ',function(' + dir.item + ',' + dir.index + '){return '
-          isDebug && detectTeamplateError(dir.expression.replace(/ (in|of) /, '/'), root, node)
+          isDebug && detectTemplateError(dir.expression.replace(/ (in|of) /, '/'), root, node)
         }
         // if
         // bool? createVnode(,,[..loop..]): ""
@@ -421,7 +421,7 @@
           var expression = dirs['if'].expression
           code += expression + '? '
 
-          isDebug && detectTeamplateError(expression, root, node)
+          isDebug && detectTemplateError(expression, root, node)
         }
 
         // createVnode
@@ -448,7 +448,7 @@
           .replace(/{{(.*?)}}/g, '+__outValue($1)+')
         code += vnodeCode
 
-        isDebug && detectTeamplateError(vnodeCode, root, node)
+        isDebug && detectTemplateError(vnodeCode, root, node)
       }
       // parse commentNode ...
       else {
