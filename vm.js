@@ -2,6 +2,9 @@
 
 (function (window, document, undefined) ////
 {
+  var String = window.String
+  var Array = window.Array
+
   var requestAnimationFrame = window.requestAnimationFrame
   var cancelAnimationFrame = window.cancelAnimationFrame
   if (!requestAnimationFrame) {
@@ -11,6 +14,30 @@
     cancelAnimationFrame = function (timer) {
       clearTimeout(timer)
     }
+  }
+
+  function isArray(val) {
+    return val instanceof Array
+  }
+
+  function isObject(val) {
+    return val instanceof Object && !isArray(val)
+  }
+
+  function isFunction(val) {
+    return val instanceof Function
+  }
+
+  function isString(val) {
+    return typeof val == 'string'
+  }
+
+  function isNumber(val) {
+    return typeof val == 'number'
+  }
+
+  function isBoolean(val) {
+    return typeof val == 'boolean'
   }
 
   // for array|arrayLike
@@ -25,12 +52,12 @@
   // for array|object|string|number => []
   function each(list, fn) {
     var array = [], i = 0, rs
-    if (list instanceof Array || typeof list == 'string') {
+    if (isArray(list) || isString(list)) {
       while (i < list.length) {
         rs = fn.call(this, list[i], i, i++)
         array.push(rs)
       }
-    } else if (typeof list == 'number') {
+    } else if (isNumber(list)) {
       while (i++ < list) {
         rs = fn.call(this, i, i, i)
         array.push(rs)
@@ -88,12 +115,12 @@
     n = n || 2
     var indent = indentChars ? '\n' + Array(n).join(indentChars) : ''
     var indentPop = indentChars ? '\n' + Array(n - 1).join(indentChars) : ''
-    if (val instanceof Array) {
+    if (isArray(val)) {
       return '[' + indent + each(val, function(item){
         return toJson(item, indentChars, n + 1)
       }).join(',' + indent) + indentPop + ']'
     }
-    if (val && typeof val == 'object') {
+    if (isObject(val)) {
       var items = []
       each(val, function (item, key) {
         if (item === undefined) return
@@ -101,7 +128,7 @@
       })
       return '{' + indent + items.join(',' + indent) + indentPop + '}'
     }
-    if (typeof val == 'string') {
+    if (isString(val)) {
       return quot(val)
     }
     return String(val)
@@ -110,14 +137,14 @@
   // undefined => ''
   // obj => json
   function outValue(val) {
-    if (val == undefined) return ''
-    if (typeof val == 'object') return toJson(val, '  ')
+    if (val === undefined) return ''
+    if (isObject(val) || isArray(val)) return toJson(val, '  ')
     return val
   }
 
   // selector => node
   function querySelector(selector) {
-    if (typeof selector == 'string') {
+    if (isString(selector)) {
       var s = selector.substr(1)
       if (selector.match(/^#/)) {
         return document.getElementById(s)
@@ -242,7 +269,7 @@
         }
 
         // remove directive attr
-        setTimeout(function () { // timeout for template error
+        requestAnimationFrame(function () { // async is for template error
           node.removeAttribute(attr)
         })
       } else {
@@ -266,15 +293,15 @@
     // ['child', [for...]] => ['child', ...]
     // 'text' => {nodeType:3, nodeValue:'text'}
     forEach(childNodes, function (child) {
-      if (child instanceof Array) {
+      if (isArray(child)) {
         forEach(child, function (child) {
-          if (typeof child != 'object') {
+          if (!isObject(child)) {
             child = { nodeType: 3, nodeValue: String(child) }
           }
           vnode.childNodes.push(child)
         })
       } else {
-        if (typeof child != 'object') {
+        if (!isObject(child)) {
           child = { nodeType: 3, nodeValue: String(child) }
         }
         vnode.childNodes.push(child)
@@ -357,7 +384,7 @@
       if (value != oldValue) {
         node[name] = value
         // polygon:points ...
-        if (typeof oldValue == 'object') {
+        if (isObject(oldValue)) {
           node.setAttribute(name, value)
         }
       }
@@ -367,7 +394,7 @@
   // → errorNodeTpl
   function detectTemplateError(code, root, errorNode) {
     try {
-      new Function('!' + code)
+      Function('!' + code)
     } catch (error) {
       errorNode = errorNode.cloneNode()
       var errorTpl = errorNode.outerHTML || errorNode.nodeValue
@@ -412,7 +439,7 @@
         // each(, ()=> bool? createVnode(, [ loop ]): "" )
         if (dirs['for']) {
           var dir = dirs['for']
-          code += '__each(' + dir.list + ',function(' + dir.item + ',' + dir.index + '){return '
+          code += '__e(' + dir.list + ',function(' + dir.item + ',' + dir.index + '){return '
           isDebug && detectTemplateError(dir.expression.replace(/ (in|of) /, '/'), root, node)
         }
         // if
@@ -425,7 +452,7 @@
         }
 
         // createVnode
-        code += '__createVnode(' + vnodeCode + ', [\n'
+        code += '__c(' + vnodeCode + ', [\n'
 
         // childNodes
         var childNodes = toArray(node.childNodes)
@@ -445,7 +472,7 @@
         // text{{exp}}no"de  =>  "text" +(exp)+ "no\"de"
         var vnodeCode = node.nodeValue.replace(/\s+/g, ' ')
           .replace(/(^|}})(.*?)({{|$)/g, function (str, $1, $2, $3) {return $1 + quot($2) + $3})
-          .replace(/{{(.*?)}}/g, '+__outValue($1)+')
+          .replace(/{{(.*?)}}/g, '+__o($1)+')
         code += vnodeCode
 
         isDebug && detectTemplateError(vnodeCode, root, node)
@@ -552,7 +579,7 @@
     XMLHttpRequest.prototype.send = function () {
       var xhr = this
       each(xhr, function (callback, name) {
-        if (name.match(/^on/) && typeof callback == 'function') {
+        if (name.match(/^on/) && isFunction(callback)) {
           xhr[name] = injectRender(vm, callback)
         }
       })
@@ -598,7 +625,7 @@
 
     // data
     var data = options.data
-    if (typeof data == 'function') data = data.call(vm) // compoment data()
+    if (isFunction(data)) data = data.call(vm) // compoment data()
     assign(vm, data)
 
     // methods
@@ -608,7 +635,7 @@
 
     // hooks
     each(options, function (fn, key) {
-      if (typeof fn == 'function') {
+      if (isFunction(fn)) {
         vm[key] = injectRender(vm, fn)
       }
     })
@@ -665,7 +692,7 @@
     })
 
     // test: return proxy
-    if (typeof Proxy == 'function') {
+    if (isFunction(window.Proxy)) {
       return new Proxy(vm, {
         set: function (vm, key, val) {
           vm[key] = val
@@ -680,14 +707,14 @@
   }
 
 
-  var __createVnode = createVnode
-  var __each = each
-  var __outValue = outValue
+  var __c = createVnode
+  var __e = each
+  var __o = outValue
   VM.prototype = {
     constructor: VM,
-    __createVnode: __createVnode,
-    __each: __each,
-    __outValue: __outValue,
+    __c: __c,
+    __e: __e,
+    __o: __o,
     $mount: function (el) {
       this.$el = el
 
@@ -707,7 +734,7 @@
   // definition.bind -> createNode
   // definition.update -> diff
   VM.directive = function (name, definition) {
-    if (typeof definition == 'function') {
+    if (isFunction(definition)) {
       definition = {
         bind: definition,
         update: definition
@@ -754,7 +781,7 @@
     // checkbox
     if (el.type == 'checkbox') {
       eventType = 'click'
-      if (model instanceof Array) {
+      if (isArray(model)) {
         props.checked = indexOf(model, value) != -1
         viewToModel = function () {
           if (el.checked) {
@@ -821,8 +848,8 @@
       }
     }
 
-    off(el, eventType, el.__mf) // once !!
-    on(el, eventType, el.__mf = viewToModel)
+    off(el, eventType, el.__m2v) // once !!
+    on(el, eventType, el.__m2v = viewToModel)
   })
 
   // exports
