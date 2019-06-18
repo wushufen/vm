@@ -174,15 +174,14 @@
       node.addEventListener(type, fn, useCapture)
     } : function (node, type, fn) { // ie
       type = ieEventType(type)
-      var __ieFn = fn.__ieFn || function () {
+      fn.__ie = fn.__ie || function () { // for off
         var event = window.event
         event.target = event.srcElement
         event.preventDefault = function () { event.returnValue = false }
         event.stopPropagation = function () { event.cancelBubble = true }
         fn.call(this, event)
       }
-      fn.__ieFn = __ieFn // for off
-      node.attachEvent(type, __ieFn)
+      node.attachEvent(type, fn.__ie)
     }
   }()
 
@@ -192,7 +191,7 @@
       node.removeEventListener(type, fn)
     } : function (node, type, fn) { // ie
       type = ieEventType(type)
-      fn = fn ? (fn.__ieFn || fn) : null
+      fn = fn ? (fn.__ie || fn) : null
       node.detachEvent(type, fn)
     }
   }()
@@ -666,12 +665,15 @@
     }
     // async render
     vm.$render = function () {
+      // console.log('$render')
+
       // update computed
       // each(options.computed, function (fn, key) {
       //   vm[key] = fn.call(vm)
       // })
 
       // trigger watch
+      //
 
       // dom diff update view
       cancelAnimationFrame(render.timer)
