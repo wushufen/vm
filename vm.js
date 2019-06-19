@@ -205,13 +205,16 @@
 
       // directives && props
       // v-for  v-bind:title  :title  v-on:click  @click.prevent.stop
-      var m = attr.match(/^(v-([^.:]+)|:|@)(?::([^.]*))?(?:\.(.*))?/)
+      var m = attr.match(/^(v-([^.:]*):?|:|@)([^.]*)(.*)/)
       if (m) {
         var name = m[2]
         if (m[1] == ':') name = 'bind'
         if (m[1] == '@') name = 'on'
         var arg = m[3]
-        var mdfs = m[4]
+        var modifiers = {}
+        forEach(m[4].split('.'), function (name) {
+          if(name) modifiers[name] = true
+        })
 
         // "🚩value" => value without "" in runtime code
         var dir = {
@@ -220,7 +223,7 @@
           value: '🚩' + value,
           name: name,
           arg: arg,
-          mdfs: mdfs
+          modifiers: modifiers
         }
 
         if (name == 'on') {
@@ -735,20 +738,20 @@
   VM.directive('on', function (el, binding) {
     off(el, binding.arg, el['__' + binding.raw]) // one
     on(el, binding.arg, el['__' + binding.raw] = function (e) {
-      // mdfs
-      var mdfs = binding.mdfs
-      if (mdfs.match(/\.prevent\b/)) event.preventDefault()
-      if (mdfs.match(/\.stop\b/)) event.stopPropagation()
-      if (mdfs.match(/\.self\b/) && event.target != el) return
+      // modifiers
+      var modifiers = binding.modifiers
+      if (modifiers.prevent) event.preventDefault()
+      if (modifiers.stop) event.stopPropagation()
+      if (modifiers.self && event.target != el) return
 
-      if (mdfs.match(/\.ctrl\b/) && !event.ctrlKey) return
-      if (mdfs.match(/\.alt\b/) && !event.altKey) return
-      if (mdfs.match(/\.shift\b/) && !event.shiftKey) return
-      if (mdfs.match(/\.meta\b/) && !event.metaKey) return
+      if (modifiers.ctrl && !event.ctrlKey) return
+      if (modifiers.alt && !event.altKey) return
+      if (modifiers.shift && !event.shiftKey) return
+      if (modifiers.meta && !event.metaKey) return
 
-      if (mdfs.match(/\.enter\b/) && event.keyCode != 13) return
+      if (modifiers.enter && event.keyCode != 13) return
 
-      var m = mdfs.match(/\.(\d+)/)
+      var m = binding.raw.match(/\.(\d+)/)
       if (m && event.keyCode != m[1]) return
       binding.value(e)
     })
