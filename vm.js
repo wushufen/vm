@@ -203,8 +203,8 @@
       var attr = attribute.nodeName
       var value = attribute.nodeValue
 
+      // directives && props
       // v-for  v-bind:title  :title  v-on:click  @click.prevent.stop
-      // var m = attr.match(/^(:|@|v-([^.]*))([^.]*)(.*)/)
       var m = attr.match(/^(v-([^.:]+)|:|@)(?::([^.]*))?(?:\.(.*))?/)
       if (m) {
         var name = m[2]
@@ -253,7 +253,9 @@
         requestAnimationFrame(function () { // async is for template error
           node.removeAttribute(attr)
         })
-      } else {
+      }
+      // attrs
+      else {
         vnodeData.attrs[attr] = value
       }
     })
