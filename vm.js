@@ -1,6 +1,6 @@
 /*! @preserve https://github.com/wusfen/vm */
 
-(function (window, document, Object, Array, String, Function, undefined) ////
+(function (window, document, Object, Array, Function, String, undefined) ////
 {
   var requestAnimationFrame = window.requestAnimationFrame
   var cancelAnimationFrame = window.cancelAnimationFrame
@@ -13,10 +13,20 @@
     }
   }
 
+  // undefined => undefined
+  // null => null
+  // 0 => Number
+  // '' => String
+  // false => Boolean
+  // Symbol() => Symbol
+  // function(){} => Function
+  // [] => Array
+  // {} => Object
+  // else => Object
   function typeOf(val) {
     if(val === undefined) return
     if(val === null) return val
-    if (val !== Object(val) || val instanceof Array || val instanceof Function) {
+    if (val !== Object(val) || val instanceof Function || val instanceof Array) {
       return val.constructor
     }
     return Object
@@ -845,4 +855,4 @@
   }
 
 } //
-)(window, document, Object, Array, String, Function) ////
+)(window, document, Object, Array, Function, String) ////
