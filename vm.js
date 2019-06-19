@@ -203,8 +203,9 @@
       var attr = attribute.nodeName
       var value = attribute.nodeValue
 
-      // v-bind:title  :title  v-on:click  @click.prevent.stop
-      var m = attr.match(/^(:|@|v-([^.]*))([^.]*)(.*)/)
+      // v-for  v-bind:title  :title  v-on:click  @click.prevent.stop
+      // var m = attr.match(/^(:|@|v-([^.]*))([^.]*)(.*)/)
+      var m = attr.match(/^(v-([^.:]+)|:|@)(?::([^.]*))?(?:\.(.*))?/)
       if (m) {
         var name = m[2]
         if (m[1] == ':') name = 'bind'

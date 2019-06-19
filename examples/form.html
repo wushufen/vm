@@ -12,7 +12,7 @@
 <body>
 
   <div id="app">
-    <h1>model: {{model}}</h1>
+    <h1 v-bind:title="model">model: {{model}}</h1>
     <h2>list: {{list}}</h2>
     <input v-model="model" placeholder="model">
     <br>
