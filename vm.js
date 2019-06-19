@@ -399,7 +399,7 @@
       var errorTpl = errorNode.outerHTML || errorNode.nodeValue
       errorTpl = errorTpl.replace(/<\/.*?>/, '')
       errorTpl = root.outerHTML.replace(errorTpl, '🐞→ ' + errorTpl)
-      throw '[template error]\n  ' + errorTpl
+      throw Error('[TemplateError]\n  ' + errorTpl) // Error: ie
     }
   }
 
@@ -484,7 +484,7 @@
 
     if (!isDebug) {
       try {
-        var render = Function('data', 'var __vm=this;with(__vm){return ' + code + '}')
+        var render = Function('var __vm=this;with(__vm){return ' + code + '}')
         return render
       } catch (error) {
         // setTimeout(code)
