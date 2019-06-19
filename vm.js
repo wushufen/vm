@@ -13,26 +13,16 @@
     }
   }
 
-  // undefined => undefined
-  // null => null
-  // 0 => Number
-  // '' => String
-  // false => Boolean
-  // Symbol() => Symbol
-  // function(){} => Function
-  // [] => Array
-  // {} => Object
-  // else => Object
+  // val => constructor
   function typeOf(val) {
-    if(val === undefined) return
-    if(val === null) return val
+    if(val === undefined || val === null) return val
     if (val !== Object(val) || val instanceof Function || val instanceof Array) {
       return val.constructor
     }
     return Object
   }
 
-  // for array|arrayLike
+  // for: array|arrayLike
   function forEach(arrayLike, fn) {
     if (!arrayLike) return
     for (var i = 0; i < arrayLike.length; i++) {
@@ -41,7 +31,7 @@
     }
   }
 
-  // for array|object|string|number => []
+  // for: array|object|string|number => []
   function each(list, fn) {
     var array = [], i = 0, rs
     if (typeOf(list) == Array || typeOf(list) == String) {
@@ -97,7 +87,7 @@
     return obj
   }
 
-  // str"\q"ing => "str\"\\q\"ing"
+  // str"q"\ing => "str\"q\"\\ing"
   function quot(string) {
     return '"' + string.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"'
   }
@@ -126,8 +116,7 @@
     return String(val)
   }
 
-  // undefined => ''
-  // obj => json
+  // undefined => '', obj => json
   function outValue(val) {
     if (val === undefined) return ''
     if (typeOf(val) == Object || typeOf(val) == Array) return toJson(val, '  ')
@@ -426,15 +415,15 @@
 
         isDebug && detectTemplateError(vnodeCode, root, node)
 
-        // for if?
-        // each(, ()=> bool? createVnode(, [ loop ]): "" )
+        // for
+        // each(, function(){ return createVnode(, [..loop..]) || if } )
         if (dirs['for']) {
           var dir = dirs['for']
           code += '__e(' + dir.list + ',function(' + dir.item + ',' + dir.index + '){return '
           isDebug && detectTemplateError(dir.expression.replace(/ (in|of) /, '/'), root, node)
         }
         // if
-        // bool? createVnode(,,[..loop..]): ""
+        // bool? createVnode(, [..loop..] ): ""
         if (dirs['if']) {
           var expression = dirs['if'].expression
           code += expression + '? '
@@ -461,12 +450,12 @@
       // parse textNode
       else if (node.nodeType == 3) {
         // text{{exp}}no"de  =>  "text" +(exp)+ "no\"de"
-        var vnodeCode = node.nodeValue.replace(/\s+/g, ' ')
+        var textVnodeCode = node.nodeValue.replace(/\s+/g, ' ')
           .replace(/(^|}})(.*?)({{|$)/g, function (str, $1, $2, $3) {return $1 + quot($2) + $3})
           .replace(/{{(.*?)}}/g, '+__o($1)+')
-        code += vnodeCode
+        code += textVnodeCode
 
-        isDebug && detectTemplateError(vnodeCode, root, node)
+        isDebug && detectTemplateError(textVnodeCode, root, node)
       }
       // parse commentNode ...
       else {
@@ -699,7 +688,6 @@
       })
     }
   }
-
 
   var __c = createVnode
   var __e = each
