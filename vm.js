@@ -66,7 +66,7 @@
   function indexOf(array, item) {
     var index = -1
     forEach(array, function (_item, i) {
-      if (item == _item) return index = i
+      if (item === _item) return index = i
     })
     return index
   }
@@ -698,8 +698,7 @@
   var __c = createVnode
   var __e = each
   var __o = outValue
-  VM.prototype = {
-    constructor: VM,
+  assign(VM.prototype, {
     __c: __c,
     __e: __e,
     __o: __o,
@@ -712,7 +711,7 @@
       // mounted hook
       this.mounted && this.mounted()
     }
-  }
+  })
 
   VM.options = {
     directives: {}
@@ -736,7 +735,7 @@
 
   // v-on:click @click
   VM.directive('on', function (el, binding) {
-    off(el, binding.arg, el['__' + binding.raw]) // one
+    off(el, binding.arg, el['__' + binding.raw]) // once
     on(el, binding.arg, el['__' + binding.raw] = function (e) {
       // modifiers
       var modifiers = binding.modifiers
