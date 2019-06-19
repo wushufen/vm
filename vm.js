@@ -1,10 +1,7 @@
 /*! @preserve https://github.com/wusfen/vm */
 
-(function (window, document, undefined) ////
+(function (window, document, Object, Array, String, Function, undefined) ////
 {
-  var String = window.String
-  var Array = window.Array
-
   var requestAnimationFrame = window.requestAnimationFrame
   var cancelAnimationFrame = window.cancelAnimationFrame
   if (!requestAnimationFrame) {
@@ -16,28 +13,13 @@
     }
   }
 
-  function isArray(val) {
-    return val instanceof Array
-  }
-
-  function isObject(val) {
-    return val instanceof Object && !isArray(val)
-  }
-
-  function isFunction(val) {
-    return val instanceof Function
-  }
-
-  function isString(val) {
-    return typeof val == 'string'
-  }
-
-  function isNumber(val) {
-    return typeof val == 'number'
-  }
-
-  function isBoolean(val) {
-    return typeof val == 'boolean'
+  function typeOf(val) {
+    if(val === undefined) return
+    if(val === null) return val
+    if (val !== Object(val) || val instanceof Array || val instanceof Function) {
+      return val.constructor
+    }
+    return Object
   }
 
   // for array|arrayLike
@@ -52,12 +34,12 @@
   // for array|object|string|number => []
   function each(list, fn) {
     var array = [], i = 0, rs
-    if (isArray(list) || isString(list)) {
+    if (typeOf(list) == Array || typeOf(list) == String) {
       while (i < list.length) {
         rs = fn.call(this, list[i], i, i++)
         array.push(rs)
       }
-    } else if (isNumber(list)) {
+    } else if (typeOf(list) == Number) {
       while (i++ < list) {
         rs = fn.call(this, i, i, i)
         array.push(rs)
@@ -115,12 +97,12 @@
     n = n || 2
     var indent = indentChars ? '\n' + Array(n).join(indentChars) : ''
     var indentPop = indentChars ? '\n' + Array(n - 1).join(indentChars) : ''
-    if (isArray(val)) {
+    if (typeOf(val) == Array) {
       return '[' + indent + each(val, function(item){
         return toJson(item, indentChars, n + 1)
       }).join(',' + indent) + indentPop + ']'
     }
-    if (isObject(val)) {
+    if (typeOf(val) == Object) {
       var items = []
       each(val, function (item, key) {
         if (item === undefined) return
@@ -128,7 +110,7 @@
       })
       return '{' + indent + items.join(',' + indent) + indentPop + '}'
     }
-    if (isString(val)) {
+    if (typeOf(val) == String) {
       return quot(val)
     }
     return String(val)
@@ -138,13 +120,13 @@
   // obj => json
   function outValue(val) {
     if (val === undefined) return ''
-    if (isObject(val) || isArray(val)) return toJson(val, '  ')
+    if (typeOf(val) == Object || typeOf(val) == Array) return toJson(val, '  ')
     return val
   }
 
   // selector => node
   function querySelector(selector) {
-    if (isString(selector)) {
+    if (typeOf(selector) == String) {
       var s = selector.substr(1)
       if (selector.match(/^#/)) {
         return document.getElementById(s)
@@ -292,15 +274,15 @@
     // ['child', [for...]] => ['child', ...]
     // 'text' => {nodeType:3, nodeValue:'text'}
     forEach(childNodes, function (child) {
-      if (isArray(child)) {
+      if (typeOf(child) == Array) {
         forEach(child, function (child) {
-          if (!isObject(child)) {
+          if (typeOf(child) != Object) {
             child = { nodeType: 3, nodeValue: String(child) }
           }
           vnode.childNodes.push(child)
         })
       } else {
-        if (!isObject(child)) {
+        if (typeOf(child) != Object) {
           child = { nodeType: 3, nodeValue: String(child) }
         }
         vnode.childNodes.push(child)
@@ -383,7 +365,7 @@
       if (value != oldValue) {
         node[name] = value
         // polygon:points ...
-        if (isObject(oldValue)) {
+        if (typeOf(oldValue) == Object) {
           node.setAttribute(name, value)
         }
       }
@@ -578,7 +560,7 @@
     XMLHttpRequest.prototype.send = function () {
       var xhr = this
       each(xhr, function (callback, name) {
-        if (name.match(/^on/) && isFunction(callback)) {
+        if (name.match(/^on/) && typeOf(callback) == Function) {
           xhr[name] = injectRender(vm, callback)
         }
       })
@@ -624,7 +606,7 @@
 
     // data
     var data = options.data
-    if (isFunction(data)) data = data.call(vm) // compoment data()
+    if (typeOf(data) == Function) data = data.call(vm) // compoment data()
     assign(vm, data)
 
     // methods
@@ -634,7 +616,7 @@
 
     // hooks
     each(options, function (fn, key) {
-      if (isFunction(fn)) {
+      if (typeOf(fn) == Function) {
         vm[key] = injectRender(vm, fn)
       }
     })
@@ -694,7 +676,7 @@
     })
 
     // test: return proxy
-    if (isFunction(window.Proxy)) {
+    if (typeOf(window.Proxy) == Function) {
       return new Proxy(vm, {
         set: function (vm, key, val) {
           vm[key] = val
@@ -736,7 +718,7 @@
   // definition.bind -> createNode
   // definition.update -> diff
   VM.directive = function (name, definition) {
-    if (isFunction(definition)) {
+    if (typeOf(definition) == Function) {
       definition = {
         bind: definition,
         update: definition
@@ -783,7 +765,7 @@
     // checkbox
     if (el.type == 'checkbox') {
       eventType = 'click'
-      if (isArray(model)) {
+      if (typeOf(model) == Array) {
         props.checked = indexOf(model, value) != -1
         viewToModel = function () {
           if (el.checked) {
@@ -814,7 +796,7 @@
       forEach(vnode.childNodes, function (voption) {
         if (voption.nodeType == 1) {
           var optionValue = voption.props.value
-          if (optionValue == undefined) {
+          if (optionValue === undefined) {
             optionValue = voption.attrs.value || voption.childNodes[0].nodeValue
           }
           voption.props.selected = optionValue == model
@@ -830,7 +812,7 @@
                 vindex += 1
                 if (vindex == option.index) {
                   var optionValue = voption.props.value
-                  if (optionValue == undefined) {
+                  if (optionValue === undefined) {
                     optionValue = voption.attrs.value || voption.childNodes[0].nodeValue
                   }
                   binding.setModel(optionValue)
@@ -863,4 +845,4 @@
   }
 
 } //
-)(window, document) ////
+)(window, document, Object, Array, String, Function) ////
