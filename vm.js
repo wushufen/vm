@@ -197,7 +197,6 @@
   function getVnodeData(node) {
     var ns = node.namespaceURI
     var vnodeData = {
-      uid: uid(),
       nodeType: node.nodeType,
       tagName: node.tagName,
       ns: ns == document.documentElement.namespaceURI ? undefined : ns,
@@ -303,16 +302,10 @@
     })
 
     // component
-    var $children = this.$children = this.$children || {}
     var components = assign({}, VM.options.components, this.components)
     if (tagName in components) {
-      if (!$children[vnode.uid]) {
-        var options = components[tagName]
-        $children[vnode.uid] = new VM(options)
-      }
-      var component = $children[vnode.uid]
-      component.$parent = this
-      vnode = component.$options.render.call(component)
+      var options = components[tagName]
+      vnode.componentOptions = options
     }
 
     return vnode
@@ -667,7 +660,7 @@
     vm.$forceUpdate = function () {
       var vnode = render.call(vm, createElement)
       vm.$el && diff(vm.$el, vnode)
-      options.__vnode = vnode // dev
+      vm._vnode = vnode
     }
     // async render
     vm.$render = function () {

@@ -7,15 +7,19 @@
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <title>component</title>
   <script src="../vm.js"></script>
+  <!-- <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script> -->
 </head>
 
 <body>
 
   <div id="app">
     <input v-model="model"> {{model}}
+    <hello v-if="model"></hello>
     <hello></hello>
-    <!--  -->
-    <hello></hello>
+    <div>
+      <span></span> <span></span>
+      <hello v-for="item in model">{{item}}</hello>
+    </div>
   </div>
 
   <script type="x">
@@ -36,20 +40,26 @@
         }
       },
       template: `
-      <div>
-        {{n}}
-        <button @click="n++">+</button>
-      </div>
+      <button @click="n++">{{n}} ++</button>
       `,
       methods: {
         click: function () {
           this.n += 1
         }
+      },
+      mounted: function () {
+        console.log('component mounted')
+      },
+      destroyed: function () {
+        console.log('component destroyed')
       }
     })
     var vm = new Vue({
       el: '#app',
       template: app.outerHTML,
+      xrender: function (c) {
+        return c('hello', ['abc'])
+      },
       data: {
         model: 'hello vm.js'
       }
