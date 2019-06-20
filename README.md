@@ -41,6 +41,7 @@
 可在ie6下测试
 
 * [hello world](https://wusfen.github.io/vm/examples/helloWorld.html) | [源码](examples/helloWorld.html)
+* [form](https://wusfen.github.io/vm/examples/form.html) | [源码](examples/form.html)
 * [todo list](https://wusfen.github.io/vm/examples/todoList.html) | [源码](examples/todoList.html)
 * [template error](https://wusfen.github.io/vm/examples/templateError.html) | [源码](examples/templateError.html)
 * [svg (需浏览器支持 ie9+)](https://wusfen.github.io/vm/examples/svg.html) | [源码](examples/svg.html) 

@@ -489,6 +489,7 @@
 
     parentNode = parentNode || node.parentNode
     var newNode
+    var selectedIndex = parentNode.selectedIndex
     // +
     if (!node && vnode) {
       newNode = createNode(vnode)
@@ -526,6 +527,10 @@
       for (var i = 0; i < maxLength; i++) {
         diff(childNodes[i], newChildren[i], node)
       }
+    }
+    // fix <select> selectedIndex when option add or remove
+    if (selectedIndex !== undefined) {
+      parentNode.selectedIndex = selectedIndex
     }
   }
 
@@ -787,7 +792,7 @@
     }
     // radio
     else if (el.type == 'radio') {
-      props.checked = model == value
+      props.checked = model === value
       eventType = 'click'
       viewToModel = function () {
         binding.setModel(value)
@@ -795,14 +800,14 @@
     }
     // select
     else if (el.type == 'select-one') {
-      props.value = model
+      el.value = model
       forEach(vnode.childNodes, function (voption) {
         if (voption.nodeType == 1) {
           var optionValue = voption.props.value
           if (optionValue === undefined) {
             optionValue = voption.attrs.value || voption.childNodes[0].nodeValue
           }
-          voption.props.selected = optionValue == model
+          voption.props.selected = optionValue === model
         }
       })
       eventType = 'change'
