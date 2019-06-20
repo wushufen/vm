@@ -6,7 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <title>form</title>
-  <script src="../vm.js"></script>
+  <!-- <script src="../vm.js"></script> -->
+  <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
 </head>
 
 <body>
@@ -15,6 +16,8 @@
     <h1 v-bind:title="model">model: {{model}}</h1>
     <h2>list: {{list}}</h2>
     <input v-model="model" placeholder="model">
+    <br>
+    <textarea v-model="model"></textarea>
     <br>
     <input v-model="model" type="checkbox">
     <br>
@@ -25,7 +28,7 @@
     <input v-model="model" :value="'radio2'" type="radio">
     <br>
     <select v-model="model">
-      <option v-for="(item,i) in list">{{item}}</option>
+      <option v-for="(item,i) in list" :value="item">{{item}}</option>
     </select>
   </div>
 
@@ -35,7 +38,7 @@
       el: app,
       data: {
         model: 'hello vm.js',
-        list: [1]
+        list: ['--']
       }
     })
   </script>
