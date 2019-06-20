@@ -13,7 +13,7 @@
     }
   }
 
-  // val => constructor
+  // val => undefined|null|String|Number|Boolean|Symbol|Function|Array|Object
   function typeOf(val) {
     if(val === undefined || val === null) return val
     if (val !== Object(val) || val instanceof Function || val instanceof Array) {
@@ -177,6 +177,13 @@
     }
   }()
 
+  // increment id
+  var uid = function (id) {
+    return function () {
+      return ++id
+    }
+  }(0)
+
   // html => node
   function parse(html) {
     parse.el = parse.el || document.createElement('div')
@@ -190,6 +197,7 @@
   function getVnodeData(node) {
     var ns = node.namespaceURI
     var vnodeData = {
+      uid: uid(),
       nodeType: node.nodeType,
       tagName: node.tagName,
       ns: ns == document.documentElement.namespaceURI ? undefined : ns,
@@ -227,7 +235,7 @@
         }
 
         if (name == 'on') {
-          if (value.match(/[=();]/)) {
+          if (value.match(/[-+=();]/)) {
             dir.value = '🚩function(){' + value + '}'
           } else {
             dir.value = '🚩function(){' + value + '.apply(__vm,arguments)}'
@@ -274,7 +282,7 @@
       directives: [],
       childNodes: []
     }, vnodeData)
-    vnode.tagName = vnode.tagName.toLowerCase()
+    var tagName = vnode.tagName = vnode.tagName.toLowerCase()
 
     // ['child', [for...]] => ['child', ...]
     // 'text' => {nodeType:3, nodeValue:'text'}
@@ -293,6 +301,19 @@
         vnode.childNodes.push(child)
       }
     })
+
+    // component
+    var $children = this.$children = this.$children || {}
+    var components = assign({}, VM.options.components, this.components)
+    if (tagName in components) {
+      if (!$children[vnode.uid]) {
+        var options = components[tagName]
+        $children[vnode.uid] = new VM(options)
+      }
+      var component = $children[vnode.uid]
+      component.$parent = this
+      vnode = component.$options.render.call(component)
+    }
 
     return vnode
   }
@@ -401,9 +422,7 @@
         })
       ]),
       bool? createVnode({tagName:'span'}, [ loop ]) : '', // v-if
-      function component(){ // component
-        return createVnode()
-      }
+      createVnode({tagName: 'hello'}, [ loop ]) // component
     ])
     */
     var code = ''
@@ -714,7 +733,8 @@
   })
 
   VM.options = {
-    directives: {}
+    directives: {},
+    components: {}
   }
 
   // directive: v-directive
@@ -838,6 +858,13 @@
     off(el, eventType, el.__m2v) // once !!
     on(el, eventType, el.__m2v = viewToModel)
   })
+
+  // component
+  VM.component = function (name, options) {
+    options.isComponent = true
+    document.createElement(name) // ie
+    VM.options.components[name] = options
+  }
 
   // exports
   if (typeof module == 'object') {

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>component</title>
+  <script src="../vm.js"></script>
+</head>
+
+<body>
+
+  <div id="app">
+    <input v-model="model"> {{model}}
+    <hello></hello>
+    <!--  -->
+    <hello></hello>
+  </div>
+
+  <script type="x">
+    c('div', [
+      c('input')
+      hello.render()
+    ])
+  </script>
+
+  <script>
+    Vue.component('hello', {
+      props: {
+        name: String
+      },
+      data: function () {
+        return {
+          n: 0
+        }
+      },
+      template: `
+      <div>
+        {{n}}
+        <button @click="n++">+</button>
+      </div>
+      `,
+      methods: {
+        click: function () {
+          this.n += 1
+        }
+      }
+    })
+    var vm = new Vue({
+      el: '#app',
+      template: app.outerHTML,
+      data: {
+        model: 'hello vm.js'
+      }
+    })
+  </script>
+</body>
+
+</html>
