@@ -338,8 +338,9 @@
       : document.createElement(tagName)
 
     // component
-    if (vnode.componentOptions) {
-      var component = new VM(vnode.componentOptions)
+    var componentOptions = vnode.componentOptions
+    if (componentOptions) {
+      var component = new VM(componentOptions)
       component.$mount(node)
       node = component.$el
       return node
@@ -400,7 +401,7 @@
     })
   }
 
-  // code => → error
+  // code => → errorNode
   function detectTemplateError(code, root, errorNode) {
     try {
       Function('!' + code)
@@ -413,7 +414,7 @@
     }
   }
 
-  // node => render() => vnode
+  // node => render => vnode
   function compile(node, isDebug) {
     /*
     createVnode({tagName:'div'}, [
@@ -754,7 +755,8 @@
       var vnode = vm._render(createElement)
       vm._vnode = vnode
       if (vm.$el) {
-        vm.$el = diff(vm.$el, vnode) // = if root replaced
+        vm.$el = diff(vm.$el, vnode) // <span>.$mount(div)
+        vm.$el.__vm = vm
       }
     },
     // async render
