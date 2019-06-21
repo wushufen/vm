@@ -62,7 +62,7 @@
     return array.slice(start)
   }
 
-  // item index of array
+  // array, item => index
   function indexOf(array, item) {
     var index = -1
     forEach(array, function (_item, i) {
@@ -71,13 +71,13 @@
     return index
   }
 
-  // array remove item
+  // array, item => --item
   function remove(array, item) {
     var index = indexOf(array, item)
     index != -1 && array.splice(index, 1)
   }
 
-  // obj extend ... => obj
+  // obj, ... => extend obj
   function assign(obj) {
     forEach(toArray(arguments, 1), function (arg) {
       each(arg, function (value, key) {
@@ -177,7 +177,7 @@
     }
   }()
 
-  // increment id
+  // => increment id
   var uid = function (id) {
     return function () {
       return ++id
@@ -311,7 +311,7 @@
     return vnode
   }
 
-  // vue createElement => createVnode => vnode
+  // vue: createElement => createVnode => vnode
   function createElement(tagName, data, childNodes) {
     if (!childNodes) {
       childNodes = data
@@ -326,6 +326,7 @@
 
   // vnode tree => node tree
   function createNode(vnode) {
+    // textNode
     if (vnode.nodeType == 3) {
       return document.createTextNode(vnode.nodeValue)
     }
@@ -335,6 +336,14 @@
     var node = vnode.ns && document.createElementNS
       ? document.createElementNS(vnode.ns, tagName)
       : document.createElement(tagName)
+
+    // component
+    if (vnode.componentOptions) {
+      var component = new VM(vnode.componentOptions)
+      component.$mount(node)
+      node = component.$el
+      return node
+    }
 
     // attrs
     each(vnode.attrs, function (value, name) {
@@ -362,7 +371,7 @@
     return node
   }
 
-  // *:props
+  // node + props => props*
   function updateProps(node, props) {
     each(props, function (value, name) {
       if (name == 'style') {
@@ -391,7 +400,7 @@
     })
   }
 
-  // → errorNodeTpl
+  // code => → error
   function detectTemplateError(code, root, errorNode) {
     try {
       Function('!' + code)
@@ -492,28 +501,20 @@
     }
   }
 
-  // node => dom diff update
+  // node + vnode => dom diff update
   function diff(node, vnode, parentNode) {
-    if (node && (!node.parentNode || node.parentNode.nodeType != 1)) return // out of document
+    // if (node && (!node.parentNode || node.parentNode.nodeType != 1)) return // out of document
     // console.log(node && node.tagName, vnode && vnode.tagName)
 
     parentNode = parentNode || node.parentNode
-    var selectedIndex = parentNode.selectedIndex
+    var selectedIndex = parentNode && parentNode.selectedIndex
 
-    // console.log(node && node.tagName, vnode)
-    if ((!node && vnode) || String(node.tagName).toLowerCase() != String(vnode && vnode.tagName)) {
-      if (vnode && vnode.componentOptions) {
-        var component = new VM(vnode.componentOptions)
-        vnode = component._render()
-        console.log(component)
-      }
-    }
+    console.log(node, vnode)
 
     // +
     if (!node && vnode) {
       node = createNode(vnode)
       parentNode.appendChild(node)
-      component && component.$mount(node)
     }
     // -
     else if (node && !vnode) {
@@ -522,9 +523,8 @@
     // +- *nodeType || *tagName
     else if (String(node.tagName).toLowerCase() != String(vnode.tagName)) {
       var newNode = createNode(vnode)
-      parentNode.replaceChild(newNode, node)
+      parentNode && parentNode.replaceChild(newNode, node)
       node = newNode
-      component && component.$mount(node)
     }
     // *text
     else if (node.nodeType == 3 && node.nodeValue != vnode.nodeValue) {
@@ -544,19 +544,63 @@
       }
       // childNodes
       var childNodes = toArray(node.childNodes)
-      var newChildren = vnode.childNodes
-      var maxLength = Math.max(childNodes.length, newChildren.length)
+      var vchildNodes = vnode.childNodes
+      var maxLength = Math.max(childNodes.length, vchildNodes.length)
       for (var i = 0; i < maxLength; i++) {
-        diff(childNodes[i], newChildren[i], node)
+        diff(childNodes[i], vchildNodes[i], node)
       }
     }
     // fix <select> selectedIndex when option add or remove
-    if (selectedIndex !== undefined) {
+    if (parentNode && selectedIndex !== undefined) {
       parentNode.selectedIndex = selectedIndex
     }
 
     return node
   }
+
+  // --               --
+  // tag              --
+  // text             --
+  // component        --
+  // --              tag
+  // tag             tag
+  // text            tag
+  // component       tag
+  // --             text
+  // tag            text
+  // text           text
+  // component      text
+  // --        component
+  // tag       component
+  // text      component
+  // component component
+
+  function diff2(node, vnode, parentNode) {
+    if (node && (!node.parentNode || node.parentNode.nodeType != 1)) return // out of document
+    // console.log(node && node.tagName, vnode && vnode.tagName)
+
+    parentNode = parentNode || node.parentNode
+    var selectedIndex = parentNode.selectedIndex
+
+    // --
+    if (!vnode) {
+      parentNode.removeChild(node)
+      if (node.component) {
+        node.component.$destroy()
+      }
+    }
+    // ++ || --++
+    else {
+      // ++
+      if (!node) {
+        node = createNode(vnode)
+
+      }
+    }
+
+    return node
+  }
+
 
   // fn => fn() vm.$render()
   function injectRender(vm, fn) {
@@ -674,44 +718,13 @@
     }
     vm._render = render
 
-    // force render => diff update view
-    vm.$forceUpdate = function () {
-      var vnode = vm._render(createElement)
-      vm._vnode = vnode
-      if (vm.$el) {
-        vm.$el = diff(vm.$el, vnode) // = if root replaced
-      }
+    // created
+    vm.created && vm.created()
+
+    // $mount
+    if (vm.$el) {
+      vm.$mount(vm.$el)
     }
-
-    // async render
-    vm.$render = function () {
-      // console.log('$render')
-
-      // update computed
-      // each(options.computed, function (fn, key) {
-      //   vm[key] = fn.call(vm)
-      // })
-
-      // trigger watch
-      //
-
-      // dom diff update view
-      cancelAnimationFrame(render.timer)
-      render.timer = requestAnimationFrame(function () {
-        vm.$forceUpdate()
-      })
-    }
-
-    // async call hooks
-    requestAnimationFrame(function () {
-      // created hook
-      vm.created && vm.created()
-
-      // $mount
-      if (vm.$el) {
-        vm.$mount(vm.$el)
-      }
-    })
 
     // test: return proxy
     if (typeOf(window.Proxy) == Function) {
@@ -735,15 +748,51 @@
     __c: __c,
     __e: __e,
     __o: __o,
+    // force render => diff update view
+    $forceUpdate: function () {
+      var vm = this
+      var vnode = vm._render(createElement)
+      vm._vnode = vnode
+      if (vm.$el) {
+        vm.$el = diff(vm.$el, vnode) // = if root replaced
+      }
+    },
+    // async render
+    $render: function (isForce) {
+      var vm = this
+      // console.log('$render')
+
+      // update computed
+      // each(options.computed, function (fn, key) {
+      //   vm[key] = fn.call(vm)
+      // })
+
+      // trigger watch
+      //
+
+      if (isForce) {
+        vm.$forceUpdate()
+        return
+      }
+
+      // dom diff update view
+      cancelAnimationFrame(vm._render.timer)
+      vm._render.timer = requestAnimationFrame(function () {
+        vm.$forceUpdate()
+      })
+    },
     $mount: function (el) {
       el.innerHTML = '' // clear
       this.$el = el
 
       // render first
-      this.$render()
+      this.$render(true)
 
       // mounted hook
       this.mounted && this.mounted()
+    },
+    $destroy: function () {
+      console.log('todo')
     }
   })
 
