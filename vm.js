@@ -494,18 +494,22 @@
 
   // node => dom diff update
   function diff(node, vnode, parentNode) {
-    if (node && (!node.parentNode || node.parentNode.nodeType != 1)) { // out of document
-      return
-    }
+    if (node && (!node.parentNode || node.parentNode.nodeType != 1)) return // out of document
     // console.log(node && node.tagName, vnode && vnode.tagName)
 
     parentNode = parentNode || node.parentNode
     var newNode
     var selectedIndex = parentNode.selectedIndex
+
     // +
     if (!node && vnode) {
       newNode = createNode(vnode)
       parentNode.appendChild(newNode)
+      if (vnode.componentOptions) {
+        var component = new VM(vnode.componentOptions)
+        component.$mount(newNode)
+        console.log(component)
+      }
     }
     // -
     else if (node && !vnode) {
