@@ -260,9 +260,9 @@
         }
 
         // remove directive attr
-        requestAnimationFrame(function () { // async is for template error
-          node.removeAttribute(attr)
-        })
+        // requestAnimationFrame(function () { // async is for template error
+        //   node.removeAttribute(attr)
+        // })
       }
       // attrs
       else {
@@ -498,18 +498,22 @@
     // console.log(node && node.tagName, vnode && vnode.tagName)
 
     parentNode = parentNode || node.parentNode
-    var newNode
     var selectedIndex = parentNode.selectedIndex
+
+    // console.log(node && node.tagName, vnode)
+    if ((!node && vnode) || String(node.tagName).toLowerCase() != String(vnode && vnode.tagName)) {
+      if (vnode && vnode.componentOptions) {
+        var component = new VM(vnode.componentOptions)
+        vnode = component._render()
+        console.log(component)
+      }
+    }
 
     // +
     if (!node && vnode) {
-      newNode = createNode(vnode)
-      parentNode.appendChild(newNode)
-      if (vnode.componentOptions) {
-        var component = new VM(vnode.componentOptions)
-        component.$mount(newNode)
-        console.log(component)
-      }
+      node = createNode(vnode)
+      parentNode.appendChild(node)
+      component && component.$mount(node)
     }
     // -
     else if (node && !vnode) {
@@ -517,8 +521,10 @@
     }
     // +- *nodeType || *tagName
     else if (String(node.tagName).toLowerCase() != String(vnode.tagName)) {
-      newNode = createNode(vnode)
+      var newNode = createNode(vnode)
       parentNode.replaceChild(newNode, node)
+      node = newNode
+      component && component.$mount(node)
     }
     // *text
     else if (node.nodeType == 3 && node.nodeValue != vnode.nodeValue) {
@@ -548,6 +554,8 @@
     if (selectedIndex !== undefined) {
       parentNode.selectedIndex = selectedIndex
     }
+
+    return node
   }
 
   // fn => fn() vm.$render()
@@ -658,19 +666,23 @@
       tplNode = parse(options.template)
     }
 
-    // render: options.render || compile
+    // render: options.render || compile => vnode tree
     var render = options.render
     if (!render) {
       tplNode = tplNode || {}
       render = options.render = compile(tplNode)
     }
+    vm._render = render
 
-    // force render
+    // force render => diff update view
     vm.$forceUpdate = function () {
       var vnode = render.call(vm, createElement)
-      vm.$el && diff(vm.$el, vnode)
       vm._vnode = vnode
+      if (vm.$el) {
+        vm.$el = diff(vm.$el, vnode) // = if root replaced
+      }
     }
+
     // async render
     vm.$render = function () {
       // console.log('$render')
@@ -724,6 +736,7 @@
     __e: __e,
     __o: __o,
     $mount: function (el) {
+      el.innerHTML = '' // clear
       this.$el = el
 
       // render first
