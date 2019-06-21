@@ -15,7 +15,7 @@
 
   // val => undefined|null|String|Number|Boolean|Symbol|Function|Array|Object
   function typeOf(val) {
-    if(val === undefined || val === null) return val
+    if (val === undefined || val === null) return val
     if (val !== Object(val) || val instanceof Function || val instanceof Array) {
       return val.constructor
     }
@@ -98,7 +98,7 @@
     var indent = indentChars ? '\n' + Array(n).join(indentChars) : ''
     var indentPop = indentChars ? '\n' + Array(n - 1).join(indentChars) : ''
     if (typeOf(val) == Array) {
-      return '[' + indent + each(val, function(item){
+      return '[' + indent + each(val, function (item) {
         return toJson(item, indentChars, n + 1)
       }).join(',' + indent) + indentPop + ']'
     }
@@ -220,7 +220,7 @@
         var arg = m[3]
         var modifiers = {}
         forEach(m[4].split('.'), function (name) {
-          if(name) modifiers[name] = true
+          if (name) modifiers[name] = true
         })
 
         // "🚩value" => value without "" in runtime code
@@ -235,13 +235,13 @@
 
         if (name == 'on') {
           if (value.match(/[-+=();]/)) {
-            dir.value = '🚩function(){' + value + '}'
+            dir.value = '🚩function(){' + value + ';$render()}'
           } else {
             dir.value = '🚩function(){' + value + '.apply(__vm,arguments)}'
           }
         }
         if (name == 'model') {
-          dir.setModel = '🚩function(value){' + value + '=value; $render()}'
+          dir.setModel = '🚩function(v){' + value + '=v;$render()}'
         }
         if (name == 'for') {
           // (item, i) in list
@@ -469,7 +469,7 @@
       else if (node.nodeType == 3) {
         // text{{exp}}no"de  =>  "text" +(exp)+ "no\"de"
         var textVnodeCode = node.nodeValue.replace(/\s+/g, ' ')
-          .replace(/(^|}})(.*?)({{|$)/g, function (str, $1, $2, $3) {return $1 + quot($2) + $3})
+          .replace(/(^|}})(.*?)({{|$)/g, function (str, $1, $2, $3) { return $1 + quot($2) + $3 })
           .replace(/{{(.*?)}}/g, '+__o($1)+')
         code += textVnodeCode
 
@@ -676,7 +676,7 @@
 
     // force render => diff update view
     vm.$forceUpdate = function () {
-      var vnode = render.call(vm, createElement)
+      var vnode = vm._render(createElement)
       vm._vnode = vnode
       if (vm.$el) {
         vm.$el = diff(vm.$el, vnode) // = if root replaced
@@ -778,10 +778,9 @@
       if (modifiers.stop) event.stopPropagation()
       if (modifiers.self && event.target != el) return
 
-      if (modifiers.ctrl && !event.ctrlKey) return
-      if (modifiers.alt && !event.altKey) return
-      if (modifiers.shift && !event.shiftKey) return
-      if (modifiers.meta && !event.metaKey) return
+      if (forEach('ctrl,alt,shift,meta'.split(','), function (key) {
+        if (modifiers[key] && !event[key + 'Key']) return true
+      })) return
 
       if (modifiers.enter && event.keyCode != 13) return
 

@@ -13,12 +13,9 @@
 <body>
 
   <div id="app">
-    <input v-model="model"> {{model}}
-    <hello v-if="model"></hello>
+    <button @click="n++">{{n}}</button>
+    --
     <hello></hello>
-    <div>
-      <hello v-for="item in model">he</hello>
-    </div>
   </div>
 
   <script type="x">
@@ -61,7 +58,13 @@
         return c('hello', ['abc'])
       },
       data: {
-        model: 'hello vm.js'
+        model: 'hello vm.js',
+        n: 10
+      },
+      methods: {
+        click: function () {
+          this.n += 1
+        }
       }
     })
   </script>
