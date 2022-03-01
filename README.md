@@ -5,7 +5,7 @@
 超轻量，可考虑用于 活动页、广告投放页 等轻量的项目。
 
 实现原理如下：  
-[从零实现mvvm框架，重写一个轻量的vue并兼容ie](https://github.com/wusfen/vm/wiki)
+[从零实现mvvm框架，重写一个轻量的vue并兼容ie](https://github.com/wushufen/vm/wiki)
 
 ### 特性
 * 兼容ie所有版本
@@ -41,11 +41,11 @@
 
 可在ie6下测试
 
-* [hello world](https://wusfen.github.io/vm/examples/helloWorld.html) | [源码](examples/helloWorld.html)
-* [form](https://wusfen.github.io/vm/examples/form.html) | [源码](examples/form.html)
-* [todo list](https://wusfen.github.io/vm/examples/todoList.html) | [源码](examples/todoList.html)
-* [template error](https://wusfen.github.io/vm/examples/templateError.html) | [源码](examples/templateError.html)
-* [svg (需浏览器支持 ie9+)](https://wusfen.github.io/vm/examples/svg.html) | [源码](examples/svg.html) 
+* [hello world](https://wushufen.github.io/vm/examples/helloWorld.html) | [源码](examples/helloWorld.html)
+* [form](https://wushufen.github.io/vm/examples/form.html) | [源码](examples/form.html)
+* [todo list](https://wushufen.github.io/vm/examples/todoList.html) | [源码](examples/todoList.html)
+* [template error](https://wushufen.github.io/vm/examples/templateError.html) | [源码](examples/templateError.html)
+* [svg (需浏览器支持 ie9+)](https://wushufen.github.io/vm/examples/svg.html) | [源码](examples/svg.html) 
 
 ## 已实现的功能列表
 
