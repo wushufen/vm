@@ -24,7 +24,7 @@
   <script>
     Vue.component('hello', {
       props: {
-        name: String
+        propName: String
       },
       data: function () {
         return {
@@ -32,7 +32,7 @@
         }
       },
       template: `
-      <button @click="n++">{{n}} ++</button>
+      <button @click="n++" prop-name="456">{{n}} 子组件</button>
       `,
       methods: {
         click: function () {
@@ -40,7 +40,7 @@
         }
       },
       mounted: function () {
-        console.log('component mounted')
+        console.log(this, 'component mounted')
       },
       destroyed: function () {
         console.log('component destroyed')

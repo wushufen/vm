@@ -1,7 +1,14 @@
 /*! @preserve https://github.com/wusfen/vm */
 
-(function (window, document, Object, Array, Function, String, undefined) ////
-{
+;(function (
+  window,
+  document,
+  Object,
+  Array,
+  Function,
+  String,
+  undefined ////
+) {
   var requestAnimationFrame = window.requestAnimationFrame
   var cancelAnimationFrame = window.cancelAnimationFrame
   if (!requestAnimationFrame) {
@@ -13,10 +20,71 @@
     }
   }
 
+  function hyphenToCamelCase(str) {
+    return str.replace(/-([a-z])/g, function (match, letter) {
+      return letter.toUpperCase()
+    })
+  }
+
+  function hasOwn(obj, prop) {
+    return Object.hasOwnProperty.call(obj, prop)
+  }
+  // {a: 'a1', b: 'b1'} => ['a', 'b']
+  function objKeys(obj) {
+    var keys = []
+    for (var i in obj) {
+      if (obj.hasOwnProperty(i)) {
+        keys.push(i)
+      }
+    }
+    return keys
+  }
+
+  function includes(array, searchElement) {
+    "use strict"
+    if (array == null) {
+      throw new TypeError(
+        "Array.prototype.includes called on null or undefined"
+      )
+    }
+
+    var O = Object(array)
+    var len = parseInt(O.length, 10) || 0
+    if (len === 0) {
+      return false
+    }
+    var n = parseInt(arguments[1], 10) || 0
+    var k
+    if (n >= 0) {
+      k = n
+    } else {
+      k = len + n
+      if (k < 0) {
+        k = 0
+      }
+    }
+    var currentElement
+    while (k < len) {
+      currentElement = O[k]
+      if (
+        searchElement === currentElement ||
+        (searchElement !== searchElement && currentElement !== currentElement)
+      ) {
+        return true
+      }
+      k++
+    }
+    return false
+  }
+
   // val => undefined|null|String|Number|Boolean|Symbol|Function|Array|Object
   function typeOf(val) {
     if (val === undefined || val === null) return val
-    if (val !== Object(val) || val instanceof Function || val instanceof Array) {
+    if (
+      val !== Object(val) ||
+      val instanceof Function ||
+      val instanceof Array
+    ) {
       return val.constructor
     }
     return Object
@@ -33,7 +101,9 @@
 
   // for: array|object|string|number => []
   function each(list, fn) {
-    var array = [], i = 0, rs
+    var array = [],
+      i = 0,
+      rs
     if (typeOf(list) == Array || typeOf(list) == String) {
       while (i < list.length) {
         rs = fn.call(this, list[i], i, i++)
@@ -57,7 +127,8 @@
 
   // arrayLike => array
   function toArray(arrayLike, start) {
-    var array = [], i = arrayLike.length
+    var array = [],
+      i = arrayLike.length
     while (i--) array[i] = arrayLike[i]
     return array.slice(start)
   }
@@ -66,7 +137,7 @@
   function indexOf(array, item) {
     var index = -1
     forEach(array, function (_item, i) {
-      if (item === _item) return index = i
+      if (item === _item) return (index = i)
     })
     return index
   }
@@ -89,26 +160,32 @@
 
   // str"q"\ing => "str\"q\"\\ing"
   function quot(string) {
-    return '"' + string.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"'
+    return '"' + string.replace(/\\/g, "\\\\").replace(/"/g, '\\"') + '"'
   }
 
   // any => json
   function toJson(val, indentChars, n) {
     n = n || 2
-    var indent = indentChars ? '\n' + Array(n).join(indentChars) : ''
-    var indentPop = indentChars ? '\n' + Array(n - 1).join(indentChars) : ''
+    var indent = indentChars ? "\n" + Array(n).join(indentChars) : ""
+    var indentPop = indentChars ? "\n" + Array(n - 1).join(indentChars) : ""
     if (typeOf(val) == Array) {
-      return '[' + indent + each(val, function (item) {
-        return toJson(item, indentChars, n + 1)
-      }).join(',' + indent) + indentPop + ']'
+      return (
+        "[" +
+        indent +
+        each(val, function (item) {
+          return toJson(item, indentChars, n + 1)
+        }).join("," + indent) +
+        indentPop +
+        "]"
+      )
     }
     if (typeOf(val) == Object) {
       var items = []
       each(val, function (item, key) {
         if (item === undefined) return
-        items.push(quot(key) + ': ' + toJson(item, indentChars, n + 1))
+        items.push(quot(key) + ": " + toJson(item, indentChars, n + 1))
       })
-      return '{' + indent + items.join(',' + indent) + indentPop + '}'
+      return "{" + indent + items.join("," + indent) + indentPop + "}"
     }
     if (typeOf(val) == String) {
       return quot(val)
@@ -118,8 +195,8 @@
 
   // undefined => '', obj => json
   function outValue(val) {
-    if (val === undefined) return ''
-    if (typeOf(val) == Object || typeOf(val) == Array) return toJson(val, '  ')
+    if (val === undefined) return ""
+    if (typeOf(val) == Object || typeOf(val) == Array) return toJson(val, "  ")
     return val
   }
 
@@ -130,8 +207,8 @@
       if (selector.match(/^#/)) {
         return document.getElementById(s)
       } else if (selector.match(/^\./)) {
-        return forEach(document.getElementsByTagName('*'), function (el) {
-          if (el.className.match('\\b' + s + '\\b')) {
+        return forEach(document.getElementsByTagName("*"), function (el) {
+          if (el.className.match("\\b" + s + "\\b")) {
             return el
           }
         })
@@ -141,52 +218,69 @@
   }
 
   // ie: input => onkeyup, focus => onfocusin
-  function ieEventType(type) { // ie
-    return 'on' + ({
-      input: 'keyup',
-      focus: 'focusin',
-      blur: 'focusout'
-    }[type] || type)
+  function ieEventType(type) {
+    // ie
+    return (
+      "on" +
+      ({
+        input: "keyup",
+        focus: "focusin",
+        blur: "focusout",
+      }[type] || type)
+    )
   }
 
   // addEventListener
-  var on = function () {
-    return window.addEventListener ? function (node, type, fn, useCapture) {
-      node.addEventListener(type, fn, useCapture)
-    } : function (node, type, fn) { // ie
-      type = ieEventType(type)
-      fn.__ie = fn.__ie || function () { // for off
-        var event = window.event
-        event.target = event.srcElement
-        event.preventDefault = function () { event.returnValue = false }
-        event.stopPropagation = function () { event.cancelBubble = true }
-        fn.call(this, event)
-      }
-      node.attachEvent(type, fn.__ie)
-    }
-  }()
+  var on = (function () {
+    return window.addEventListener
+      ? function (node, type, fn, useCapture) {
+          node.addEventListener(type, fn, useCapture)
+        }
+      : function (node, type, fn) {
+          // ie
+          type = ieEventType(type)
+          fn.__ie =
+            fn.__ie ||
+            function () {
+              // for off
+              var event = window.event
+              event.target = event.srcElement
+              event.preventDefault = function () {
+                event.returnValue = false
+              }
+              event.stopPropagation = function () {
+                event.cancelBubble = true
+              }
+              fn.call(this, event)
+            }
+          node.attachEvent(type, fn.__ie)
+        }
+  })()
 
   // removeEventListener
-  var off = function () {
-    return window.removeEventListener ? function (node, type, fn) {
-      node.removeEventListener(type, fn)
-    } : function (node, type, fn) { // ie
-      type = ieEventType(type)
-      fn = fn ? (fn.__ie || fn) : null
-      node.detachEvent(type, fn)
-    }
-  }()
+  var off = (function () {
+    return window.removeEventListener
+      ? function (node, type, fn) {
+          node.removeEventListener(type, fn)
+        }
+      : function (node, type, fn) {
+          // ie
+          type = ieEventType(type)
+          fn = fn ? fn.__ie || fn : null
+          node.detachEvent(type, fn)
+        }
+  })()
 
   // => increment id
-  var uid = function (id) {
+  var uid = (function (id) {
     return function () {
       return ++id
     }
-  }(0)
+  })(0)
 
   // html => node
   function parse(html) {
-    parse.el = parse.el || document.createElement('div')
+    parse.el = parse.el || document.createElement("div")
     parse.el.innerHTML = html
     var node = parse.el.children[0]
     parse.el.removeChild(node) // ie
@@ -194,7 +288,7 @@
   }
 
   // node => vnodeData
-  function getVnodeData(node) {
+  function getVnodeData(node, vm) {
     var ns = node.namespaceURI
     var vnodeData = {
       nodeType: node.nodeType,
@@ -202,24 +296,39 @@
       ns: ns == document.documentElement.namespaceURI ? undefined : ns,
       attrs: {}, // attr="value"
       props: {}, // :prop="value"
-      directives: [] // v-dir.mdfs="value"
+      directives: [], // v-dir.mdfs="value"
     }
     var attributes = toArray(node.attributes)
+    var propToData = {}
+    var nodeOptions = vm.$options
     forEach(attributes, function (attribute) {
-      if (!attribute.specified && attribute.nodeName != 'value') return // ie
+      if (!attribute.specified && attribute.nodeName != "value") return // ie
       var attr = attribute.nodeName
       var value = attribute.nodeValue
+
+      var isDefProps = false
+      var defPropKey = ""
+      for (const key in nodeOptions.props) {
+        if (
+          key == attr ||
+          key.toLocaleLowerCase() == attr ||
+          key == hyphenToCamelCase(attr)
+        ) {
+          isDefProps = true
+          defPropKey = key
+        }
+      }
 
       // directives && props
       // v-for  v-bind:title  :title  v-on:click  @click.prevent.stop
       var m = attr.match(/^(v-([^.:]*):?|:|@)([^.]*)(.*)/)
       if (m) {
         var name = m[2]
-        if (m[1] == ':') name = 'bind'
-        if (m[1] == '@') name = 'on'
+        if (m[1] == ":") name = "bind"
+        if (m[1] == "@") name = "on"
         var arg = m[3]
         var modifiers = {}
-        forEach(m[4].split('.'), function (name) {
+        forEach(m[4].split("."), function (name) {
           if (name) modifiers[name] = true
         })
 
@@ -227,34 +336,36 @@
         var dir = {
           raw: attr,
           expression: value,
-          value: '🚩' + value,
+          value: "🚩" + value,
           name: name,
           arg: arg,
-          modifiers: modifiers
+          modifiers: modifiers,
         }
 
-        if (name == 'on') {
+        if (name == "on") {
           if (value.match(/[-+=();]/)) {
-            dir.value = '🚩function(){' + value + ';$render()}'
+            dir.value = "🚩function(){" + value + ";$render()}"
           } else {
-            dir.value = '🚩function(){' + value + '.apply(__vm,arguments)}'
+            dir.value = "🚩function(){" + value + ".apply(__vm,arguments)}"
           }
         }
-        if (name == 'model') {
-          dir.setModel = '🚩function(v){' + value + '=v;$render()}'
+        if (name == "model") {
+          dir.setModel = "🚩function(v){" + value + "=v;$render()}"
         }
-        if (name == 'for') {
+        if (name == "for") {
           // (item, i) in list
-          m = value.match(/(?:\(([^,()]+),([^,()]+)\)|([^,()]+))\s+(?:in|of)\s+(\S+)/) || [0, ',']
+          m = value.match(
+            /(?:\(([^,()]+),([^,()]+)\)|([^,()]+))\s+(?:in|of)\s+(\S+)/
+          ) || [0, ","]
           dir.item = m[1] || m[3]
-          dir.index = m[2] || '$index'
+          dir.index = m[2] || "$index"
           dir.list = m[4]
         }
-
         if (/^(for|if)$/.test(name)) {
           vnodeData.directives[name] = dir
-        } else if (name == 'bind') {
-          vnodeData.props[arg] = '🚩' + value
+        } else if (name == "bind") {
+          vnodeData.props[arg] = "🚩" + value
+          propToData[arg] = value
         } else {
           vnodeData.directives.push(dir)
         }
@@ -264,24 +375,35 @@
         //   node.removeAttribute(attr)
         // })
       }
+      // explicit definition props
+      // eg: {props: {name: String}}
+      else if (isDefProps) {
+        vnodeData.props[defPropKey] = "🚩" + value
+        propToData[defPropKey] = value
+      }
       // attrs
       else {
         vnodeData.attrs[attr] = value
       }
     })
+    // props mount to this
+    assign(vm, propToData)
     return vnodeData
   }
 
   // vnodeData + childNodes => vnode tree
   function createVnode(vnodeData, childNodes) {
-    var vnode = assign({
-      tagName: '',
-      attrs: {},
-      props: {},
-      directives: [],
-      childNodes: []
-    }, vnodeData)
-    var tagName = vnode.tagName = vnode.tagName.toLowerCase()
+    var vnode = assign(
+      {
+        tagName: "",
+        attrs: {},
+        props: {},
+        directives: [],
+        childNodes: [],
+      },
+      vnodeData
+    )
+    var tagName = (vnode.tagName = vnode.tagName.toLowerCase())
 
     // ['child', [for...]] => ['child', ...]
     // 'text' => {nodeType:3, nodeValue:'text'}
@@ -317,10 +439,13 @@
       childNodes = data
       data = {}
     }
-    data = assign({
-      tagName: tagName,
-      nodeType: 1
-    }, data)
+    data = assign(
+      {
+        tagName: tagName,
+        nodeType: 1,
+      },
+      data
+    )
     return createVnode(data, childNodes)
   }
 
@@ -333,9 +458,10 @@
 
     // createElement namespaceURI
     var tagName = vnode.tagName
-    var node = vnode.ns && document.createElementNS
-      ? document.createElementNS(vnode.ns, tagName)
-      : document.createElement(tagName)
+    var node =
+      vnode.ns && document.createElementNS
+        ? document.createElementNS(vnode.ns, tagName)
+        : document.createElement(tagName)
 
     // component
     var componentOptions = vnode.componentOptions
@@ -349,7 +475,7 @@
     // attrs
     each(vnode.attrs, function (value, name) {
       node.setAttribute(name, value)
-      if (name == 'class') node.className = value // ie
+      if (name == "class") node.className = value // ie
     })
 
     // directives.bind
@@ -375,15 +501,18 @@
   // node + props => props*
   function updateProps(node, props) {
     each(props, function (value, name) {
-      if (name == 'style') {
+      if (name == "style") {
         assign(node.style, value)
         return
       }
-      if (name == 'class') {
+      if (name == "class") {
         each(value, function (bool, key) {
-          var className = node.className.replace(RegExp('(?:^|\\s+)' + key, 'g'), '')
+          var className = node.className.replace(
+            RegExp("(?:^|\\s+)" + key, "g"),
+            ""
+          )
           if (bool) {
-            node.className = className ? className + ' ' + key : key
+            node.className = className ? className + " " + key : key
           } else {
             node.className = className
           }
@@ -404,18 +533,18 @@
   // code => → errorNode
   function detectTemplateError(code, root, errorNode) {
     try {
-      Function('!' + code)
+      Function("!" + code)
     } catch (error) {
       errorNode = errorNode.cloneNode()
       var errorTpl = errorNode.outerHTML || errorNode.nodeValue
-      errorTpl = errorTpl.replace(/<\/.*?>/, '')
-      errorTpl = root.outerHTML.replace(errorTpl, '🐞→ ' + errorTpl)
-      throw Error('[TemplateError]\n  ' + errorTpl) // Error: ie
+      errorTpl = errorTpl.replace(/<\/.*?>/, "")
+      errorTpl = root.outerHTML.replace(errorTpl, "🐞→ " + errorTpl)
+      throw Error("[TemplateError]\n  " + errorTpl) // Error: ie
     }
   }
 
   // node => render => vnode
-  function compile(node, isDebug) {
+  function compile(node, isDebug, vm) {
     /*
     createVnode({tagName:'div'}, [
       'textNode', // textNode
@@ -428,39 +557,49 @@
       createVnode({tagName: 'hello'}, [ loop ]) // component
     ])
     */
-    var code = ''
+    var code = ""
     var root = node
     loop(root)
     function loop(node) {
-      if (!code.match(/^$|\[\s*$/)) code += ',\n' // [childNode, ..]
+      if (!code.match(/^$|\[\s*$/)) code += ",\n" // [childNode, ..]
 
       // parse element
       if (node.nodeType == 1) {
-        var vnodeData = getVnodeData(node)
+        var vnodeData = getVnodeData(node, vm)
         var vnodeJson = toJson(vnodeData)
         var dirs = vnodeData.directives
-        var vnodeCode = vnodeJson.replace(/"🚩((?:\\.|.)*?)"/g, '$1') // rutime value without ""
-
+        var vnodeCode = vnodeJson.replace(/"🚩((?:\\.|.)*?)"/g, "$1") // rutime value without ""
         isDebug && detectTemplateError(vnodeCode, root, node)
-
         // for
         // each(, function(){ return createVnode(, [..loop..]) || if } )
-        if (dirs['for']) {
-          var dir = dirs['for']
-          code += '__e(' + dir.list + ',function(' + dir.item + ',' + dir.index + '){return '
-          isDebug && detectTemplateError(dir.expression.replace(/ (in|of) /, '/'), root, node)
+        if (dirs["for"]) {
+          var dir = dirs["for"]
+          code +=
+            "__e(" +
+            dir.list +
+            ",function(" +
+            dir.item +
+            "," +
+            dir.index +
+            "){return "
+          isDebug &&
+            detectTemplateError(
+              dir.expression.replace(/ (in|of) /, "/"),
+              root,
+              node
+            )
         }
         // if
         // bool? createVnode(, [..loop..] ): ""
-        if (dirs['if']) {
-          var expression = dirs['if'].expression
-          code += expression + '? '
+        if (dirs["if"]) {
+          var expression = dirs["if"].expression
+          code += expression + "? "
 
           isDebug && detectTemplateError(expression, root, node)
         }
 
         // createVnode
-        code += '__c(' + vnodeCode + ', [\n'
+        code += "__c(" + vnodeCode + ", [\n"
 
         // childNodes
         var childNodes = toArray(node.childNodes)
@@ -469,18 +608,21 @@
         })
 
         // end createVnode
-        code += '])\n'
+        code += "])\n"
         // end if
-        if (dirs['if']) code += ': ""\n' //: ""
+        if (dirs["if"]) code += ': ""\n' //: ""
         // end for
-        if (dirs['for']) code += '})\n'
+        if (dirs["for"]) code += "})\n"
       }
       // parse textNode
       else if (node.nodeType == 3) {
         // text{{exp}}no"de  =>  "text" +(exp)+ "no\"de"
-        var textVnodeCode = node.nodeValue.replace(/\s+/g, ' ')
-          .replace(/(^|}})(.*?)({{|$)/g, function (str, $1, $2, $3) { return $1 + quot($2) + $3 })
-          .replace(/{{(.*?)}}/g, '+__o($1)+')
+        var textVnodeCode = node.nodeValue
+          .replace(/\s+/g, " ")
+          .replace(/(^|}})(.*?)({{|$)/g, function (str, $1, $2, $3) {
+            return $1 + quot($2) + $3
+          })
+          .replace(/{{(.*?)}}/g, "+__o($1)+")
         code += textVnodeCode
 
         isDebug && detectTemplateError(textVnodeCode, root, node)
@@ -493,11 +635,11 @@
 
     if (!isDebug) {
       try {
-        var render = Function('var __vm=this;with(__vm){return ' + code + '}')
+        var render = Function("var __vm=this;with(__vm){return " + code + "}")
         return render
       } catch (error) {
         // setTimeout(code)
-        compile(node, true)
+        compile(node, true, vm)
       }
     }
   }
@@ -509,8 +651,6 @@
 
     parentNode = parentNode || node.parentNode
     var selectedIndex = parentNode && parentNode.selectedIndex
-
-    console.log(node, vnode)
 
     // +
     if (!node && vnode) {
@@ -595,13 +735,11 @@
       // ++
       if (!node) {
         node = createNode(vnode)
-
       }
     }
 
     return node
   }
-
 
   // fn => fn() vm.$render()
   function injectRender(vm, fn) {
@@ -650,18 +788,18 @@
     if (Promise) {
       var Promise_prototype = Promise.prototype
       var then = Promise_prototype.then
-      var _catch = Promise_prototype['catch']
-      var _finally = Promise_prototype['finally']
+      var _catch = Promise_prototype["catch"]
+      var _finally = Promise_prototype["finally"]
       Promise_prototype.then = function (fn) {
         Promise_prototype.then = then // !!??
         return then.call(this, injectRender(vm, fn))
       }
-      Promise_prototype['catch'] = function (fn) {
-        Promise_prototype['catch'] = _catch // !!??
+      Promise_prototype["catch"] = function (fn) {
+        Promise_prototype["catch"] = _catch // !!??
         return _catch.call(this, injectRender(vm, fn))
       }
-      Promise_prototype['finally'] = function (fn) {
-        Promise_prototype['finally'] = _finally // !!??
+      Promise_prototype["finally"] = function (fn) {
+        Promise_prototype["finally"] = _finally // !!??
         return _finally.call(this, injectRender(vm, fn))
       }
     }
@@ -672,8 +810,8 @@
       XMLHttpRequest_prototype.send = send
       if (Promise) {
         Promise_prototype.then = then
-        Promise_prototype['catch'] = _catch
-        Promise_prototype['finally'] = _finally
+        Promise_prototype["catch"] = _catch
+        Promise_prototype["finally"] = _finally
       }
     }
   }
@@ -715,7 +853,7 @@
     var render = options.render
     if (!render) {
       tplNode = tplNode || {}
-      render = options.render = compile(tplNode)
+      render = options.render = compile(tplNode, false, vm)
     }
     vm._render = render
 
@@ -737,7 +875,7 @@
         get: function (vm, key) {
           vm.$render()
           return vm[key]
-        }
+        },
       })
     }
   }
@@ -784,7 +922,7 @@
       })
     },
     $mount: function (el) {
-      el.innerHTML = '' // clear
+      el.innerHTML = "" // clear
       this.$el = el
 
       // render first
@@ -794,13 +932,13 @@
       this.mounted && this.mounted()
     },
     $destroy: function () {
-      console.log('todo')
-    }
+      console.log("todo")
+    },
   })
 
   VM.options = {
     directives: {},
-    components: {}
+    components: {},
   }
 
   // directive: v-directive
@@ -810,7 +948,7 @@
     if (typeOf(definition) == Function) {
       definition = {
         bind: definition,
-        update: definition
+        update: definition,
       }
     }
     VM.options.directives[name] = definition
@@ -820,29 +958,37 @@
   // vnode.props || directive('bind') ??
 
   // v-on:click @click
-  VM.directive('on', function (el, binding) {
-    off(el, binding.arg, el['__' + binding.raw]) // once
-    on(el, binding.arg, el['__' + binding.raw] = function (e) {
-      // modifiers
-      var modifiers = binding.modifiers
-      if (modifiers.prevent) event.preventDefault()
-      if (modifiers.stop) event.stopPropagation()
-      if (modifiers.self && event.target != el) return
+  VM.directive("on", function (el, binding) {
+    off(el, binding.arg, el["__" + binding.raw]) // once
+    on(
+      el,
+      binding.arg,
+      (el["__" + binding.raw] = function (e) {
+        // modifiers
+        var modifiers = binding.modifiers
+        if (modifiers.prevent) event.preventDefault()
+        if (modifiers.stop) event.stopPropagation()
+        if (modifiers.self && event.target != el) return
 
-      if (forEach('ctrl,alt,shift,meta'.split(','), function (key) {
-        if (modifiers[key] && !event[key + 'Key']) return true
-      })) return
+        if (
+          forEach("ctrl,alt,shift,meta".split(","), function (key) {
+            if (modifiers[key] && !event[key + "Key"]) return true
+          })
+        )
+          return
 
-      if (modifiers.enter && event.keyCode != 13) return
+        if (modifiers.enter && event.keyCode != 13) return
 
-      var m = binding.raw.match(/\.(\d+)/)
-      if (m && event.keyCode != m[1]) return
-      binding.value(e)
-    })
+        var m = binding.raw.match(/\.(\d+)/)
+        if (m && event.keyCode != m[1]) return
+        console.log(binding, "binding")
+        binding.value(e)
+      })
+    )
   })
 
   // v-model
-  VM.directive('model', function (el, binding, vnode) {
+  VM.directive("model", function (el, binding, vnode) {
     var model = binding.value
     var attrs = vnode.attrs
     var props = vnode.props
@@ -851,8 +997,8 @@
     var viewToModel
 
     // checkbox
-    if (el.type == 'checkbox') {
-      eventType = 'click'
+    if (el.type == "checkbox") {
+      eventType = "click"
       if (typeOf(model) == Array) {
         props.checked = indexOf(model, value) != -1
         viewToModel = function () {
@@ -871,15 +1017,15 @@
       }
     }
     // radio
-    else if (el.type == 'radio') {
+    else if (el.type == "radio") {
       props.checked = model === value
-      eventType = 'click'
+      eventType = "click"
       viewToModel = function () {
         binding.setModel(value)
       }
     }
     // select
-    else if (el.type == 'select-one') {
+    else if (el.type == "select-one") {
       el.value = model
       forEach(vnode.childNodes, function (voption) {
         if (voption.nodeType == 1) {
@@ -890,7 +1036,7 @@
           voption.props.selected = optionValue === model
         }
       })
-      eventType = 'change'
+      eventType = "change"
       viewToModel = function () {
         forEach(el.options, function (option) {
           if (option.selected) {
@@ -901,7 +1047,8 @@
                 if (vindex == option.index) {
                   var optionValue = voption.props.value
                   if (optionValue === undefined) {
-                    optionValue = voption.attrs.value || voption.childNodes[0].nodeValue
+                    optionValue =
+                      voption.attrs.value || voption.childNodes[0].nodeValue
                   }
                   binding.setModel(optionValue)
                 }
@@ -914,14 +1061,14 @@
     // input, textarea, ...
     else {
       props.value = model
-      eventType = 'input'
+      eventType = "input"
       viewToModel = function () {
         binding.setModel(el.value)
       }
     }
 
     off(el, eventType, el.__m2v) // once !!
-    on(el, eventType, el.__m2v = viewToModel)
+    on(el, eventType, (el.__m2v = viewToModel))
   })
 
   // component
@@ -932,12 +1079,18 @@
   }
 
   // exports
-  if (typeof module == 'object') {
+  if (typeof module == "object") {
     module.exports = VM
   } else {
     window.VM = VM
     window.Vue = VM
   }
-
-} //
-)(window, document, Object, Array, Function, String) ////
+})(
+  //
+  window,
+  document,
+  Object,
+  Array,
+  Function,
+  String
+) ////
